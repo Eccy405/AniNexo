@@ -1,0 +1,24 @@
+# Historial de Tareas Completadas
+
+- [x] Planificación y arquitectura definida.
+- [x] Estructura de memoria persistente creada (`/memory`, `/tasks`, `/docs`).
+- [x] Inicialización del servidor backend (Express + TS + Socket.io).
+- [x] Configuración de Prisma y esquema MySQL inicial.
+- [x] Inicialización del cliente Next.js 15 sin Tailwind.
+- [x] Configuración de scripts de desarrollo (nodemon, ts-node).
+- [x] Creación de estructura de directorios inicial en src/ (styles, components).
+- [x] Reinstalar dependencias del backend.
+- [x] Crear `variables.css` con la paleta de colores y reset de estilos en `globals.css`.
+- [x] Implementar componentes base (`Button`, `Card`, `Input`) con CSS Modules.
+- [x] Configurar cliente de Prisma (`src/lib/prisma.ts`).
+- [x] Configurar middleware global de manejo de errores.
+- [x] Integrar router principal Express con los módulos en `src/index.ts`.
+- [x] Añadir modelo de caché `AnimeCache` al schema de Prisma.
+- [x] Generar Prisma client y añadir Axios para requests.
+- [x] Implementar consumo de API de AniList usando GraphQL en `anime.service.ts`.
+- [x] Implementar proxy/caché en base de datos para la API de AniList.
+- [x] Configurar controlador y rutas para el módulo Anime.
+- [x] Implementar Autenticación Completa (JWT, Login, Registro) con bcryptjs.
+- [x] Crear el Sistema Dinámico de Perfiles de Usuario (Avatar y Biografía).
+- [x] Desarrollar Endpoints de Listas de Seguimiento de Anime (Base de datos y Endpoints).
+- [x] Construir el Feed Social Global (Posts y Comentarios).

@@ -1,0 +1,91 @@
+import { Request, Response, NextFunction } from 'express';
+import { DiscoveryService } from './discovery.service';
+
+export class DiscoveryController {
+  private discoveryService: DiscoveryService;
+
+  constructor() {
+    this.discoveryService = new DiscoveryService();
+  }
+
+  getHomeData = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = (req as any).user?.id;
+
+      const [hero, rows, personalized] = await Promise.all([
+        this.discoveryService.getHeroSlides(),
+        this.discoveryService.getHomeRows(),
+        userId ? this.discoveryService.getPersonalizedData(userId as string) : Promise.resolve([])
+      ]);
+
+      res.status(200).json({
+        success: true,
+        data: { 
+          hero, 
+          rows: [...personalized, ...rows] 
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getByGenre = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { genre } = req.params;
+      const page = Number(req.query.page) || 1;
+      const perPage = Number(req.query.perPage) || 50;
+      
+      const data = await this.discoveryService.getByGenre(genre as string, page, perPage);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getByCategory = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { category } = req.params;
+      const page = Number(req.query.page) || 1;
+      const perPage = Number(req.query.perPage) || 50;
+
+      const data = await this.discoveryService.getByCategory(category as string, page, perPage);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  advancedSearch = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const filters = req.query;
+      const page = Number(req.query.page) || 1;
+      const perPage = Number(req.query.perPage) || 50;
+
+      // Convertir géneros de string a array si es necesario
+      if (typeof filters.genres === 'string') {
+        filters.genres = filters.genres.split(',');
+      }
+
+      const data = await this.discoveryService.advancedSearch(filters, page, perPage);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  trackView = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { animeId } = req.body;
+      const userId = (req as any).user?.id;
+      
+      if (userId && animeId) {
+        await this.discoveryService.trackView(userId as string, Number(animeId));
+      }
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  };
+}

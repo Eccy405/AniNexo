@@ -1,0 +1,115 @@
+import { Server, Socket } from 'socket.io';
+import { MessagingService } from './modules/messaging/messaging.service';
+import { logger } from './lib/logger';
+import jwt from 'jsonwebtoken';
+import { telemetryService } from './modules/admin/telemetry.service';
+
+import { createAdapter } from '@socket.io/redis-adapter';
+import { redis } from './lib/redis';
+
+const messagingService = new MessagingService();
+
+// Mapa global para rastrear usuarios conectados (userId -> socketId)
+// NOTA: En escala horizontal esto se mueve a Redis.
+const onlineUsers = new Map<string, string>();
+
+export function setupSockets(io: Server) {
+  // Configuración de Redis Adapter para escalado horizontal (Solo si hay Redis real)
+  if (process.env.REDIS_URL) {
+    const pubClient = redis;
+    const subClient = redis.duplicate();
+    io.adapter(createAdapter(pubClient, subClient));
+    logger.info('[socket]: Redis Adapter activado para escalado horizontal');
+  } else {
+    logger.warn('[socket]: Redis URL no encontrada. Saltando Redis Adapter (Single Instance Mode)');
+  }
+
+  // Namespaces
+  const chatNamespace = io.of('/chat');
+  const notificationNamespace = io.of('/notifications');
+  const nexoNamespace = io.of('/nexo-stream');
+
+  // Middleware de Autenticación para Sockets (Global)
+  io.use((socket, next) => {
+    const token = socket.handshake.auth.token;
+    if (!token) {
+      return next(new Error('Authentication error: No token provided'));
+    }
+
+    try {
+      const secret = process.env.JWT_SECRET || 'super_secret_jwt_key_for_dev';
+      const decoded = jwt.verify(token, secret) as any;
+      socket.data.user = decoded;
+      next();
+    } catch (err) {
+      next(new Error('Authentication error: Invalid token'));
+    }
+  });
+
+  io.on('connection', async (socket: Socket) => {
+    const userId = socket.data.user.id;
+    onlineUsers.set(userId, socket.id);
+    logger.info(`[socket]: Usuario ${userId} conectado - Socket ${socket.id}`);
+
+    // Telemetría: Iniciar Sesión
+    const userAgent = socket.handshake.headers['user-agent'];
+    const session = await telemetryService.startSession(
+      userId, 
+      socket.handshake.address, 
+      Array.isArray(userAgent) ? userAgent[0] : userAgent
+    );
+    if (session) socket.data.sessionId = session.id;
+
+    // Unirse a sala personal para notificaciones directas
+    socket.join(`user:${userId}`);
+
+    // Notificar a otros que este usuario está online (Opcional: solo a seguidores)
+    socket.broadcast.emit('user_status', { userId, status: 'online' });
+
+    // Unirse a una sala de conversación
+    socket.on('join_conversation', (conversationId: string) => {
+      socket.join(`conv_${conversationId}`);
+      logger.info(`[socket]: Usuario ${userId} se unió a conv_${conversationId}`);
+    });
+
+    // Enviar y recibir mensajes en tiempo real
+    socket.on('send_message', async (data: { conversationId: string, senderId: string, content: string }) => {
+      try {
+        const message = await messagingService.sendMessage(data.conversationId, data.senderId, data.content);
+        io.to(`conv_${data.conversationId}`).emit('new_message', message);
+        
+        // Notificación opcional al destinatario si no está en la sala del chat
+        // io.to(`user:${targetId}`).emit('notification', { type: 'NEW_MESSAGE', sender: userId });
+      } catch (error) {
+        logger.error('[socket]: Error guardando mensaje', error);
+      }
+    });
+
+    // Indicador de Escritura
+    socket.on('typing', (data: { conversationId: string }) => {
+      socket.to(`conv_${data.conversationId}`).emit('user_typing', { userId, conversationId: data.conversationId });
+    });
+
+    socket.on('stop_typing', (data: { conversationId: string }) => {
+      socket.to(`conv_${data.conversationId}`).emit('user_stop_typing', { userId, conversationId: data.conversationId });
+    });
+
+    // Mensaje Leído
+    socket.on('message_read', async (data: { conversationId: string, messageId: string }) => {
+      // Emitir a la sala que el mensaje fue leído
+      io.to(`conv_${data.conversationId}`).emit('message_seen', { messageId: data.messageId, userId });
+    });
+
+    socket.on('disconnect', async () => {
+      onlineUsers.delete(userId);
+      socket.broadcast.emit('user_status', { userId, status: 'offline' });
+      
+      // Telemetría: Finalizar Sesión
+      if (socket.data.sessionId) {
+        await telemetryService.endSession(socket.data.sessionId);
+      }
+
+      logger.info(`[socket]: Usuario ${userId} desconectado`);
+    });
+  });
+}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Bienvenido a AniNexo!</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0a0a0a; color: #ffffff; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #1a1a1a; border-radius: 12px; overflow: hidden; border: 1px solid #333; }
+        .header { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); padding: 40px 20px; text-align: center; }
+        .content { padding: 40px 30px; line-height: 1.6; }
+        .footer { padding: 20px; text-align: center; font-size: 0.8rem; color: #666; border-top: 1px solid #222; }
+        .button { display: inline-block; padding: 12px 24px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 20px; }
+        h1 { margin: 0; font-size: 2rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AniNexo</h1>
+            <p>La Dimensión Definitiva del Anime</p>
+        </div>
+        <div class="content">
+            <h2>¡Hola, {{username}}! 🚀</h2>
+            <p>Estamos emocionados de tenerte en nuestra comunidad. En AniNexo no solo rastreas anime, vives la experiencia con nuestra IA Nexo, conectas con otros fans y descubres contenido exclusivo.</p>
+            <p>Para empezar, te recomendamos explorar las tendencias de la temporada y configurar tu perfil.</p>
+            <center>
+                <a href="{{loginUrl}}" class="button">Entrar a mi Perfil</a>
+            </center>
+        </div>
+        <div class="footer">
+            &copy; 2026 AniNexo Enterprise. Enviado con ❤️ desde la Neo-Tokyo.
+        </div>
+    </div>
+</body>
+</html>

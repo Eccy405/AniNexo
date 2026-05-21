@@ -1,0 +1,762 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  username     String    @unique
+  passwordHash String
+  role         UserRole  @default(USER)
+  isPremium    Boolean   @default(false)
+  premiumUntil DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  avatarUrl    String?   @db.LongText
+  bio          String?
+  
+  // Datos Personales
+  firstName    String?
+  lastName     String?
+  birthDate    DateTime?
+  gender       String?
+  country      String?
+  
+  // Personalización Visual y Arquetipo
+  themeColor   String?   @default("#00E5FF")
+  archetype    String?   // ej: "Dark Strategist"
+  
+  // Social/Privacy
+  privateProfile Boolean @default(false)
+  showWatchList  Boolean @default(true)
+
+  // Counters (Denormalized for scale)
+  followersCount Int @default(0)
+  followingCount Int @default(0)
+  postsCount     Int @default(0)
+
+  // Intelligence & Profiling
+  intelligence   UserIntelligence?
+  affinities     UserAffinity[]
+
+  // Security & Verification
+  isVerified      Boolean   @default(false)
+  verificationCode String?
+  
+  // Relations
+  posts           Post[]
+  comments        Comment[]
+  likes           Like[]
+  followers       Follow[]       @relation("Following")
+  following       Follow[]       @relation("Followers")
+  animeLists      AnimeList[]
+  notifications    Notification[]
+  notificationPreferences NotificationPreference[]
+  pushSubscriptions PushSubscription[]
+  badges          UserBadge[]
+  blocksMade      Block[]        @relation("Blocker")
+  blocksReceived  Block[]        @relation("Blocked")
+  mutes           Mute[]
+  reportsMade     Report[]       @relation("Reporter")
+  reportsReceived Report[]       @relation("Reported")
+  warnings        Warning[]
+  bans            Ban[]
+
+  // Nexo IA
+  nexoMemories             NexoMemory[]
+  nexoInteractions         NexoInteraction[]
+  conversationParticipants ConversationParticipant[]
+  messages                 Message[]
+  donations                Donation[]
+  searchLogs               SearchLog[]
+  // Security
+  sessions                 UserSession[]
+  refreshTokens            RefreshToken[]
+  securityLogs             SecurityLog[]
+  oauthAccounts            OAuthAccount[]
+  telemetryEvents          TelemetryEvent[]
+  
+  appeals                  Appeal[]
+  moderationLogs           ModerationLog[] @relation("ModeratedUser")
+  moderatorActions         ModerationLog[] @relation("ModeratorActions")
+  warningsIssued           Warning[]       @relation("WarnedBy")
+  mutesIssued              Mute[]          @relation("MutedBy")
+  bansIssued               Ban[]           @relation("BannedBy")
+  viewHistory              ViewHistory[]
+  stories                  UserStory[]
+
+
+  @@map("user")
+}
+
+model UserIntelligence {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  
+  // Perfiles Psicológicos (JSON para flexibilidad de evolución)
+  emotionProfile    Json?    // { adrenaline: 0.8, relax: 0.2, drama: 0.9 }
+  socialProfile     Json?    // { interaction: "active", communityType: "theorist" }
+  consumptionProfile Json?   // { type: "marathon", frequency: "high" }
+  
+  // Métricas de Sensibilidad
+  contentTolerance  Json?    // { gore: 0.5, fanservice: 0.2, horror: 0.8 }
+  narrativeRhythm   String?  // slow, balanced, fast
+  
+  // Inteligencia de Recomendación
+  recommendationVector Json? // Vector para embeddings IA
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("userintelligence")
+}
+
+model UserAffinity {
+  id        String   @id @default(uuid())
+  userId    String
+  category  String   // GENRE, PROTAGONIST, VISUAL_STYLE
+  name      String   // ej: "Cyberpunk", "Anti-hero", "Ghibli-like"
+  weight    Float    @default(1.0) // 0.0 a 1.0 (peso de afinidad)
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category, name])
+  @@map("useraffinity")
+}
+
+model OAuthAccount {
+  id                String   @id @default(uuid())
+  userId            String
+  provider          String   // GOOGLE, DISCORD
+  providerAccountId String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("oauthaccount")
+}
+
+model Anime {
+  id            Int      @id // ID de AniList
+  slug          String?  @unique
+  titleRomaji   String
+  titleEnglish  String?
+  titleNative   String?
+  description   String?  @db.Text
+  type          String?  // TV, MOVIE, etc.
+  status        String?  // FINISHED, RELEASING, etc.
+  episodes      Int?
+  duration      Int?
+  season        String?
+  seasonYear    Int?
+  averageScore  Int?
+  popularity    Int?
+  coverImage    String?
+  bannerImage   String?
+  trailerYoutubeId String?
+  
+  // Datos extendidos (JSON para flexibilidad total)
+  relationsData      Json?
+  recommendationsData Json?
+  staffData          Json?
+  statsData          Json?
+  externalLinksData  Json?
+  tagsData           Json?
+  
+  // Persistence Tracking
+  lastSyncAt    DateTime @default(now())
+  isComplete    Boolean  @default(false) // Indica si ya descargamos metadata extendida
+  
+  // Counters
+  viewsCount    Int      @default(0)
+  listsCount    Int      @default(0) // Cuántas listas contienen este anime
+
+  // Relations
+  genres        Genre[]
+  studios       Studio[]
+  characters    CharacterOnAnime[]
+  lists         AnimeList[]
+  posts         Post[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  viewHistory   ViewHistory[]
+
+  @@index([seasonYear, season])
+  @@index([popularity])
+  @@map("anime")
+}
+
+model ViewHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  animeId   Int
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anime Anime @relation(fields: [animeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, animeId])
+  @@map("viewhistory")
+}
+
+model Genre {
+  id     String  @id @default(uuid())
+  name   String  @unique
+  animes Anime[]
+
+  @@map("genre")
+}
+
+model Studio {
+  id     String  @id @default(uuid())
+  name   String  @unique
+  animes Anime[]
+
+  @@map("studio")
+}
+
+model Character {
+  id          Int      @id // ID de AniList
+  name        String
+  image       String?
+  description String?  @db.Text
+  animes      CharacterOnAnime[]
+
+  @@map("character")
+}
+
+model CharacterOnAnime {
+  animeId     Int
+  characterId Int
+  role        String // MAIN, SUPPORTING
+  voiceActorsData Json?
+
+  anime     Anime     @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@id([animeId, characterId])
+  @@map("characteronanime")
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  userId    String
+  animeId   Int?
+  content   String   @db.Text
+  mediaUrl  String?  @db.LongText
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Counters
+  likesCount    Int @default(0)
+  commentsCount Int @default(0)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anime    Anime?    @relation(fields: [animeId], references: [id], onDelete: SetNull)
+  comments Comment[]
+  likes    Like[]
+
+  @@index([createdAt(sort: Desc)])
+  @@map("post")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Counters
+  likesCount Int @default(0)
+
+  post  Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes Like[]
+
+  @@map("comment")
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String?
+  commentId String?
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post    Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@map("like")
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follow")
+}
+
+model AnimeList {
+  id        String      @id @default(uuid())
+  userId    String
+  animeId   Int
+  status    WatchStatus @default(PLAN_TO_WATCH)
+  score     Float?
+  progress  Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anime Anime @relation(fields: [animeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, animeId])
+  @@map("animelist")
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String
+  type        NotificationType
+  referenceId String?
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification")
+}
+
+model NotificationPreference {
+  id           String           @id @default(uuid())
+  userId       String
+  type         NotificationType
+  emailEnabled Boolean          @default(true)
+  pushEnabled  Boolean          @default(true)
+  inAppEnabled Boolean          @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("notificationpreference")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pushsubscription")
+}
+
+model EmailLog {
+  id        String      @id @default(uuid())
+  to        String
+  subject   String
+  template  String
+  status    EmailStatus @default(PENDING)
+  attempts  Int         @default(0)
+  lastError String?     @db.Text
+  sentAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  @@map("emaillog")
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model Badge {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  description String
+  iconUrl     String
+  createdAt   DateTime    @default(now())
+  users       UserBadge[]
+
+  @@map("badge")
+}
+
+model UserBadge {
+  id        String   @id @default(uuid())
+  userId    String
+  badgeId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@map("userbadge")
+}
+
+model Block {
+  id        String   @id @default(uuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@map("block")
+}
+
+model Mute {
+  id          String   @id @default(uuid())
+  userId      String
+  moderatorId String?
+  reason      String   @db.Text
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user      User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moderator User? @relation("MutedBy", fields: [moderatorId], references: [id], onDelete: SetNull)
+
+  @@map("mute")
+}
+
+model Report {
+  id             String       @id @default(uuid())
+  reporterId     String
+  reportedUserId String
+  postId         String?
+  commentId      String?
+  messageId      String?
+  reason         String       @db.Text
+  status         ReportStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
+
+  reporter     User @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User @relation("Reported", fields: [reportedUserId], references: [id], onDelete: Cascade)
+
+  @@map("report")
+}
+
+model Warning {
+  id          String   @id @default(uuid())
+  userId      String
+  moderatorId String?
+  reason      String   @db.Text
+  createdAt   DateTime @default(now())
+
+  user      User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moderator User? @relation("WarnedBy", fields: [moderatorId], references: [id], onDelete: SetNull)
+
+  @@map("warning")
+}
+
+model Ban {
+  id          String    @id @default(uuid())
+  userId      String
+  moderatorId String?
+  reason      String    @db.Text
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  user      User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moderator User? @relation("BannedBy", fields: [moderatorId], references: [id], onDelete: SetNull)
+
+  @@map("ban")
+}
+
+model ModerationLog {
+  id          String   @id @default(uuid())
+  moderatorId String
+  targetUserId String
+  action      String   // BAN, MUTE, WARNING, UNBAN, UNMUTE, RESOLVE_REPORT
+  reason      String   @db.Text
+  createdAt   DateTime @default(now())
+
+  moderator  User @relation("ModeratorActions", fields: [moderatorId], references: [id])
+  targetUser User @relation("ModeratedUser", fields: [targetUserId], references: [id])
+
+  @@map("moderationlog")
+}
+
+model Appeal {
+  id        String   @id @default(uuid())
+  userId    String
+  punishmentId String // ID del ban o mute
+  content   String   @db.Text
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("appeal")
+}
+
+model SystemSettings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("systemsettings")
+}
+
+model NexoMemory {
+  id        String   @id @default(uuid())
+  userId    String
+  key       String
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@map("nexomemory")
+}
+
+model NexoInteraction {
+  id         String   @id @default(uuid())
+  userId     String
+  type       String   @default("CHAT")
+  input      String   @db.Text
+  output     String   @db.Text
+  tokensUsed Int?
+  modelUsed  String?
+  sentiment  String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("nexointeraction")
+}
+
+model NexoTask {
+  id          String   @id @default(uuid())
+  type        String
+  payload     String   @db.Text
+  status      String   @default("PENDING")
+  scheduledAt DateTime
+  createdAt   DateTime @default(now())
+
+  @@map("nexotask")
+}
+
+model AnalyticsSnapshot {
+  id           String   @id @default(uuid())
+  date         DateTime @unique @db.Date
+  activeUsers  Int      @default(0)
+  newUsers     Int      @default(0)
+  totalRevenue Float    @default(0)
+  postsCreated Int      @default(0)
+  messagesSent Int      @default(0)
+  likesGiven   Int      @default(0)
+  searchCount  Int      @default(0)
+  avgSessionDuration Float @default(0) // en minutos
+  createdAt    DateTime @default(now())
+
+  @@map("analyticssnapshot")
+}
+
+model SearchLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  query     String
+  resultsCount Int   @default(0)
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("searchlog")
+}
+
+model UserSession {
+  id        String   @id @default(uuid())
+  userId    String
+  startTime DateTime @default(now())
+  endTime   DateTime?
+  duration  Int?     // en segundos
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("usersession")
+}
+
+model TelemetryEvent {
+  id        String   @id @default(uuid())
+  userId    String?
+  type      String   // AD_CLICK, REC_CLICK, UI_ERROR, PREMIUM_CONVERSION
+  payload   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("telemetryevent")
+}
+
+model Donation {
+  id        String   @id @default(uuid())
+  userId    String?
+  amount    Float
+  currency  String   @default("USD")
+  status    String   @default("COMPLETED")
+  message   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("donation")
+}
+
+model Advertisement {
+  id        String   @id @default(uuid())
+  title     String
+  imageUrl  String
+  targetUrl String
+  active    Boolean  @default(true)
+  clicks    Int      @default(0)
+  impressions Int    @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("advertisement")
+}
+
+model Conversation {
+  id           String                    @id @default(uuid())
+  isGroup      Boolean                   @default(false)
+  name         String?
+  participants ConversationParticipant[]
+  messages     Message[]
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  @@map("conversation")
+}
+
+model ConversationParticipant {
+  id             String   @id @default(uuid())
+  userId         String
+  conversationId String
+  joinedAt       DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId])
+  @@map("conversationparticipant")
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String   @db.Text
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("message")
+}
+
+enum UserRole {
+  USER
+  PREMIUM
+  MODERATOR
+  ADMIN
+  SUPERADMIN
+}
+
+enum WatchStatus {
+  WATCHING
+  COMPLETED
+  ON_HOLD
+  DROPPED
+  PLAN_TO_WATCH
+}
+
+enum NotificationType {
+  FOLLOW
+  LIKE
+  COMMENT
+  SYSTEM
+  BADGE
+  NEXO
+  MESSAGE
+}
+
+/// Refresh token for JWT rotation
+model RefreshToken {
+  id         String   @id @default(uuid())
+  userId     String
+  token      String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refreshtoken")
+}
+
+/// Security event log for audit trails
+model SecurityLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  ip        String?
+  userAgent String?
+  status    String   // SUCCESS, FAILURE
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("securitylog")
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+model UserStory {
+  id        String   @id @default(uuid())
+  userId    String
+  mediaUrl  String   @db.LongText // Imagen o video en Base64/URL
+  caption   String?  @db.Text
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  // Views (JSON array of user IDs)
+  viewedBy  Json?    // ["user-id-1", "user-id-2"]
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("userstory")
+}
