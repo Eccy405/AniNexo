@@ -56,7 +56,7 @@ export default function SearchPage() {
     try {
       if (pageNum === 1 && query) {
         try {
-          const resUser = await fetch(`http://localhost:3001/api/search/global?q=${encodeURIComponent(query)}`);
+          const resUser = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/search/global?q=${encodeURIComponent(query)}`);
           const userData = await resUser.json();
           if (userData.success) setUsers(userData.data.users || []);
         } catch (err) { console.error(err); }
@@ -74,7 +74,7 @@ export default function SearchPage() {
       params.append('page', pageNum.toString());
       params.append('perPage', '50');
 
-      const res = await fetch(`http://localhost:3001/api/anime/discovery/search?${params.toString()}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/anime/discovery/search?${params.toString()}`);
       const json = await res.json();
 
       if (json.success) {

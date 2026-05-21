@@ -3,7 +3,11 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { MailService } from '../mail/mail.service';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_jwt_key_for_dev';
+const JWT_SECRET = process.env.JWT_SECRET as string;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is missing on the server!');
+}
+
 
 export class AuthService {
   private mailService: MailService;

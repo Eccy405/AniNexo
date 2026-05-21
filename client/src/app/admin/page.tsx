@@ -39,15 +39,15 @@ export default function AdminDashboard() {
         };
 
         const [analyticsRes, reportsRes, usersRes, financesRes, animeRes, nexoRes, telemetryRes, logsRes, emailLogsRes] = await Promise.all([
-          fetch('http://localhost:3001/api/admin/analytics', { headers }),
-          fetch('http://localhost:3001/api/admin/reports', { headers }),
-          fetch('http://localhost:3001/api/admin/users', { headers }),
-          fetch('http://localhost:3001/api/admin/finances', { headers }),
-          fetch('http://localhost:3001/api/admin/anime', { headers }),
-          fetch('http://localhost:3001/api/admin/nexo-logs', { headers }),
-          fetch('http://localhost:3001/api/admin/telemetry', { headers }),
-          fetch('http://localhost:3001/api/admin/logs', { headers }),
-          fetch('http://localhost:3001/api/admin/email-logs', { headers })
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/analytics`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/reports`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/users`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/finances`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/anime`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/nexo-logs`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/telemetry`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/logs`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/email-logs`, { headers })
         ]);
         
         const analyticsData = await analyticsRes.json();
@@ -83,7 +83,7 @@ export default function AdminDashboard() {
   const toggleMaintenance = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:3001/api/admin/maintenance', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/maintenance`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

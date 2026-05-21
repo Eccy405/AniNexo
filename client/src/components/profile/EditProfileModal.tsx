@@ -23,7 +23,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ profile, onC
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3001/api/profile/update', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/profile/update`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

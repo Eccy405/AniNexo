@@ -15,7 +15,7 @@ export default function DashboardPage() {
       setError(null);
       const token = localStorage.getItem('token');
       
-      const res = await fetch('http://localhost:3001/api/anime/discovery/home', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/anime/discovery/home`, {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
           'Cache-Control': 'no-cache',

@@ -11,7 +11,7 @@ export function AnimeSocialFeed({ animeId, animeTitle }: { animeId: number, anim
   const fetchAnimeFeed = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:3001/api/feed/anime/${animeId}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/anime/${animeId}`);
       const data = await res.json();
       if (data.success) setPosts(data.data);
     } catch (e) {

@@ -10,7 +10,7 @@ export class MailService {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: process.env.MAIL_USER || 'tusoportenexo@gmail.com',
+        user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS // Aquí debe ir la "Contraseña de aplicación" de 16 caracteres
       }
     });

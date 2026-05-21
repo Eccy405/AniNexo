@@ -39,7 +39,7 @@ export const TopNavbar: React.FC = () => {
       }
 
       try {
-        const res = await fetch(`http://localhost:3001/api/search/global?q=${encodeURIComponent(searchQuery)}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/search/global?q=${encodeURIComponent(searchQuery)}`);
         const data = await res.json();
         if (data.success) {
           setSearchResults(data.data);

@@ -14,7 +14,11 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
     }
 
     const token = authHeader.split(' ')[1] as string;
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'supersecret');
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return res.status(500).json({ success: false, message: 'JWT_SECRET is not configured on the server' });
+    }
+    const decoded: any = jwt.verify(token, secret);
     
     // Buscar usuario en BD
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
@@ -37,7 +41,11 @@ export const optionalAuthenticate = async (req: AuthRequest, res: Response, next
     }
 
     const token = authHeader.split(' ')[1] as string;
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'supersecret');
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return next();
+    }
+    const decoded: any = jwt.verify(token, secret);
     
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
     if (user) {

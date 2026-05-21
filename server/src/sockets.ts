@@ -37,10 +37,14 @@ export function setupSockets(io: Server) {
     }
 
     try {
-      const secret = process.env.JWT_SECRET || 'super_secret_jwt_key_for_dev';
+      const secret = process.env.JWT_SECRET;
+      if (!secret) {
+        return next(new Error('Authentication error: JWT_SECRET not configured on the server'));
+      }
       const decoded = jwt.verify(token, secret) as any;
       socket.data.user = decoded;
       next();
+
     } catch (err) {
       next(new Error('Authentication error: Invalid token'));
     }

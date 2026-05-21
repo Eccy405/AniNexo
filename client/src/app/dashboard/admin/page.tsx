@@ -21,9 +21,9 @@ export default function AdminEnterprisePage() {
         const headers = { 'Authorization': `Bearer ${token}` };
         
         const [analyticsRes, statsRes, reportsRes] = await Promise.all([
-          fetch('http://localhost:3001/api/admin/analytics', { headers }),
-          fetch('http://localhost:3001/api/admin/stats', { headers }),
-          fetch('http://localhost:3001/api/admin/reports', { headers })
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/analytics`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/stats`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/reports`, { headers })
         ]);
         
         const analytics = await analyticsRes.json();
@@ -45,7 +45,7 @@ export default function AdminEnterprisePage() {
 
   const handleUpdateFlag = async (key: string, value: any) => {
     try {
-      const res = await fetch('http://localhost:3001/api/admin/feature-flag', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/feature-flag`, {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',

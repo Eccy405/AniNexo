@@ -18,7 +18,7 @@ export default function NotificationsPage() {
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3001/api/notifications', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/notifications`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -37,7 +37,7 @@ export default function NotificationsPage() {
   const markAllAsRead = async () => {
     try {
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:3001/api/notifications/read-all', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/notifications/read-all`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`

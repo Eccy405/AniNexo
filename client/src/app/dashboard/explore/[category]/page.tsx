@@ -35,8 +35,8 @@ export default function ExplorePage() {
     try {
       const isGenre = !['trending', 'popular', 'top-rated', 'upcoming'].includes(category.toLowerCase());
       const baseUrl = isGenre 
-        ? `http://localhost:3001/api/anime/discovery/genre/${category}`
-        : `http://localhost:3001/api/anime/discovery/category/${category}`;
+        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/anime/discovery/genre/${category}`
+        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/anime/discovery/category/${category}`;
 
       const res = await fetch(`${baseUrl}?page=${pageNum}&perPage=50`);
       const json = await res.json();

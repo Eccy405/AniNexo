@@ -19,7 +19,7 @@ export function CreatePost({ onPostCreated, defaultAnimeId }: { onPostCreated: (
     if (animeSearch.length > 2) {
       const delay = setTimeout(async () => {
         try {
-          const res = await fetch(`http://localhost:3001/api/anime/search-external?q=${animeSearch}`);
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/anime/search-external?q=${animeSearch}`);
           const data = await res.json();
           setAnimeResults(data.data || []);
         } catch (e) { console.error(e); }
@@ -49,7 +49,7 @@ export function CreatePost({ onPostCreated, defaultAnimeId }: { onPostCreated: (
       const token = localStorage.getItem('token');
       if (!user || !token) throw new Error('No estás autenticado');
 
-      const res = await fetch('http://localhost:3001/api/feed/post', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

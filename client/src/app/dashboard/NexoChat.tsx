@@ -29,7 +29,7 @@ export default function NexoChat() {
     try {
       // Usamos el userId ficticio de "Mikasa" que creamos antes: 'cf7c92fe-efc5-483b-b195-46c515bf6d43'
       // Ojo: En una app real, esto vendría del contexto/JWT.
-      const res = await fetch('http://localhost:3001/api/nexo/chat', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/nexo/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

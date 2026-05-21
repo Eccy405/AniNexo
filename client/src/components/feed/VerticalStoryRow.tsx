@@ -11,7 +11,7 @@ export function VerticalStoryRow() {
   const fetchStories = async () => {
     try {
       if (!user?.id) return;
-      const res = await fetch(`http://localhost:3001/api/social/stories?userId=${user.id}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/social/stories?userId=${user.id}`);
       const data = await res.json();
       if (data.success) setStories(data.data);
     } catch (e) {

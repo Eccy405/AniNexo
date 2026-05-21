@@ -7,7 +7,7 @@ interface PageProps {
 
 async function getProfileData(username: string) {
   try {
-    const res = await fetch(`http://localhost:3001/api/profile/${username}`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/profile/${username}`, { cache: 'no-store' });
     const data = await res.json();
     return data.success ? data.data : null;
   } catch (error) {
@@ -17,7 +17,7 @@ async function getProfileData(username: string) {
 
 async function getListData(username: string) {
   try {
-    const res = await fetch(`http://localhost:3001/api/list/${username}`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/list/${username}`, { cache: 'no-store' });
     const data = await res.json();
     return data.success ? data.data : [];
   } catch (error) {

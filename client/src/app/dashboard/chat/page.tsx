@@ -24,7 +24,7 @@ export default function ChatPage() {
         const user = JSON.parse(userStr);
         setCurrentUser(user);
 
-        const res = await fetch(`http://localhost:3001/api/messaging/user/${user.id}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/messaging/user/${user.id}`);
         const data = await res.json();
         if (data.success) {
           setConversations(data.data);
@@ -41,7 +41,7 @@ export default function ChatPage() {
     if (!activeConvId) return;
     const fetchHistory = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/messaging/${activeConvId}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/messaging/${activeConvId}`);
         const data = await res.json();
         if (data.success) {
           setMessages(data.data);

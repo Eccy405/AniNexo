@@ -35,7 +35,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
   const fetchStories = async () => {
     try {
       if (!currentUser?.id) return;
-      const res = await fetch(`http://localhost:3001/api/social/stories?userId=${currentUser.id}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/social/stories?userId=${currentUser.id}`);
       const data = await res.json();
       if (data.success) setStories(data.data);
     } catch (e) {
@@ -46,7 +46,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
   const fetchUserPosts = async () => {
     try {
       setLoadingPosts(true);
-      const res = await fetch(`http://localhost:3001/api/feed/user/${profile.id}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/user/${profile.id}`);
       const data = await res.json();
       if (data.success) setPosts(data.data);
     } catch (e) { console.error(e); }
@@ -82,7 +82,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
     reader.onloadend = async () => {
       const base64 = reader.result as string;
       try {
-        const res = await fetch('http://localhost:3001/api/social/stories', {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/social/stories`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

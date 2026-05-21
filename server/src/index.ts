@@ -36,11 +36,15 @@ import session from 'express-session';
 import passport from 'passport';
 import './config/passport.config';
 
+const allowedOrigins = process.env.CLIENT_URL 
+  ? process.env.CLIENT_URL.split(',') 
+  : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -53,7 +57,7 @@ setupSockets(io);
 // Middlewares de Seguridad Global
 app.use(securityHeaders);
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma'],
   credentials: true
@@ -65,8 +69,13 @@ app.use(morgan('dev'));
 app.use(cookieParser());
 
 // Configuración de Sesión para OAuth
+const sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret && process.env.NODE_ENV === 'production') {
+  throw new Error('SESSION_SECRET environment variable is missing in production!');
+}
+
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'keyboard_cat_aninexo',
+  secret: sessionSecret || 'keyboard_cat_aninexo',
   resave: false,
   saveUninitialized: false,
   cookie: { secure: false } 

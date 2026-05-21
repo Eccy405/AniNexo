@@ -27,7 +27,7 @@ export function ChatWindow({ chat }: { chat: any }) {
     const fetchMessages = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`http://localhost:3001/api/messaging/conversation/${chat.conversationId}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/messaging/conversation/${chat.conversationId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -61,7 +61,7 @@ export function ChatWindow({ chat }: { chat: any }) {
 
     if (chat.isNexo) {
         // Lógica especial para Nexo Premium
-        fetch('http://localhost:3001/api/nexo/chat-persistent', {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/nexo/chat-persistent`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
