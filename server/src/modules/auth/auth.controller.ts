@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from './auth.service';
+import { validateRegister, validateLogin } from './auth.validator';
 
 export class AuthController {
   private authService: AuthService;
@@ -10,10 +11,27 @@ export class AuthController {
 
   register = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, username, password } = req.body;
+      const { email, username, password, confirmPassword } = req.body;
 
       if (!email || !username || !password) {
         return res.status(400).json({ success: false, message: 'Correo, usuario y contraseña son obligatorios' });
+      }
+
+      // Validar con las reglas del pizarrón
+      const validation = validateRegister({
+        firstName: req.body.firstName || '',
+        lastName: req.body.lastName || '',
+        email,
+        username,
+        password,
+        confirmPassword: confirmPassword || password,
+        birthDate: req.body.birthDate || '',
+        gender: req.body.gender || '',
+        country: req.body.country || ''
+      });
+
+      if (!validation.valid) {
+        return res.status(400).json({ success: false, message: validation.errors[0], errors: validation.errors });
       }
 
       const result = await this.authService.register(req.body);
@@ -22,27 +40,33 @@ export class AuthController {
         success: true,
         data: result
       });
-    } catch (error) {
-      next(error);
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
     }
   };
 
   login = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, password } = req.body;
+      const { email, identifier, password } = req.body;
+      const loginIdentifier = identifier || email;
 
-      if (!email || !password) {
-        return res.status(400).json({ success: false, message: 'Email y contraseña son obligatorios' });
+      if (!loginIdentifier || !password) {
+        return res.status(400).json({ success: false, message: 'Usuario/Correo y contraseña son obligatorios' });
       }
 
-      const result = await this.authService.login(email, password);
+      const validation = validateLogin({ identifier: loginIdentifier, password });
+      if (!validation.valid) {
+        return res.status(400).json({ success: false, message: validation.errors[0], errors: validation.errors });
+      }
+
+      const result = await this.authService.login(loginIdentifier, password);
 
       res.status(200).json({
         success: true,
         data: result
       });
-    } catch (error) {
-      next(error);
+    } catch (error: any) {
+      res.status(401).json({ success: false, message: error.message });
     }
   };
 

@@ -4,37 +4,87 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ identifier?: string; password?: string; general?: string }>({});
+
+  const FORBIDDEN_CHARS = /[><=$\/]/;
+
+  const handleIdentifierChange = (val: string) => {
+    setIdentifier(val);
+    setErrors(prev => {
+      const updated = { ...prev, general: undefined };
+      if (FORBIDDEN_CHARS.test(val)) {
+        updated.identifier = 'Contiene caracteres prohibidos (> < = $ /)';
+      } else {
+        delete updated.identifier;
+      }
+      return updated;
+    });
+  };
+
+  const handlePasswordChange = (val: string) => {
+    setPassword(val);
+    setErrors(prev => {
+      const updated = { ...prev, general: undefined };
+      if (FORBIDDEN_CHARS.test(val)) {
+        updated.password = 'Contiene caracteres prohibidos (> < = $ /)';
+      } else {
+        delete updated.password;
+      }
+      return updated;
+    });
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (FORBIDDEN_CHARS.test(identifier) || FORBIDDEN_CHARS.test(password)) {
+      setErrors(prev => ({ ...prev, general: 'Corrige los errores antes de continuar.' }));
+      return;
+    }
+
     setLoading(true);
+    setErrors({});
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ identifier, password })
       });
       const data = await res.json();
       if (data.success) {
-        localStorage.setItem('token', data.data.token);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
+        // En Express, el token viene en la cookie httpOnly. Pero por retrocompatibilidad con la app existente
+        // guardamos el token si viene en la respuesta o en cookies.
+        const token = data.accessToken || data.data?.token;
+        if (token) localStorage.setItem('token', token);
+        
+        const userObj = data.user || data.data?.user;
+        if (userObj) localStorage.setItem('user', JSON.stringify(userObj));
         
         // Redirección inteligente por rol
-        if (data.data.user.role === 'ADMIN') {
-          window.location.href = '/admin';
+        const role = userObj?.role;
+        if (role === 'ADMIN' || role === 'SUPERADMIN') {
+          window.location.href = '/dashboard/admin';
         } else {
-          window.location.href = '/dashboard';
+          window.location.href = '/dashboard/community';
         }
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          general: data.errors?.[0] || data.message || 'Correo o contraseña incorrectos.'
+        }));
       }
     } catch (e) {
       console.error(e);
+      setErrors(prev => ({ ...prev, general: 'Error de conexión con el servidor.' }));
     } finally {
       setLoading(false);
     }
   };
+
+  const hasErrors = !!(errors.identifier || errors.password);
 
   return (
     <main className="login-split-page">
@@ -55,29 +105,41 @@ export default function LoginPage() {
         <div className="login-card">
           <h1 className="login-title">Login</h1>
           
+          {errors.general && (
+            <div className="error-msg-general">
+              {errors.general}
+            </div>
+          )}
+
           <form onSubmit={handleLogin} className="auth-form">
             <div className="input-group">
               <input 
-                type="email" 
-                placeholder="Correo" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text" 
+                placeholder="Correo o Usuario" 
+                value={identifier}
+                onChange={(e) => handleIdentifierChange(e.target.value)}
                 required
+                style={{ borderColor: errors.identifier ? '#ff4d4d' : undefined }}
               />
+              {errors.identifier && <span className="field-error">{errors.identifier}</span>}
             </div>
 
             <div className="input-group password-group">
               <input 
-                type="password" 
+                type={showPassword ? 'text' : 'password'} 
                 placeholder="Contraseña" 
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => handlePasswordChange(e.target.value)}
                 required
+                style={{ borderColor: errors.password ? '#ff4d4d' : undefined }}
               />
-              <span className="eye-icon">👁️</span>
+              <span className="eye-icon" onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? '🙈' : '👁️'}
+              </span>
+              {errors.password && <span className="field-error">{errors.password}</span>}
             </div>
 
-            <button type="submit" className="login-btn" disabled={loading}>
+            <button type="submit" className="login-btn" disabled={loading || hasErrors}>
               {loading ? 'Cargando...' : 'Iniciar sesión'}
             </button>
           </form>
@@ -188,6 +250,25 @@ export default function LoginPage() {
         .input-group input:focus {
           border-color: #00E5FF;
           background: #161a25;
+        }
+
+        .field-error {
+          color: #ff4d4d;
+          font-size: 0.75rem;
+          margin-top: 5px;
+          display: block;
+          text-align: left;
+        }
+
+        .error-msg-general {
+          background: rgba(255, 77, 77, 0.1);
+          border: 1px solid rgba(255, 77, 77, 0.2);
+          color: #ff4d4d;
+          padding: 12px;
+          border-radius: 12px;
+          margin-bottom: 20px;
+          text-align: center;
+          font-size: 0.85rem;
         }
 
         .password-group {

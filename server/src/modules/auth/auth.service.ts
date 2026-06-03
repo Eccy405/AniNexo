@@ -66,7 +66,8 @@ export class AuthService {
         role: newUser.role,
         isVerified: newUser.isVerified
       },
-      token
+      token,
+      verificationCode: verificationCode // TODO: REMOVE IN PRODUCTION (DEV BYPASS)
     };
   }
 
@@ -90,9 +91,14 @@ export class AuthService {
     return { success: true, message: 'Cuenta verificada correctamente' };
   }
 
-  async login(email: string, passwordHashRaw: string) {
-    const user = await prisma.user.findUnique({
-      where: { email }
+  async login(identifier: string, passwordHashRaw: string) {
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identifier },
+          { username: identifier }
+        ]
+      }
     });
 
     if (!user) {
