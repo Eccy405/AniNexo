@@ -23,7 +23,7 @@ export class AuditService {
       });
 
       if (data.status === 'FAILURE') {
-        logger.security(`[Audit FAILURE]: ${data.action} by ${data.userId || 'Anonymous'} from ${data.ip}`);
+        logger.log('security', `[Audit FAILURE]: ${data.action} by ${data.userId || 'Anonymous'} from ${data.ip}`);
       } else {
         logger.info(`[Audit SUCCESS]: ${data.action} by ${data.userId || 'Anonymous'}`);
       }

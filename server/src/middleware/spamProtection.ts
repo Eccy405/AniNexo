@@ -6,7 +6,7 @@ export const spamProtection = (action: string, limit = 5, windowSeconds = 60) =>
   return async (req: Request, res: Response, next: NextFunction) => {
     // 1. Honeypot check (Si viene el campo 'website', es un bot)
     if (req.body && req.body.website) {
-      logger.security(`[Bot Detected]: Honeypot triggered from IP ${req.ip}`);
+      logger.log('security', `[Bot Detected]: Honeypot triggered from IP ${req.ip}`);
       return res.status(403).json({ success: false, message: 'Bot detected' });
     }
 

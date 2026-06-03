@@ -7,7 +7,7 @@ const MAX_ATTEMPTS = 5; // after which lock
 const LOCK_TIME_MS = 15 * 60 * 1000; // 15 minutes
 
 export const bruteForceProtection = (req: Request, res: Response, next: NextFunction) => {
-  const ip = req.ip;
+  const ip = req.ip || 'anonymous';
   const now = Date.now();
 
   const record = attempts[ip] || { count: 0, lastAttempt: now };

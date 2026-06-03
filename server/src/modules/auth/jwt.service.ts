@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import prisma from '../../lib/prisma';
 import { redis } from '../../lib/redis';
 
@@ -16,7 +16,7 @@ export class JwtService {
   }
 
   static async generateRefreshToken(userId: string) {
-    const token = uuidv4();
+    const token = randomUUID();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRES_DAYS);
 
