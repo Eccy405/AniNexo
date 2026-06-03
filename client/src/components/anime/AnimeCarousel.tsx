@@ -34,7 +34,8 @@ export const AnimeCarousel: React.FC<Props> = ({ title, animes }) => {
             </div>
             <p className={styles.animeTitle}>{anime.titleRomaji}</p>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
