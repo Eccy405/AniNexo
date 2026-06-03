@@ -70,8 +70,8 @@ app.use(cookieParser());
 
 // Configuración de Sesión para OAuth
 const sessionSecret = process.env.SESSION_SECRET;
-if (!sessionSecret && process.env.NODE_ENV === 'production') {
-  throw new Error('SESSION_SECRET environment variable is missing in production!');
+if (!sessionSecret) {
+  logger.warn('[Warning]: SESSION_SECRET environment variable is missing! Using default fallback.');
 }
 
 app.use(session({
