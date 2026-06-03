@@ -2,8 +2,16 @@ import prisma from './prisma';
 import { logger } from './logger';
 import fs from 'fs';
 import path from 'path';
+import nodemailer from 'nodemailer';
 
 export class EmailService {
+  private transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.MAIL_USER,
+      pass: process.env.MAIL_PASS
+    }
+  });
   /**
    * Encola un email para envío asíncrono
    */
@@ -41,8 +49,14 @@ export class EmailService {
       const { name, data } = JSON.parse(log.template);
       const html = await this.renderTemplate(name, data);
 
-      // Simular envío real
+      // Envío real utilizando el transporte nodemailer
       logger.info(`[EmailService] ENVIANDO REAL: ${log.subject} a ${log.to}`);
+      await this.transporter.sendMail({
+        from: `"AniNexo" <${process.env.MAIL_USER}>`,
+        to: log.to,
+        subject: log.subject,
+        html: html
+      });
       
       await prisma.emailLog.update({
         where: { id: log.id },

@@ -1,4 +1,7 @@
+'use client';
+
 import { useState, useRef, useEffect } from 'react';
+import { BookOpen, Image as ImageIcon, Smile, X, Plus } from 'lucide-react';
 import { Button } from '../ui/Button/Button';
 import { Card } from '../ui/Card/Card';
 
@@ -89,7 +92,7 @@ export function CreatePost({ onPostCreated, defaultAnimeId }: { onPostCreated: (
         <div className="composer-input-wrapper" onClick={() => (document.getElementById('post-textarea') as any)?.focus()}>
           <textarea
             id="post-textarea"
-            placeholder={`¿Qué anime estás viendo hoy, ${user?.username || 'otaku'}?`}
+            placeholder={`¿Qué estás pensando, ${user?.username || 'otaku'}?`}
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
@@ -97,21 +100,22 @@ export function CreatePost({ onPostCreated, defaultAnimeId }: { onPostCreated: (
       </div>
 
       {selectedAnime && (
-        <div className="selected-anime-tag">
-          🏷️ Mencionado: <strong>{selectedAnime.titleRomaji}</strong>
-          <button onClick={() => setSelectedAnime(null)}>×</button>
+        <div className="selected-anime-tag animate-fade-in">
+          <span className="tag-label">🏷️ Anime Mencionado:</span>
+          <strong className="tag-name">{selectedAnime.titleRomaji}</strong>
+          <button className="tag-remove-btn" onClick={() => setSelectedAnime(null)}><X size={14} /></button>
         </div>
       )}
 
       {mediaUrl && (
-        <div className="composer-preview">
+        <div className="composer-preview animate-fade-in">
           <img src={mediaUrl} alt="Preview" />
-          <button className="remove-media" onClick={() => setMediaUrl(null)}>×</button>
+          <button className="remove-media" onClick={() => setMediaUrl(null)}><X size={18} /></button>
         </div>
       )}
 
       {showAnimeSearch && (
-        <div className="anime-search-box">
+        <div className="anime-search-box animate-fade-in">
           <input 
             type="text" 
             placeholder="Buscar anime para mencionar..." 
@@ -140,85 +144,311 @@ export function CreatePost({ onPostCreated, defaultAnimeId }: { onPostCreated: (
 
       <div className="composer-actions">
         <div className="action-item" onClick={() => setShowAnimeSearch(!showAnimeSearch)}>
-          <span className="action-icon">🏷️</span>
+          <BookOpen size={20} className="action-icon icon-blue" />
           <span className="action-label">Mencionar Anime</span>
         </div>
         <div className="action-item" onClick={() => fileInputRef.current?.click()}>
-          <span className="action-icon">🖼️</span>
+          <ImageIcon size={20} className="action-icon icon-green" />
           <span className="action-label">Foto/video</span>
           <input type="file" ref={fileInputRef} onChange={handleImageUpload} hidden accept="image/*" />
         </div>
         <div className="action-item">
-          <span className="action-icon">😊</span>
+          <Smile size={20} className="action-icon icon-yellow" />
           <span className="action-label">Sentimiento</span>
         </div>
       </div>
 
-      {content.trim() || mediaUrl || selectedAnime ? (
-        <div className="composer-footer">
-          <Button 
+      {(content.trim() || mediaUrl || selectedAnime) && (
+        <div className="composer-footer animate-fade-in">
+          <button 
+            className="btn-publish-post" 
             onClick={handleSubmit} 
-            disabled={loading} 
-            style={{ width: '100%', marginTop: '10px', fontWeight: '900' }}
+            disabled={loading}
           >
-            {loading ? 'Publicando...' : 'Publicar en el Nexo'}
-          </Button>
+            {loading ? 'Publicando...' : 'Publicar en la Comunidad'}
+          </button>
         </div>
-      ) : null}
+      )}
 
       <style jsx>{`
-        .fb-composer-card { padding: 15px !important; background: rgba(20, 20, 20, 0.6) !important; backdrop-filter: blur(20px); border-radius: 12px; }
-        .composer-top { display: flex; gap: 12px; align-items: center; }
-        .composer-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        .fb-composer-card { 
+          padding: 14px 16px !important; 
+          background: rgba(15, 15, 15, 0.75) !important; 
+          backdrop-filter: blur(25px); 
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 12px; 
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .composer-top { 
+          display: flex; 
+          gap: 12px; 
+          align-items: center; 
+        }
+
+        .composer-avatar { 
+          width: 40px; 
+          height: 40px; 
+          border-radius: 50%; 
+          object-fit: cover; 
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
         .composer-input-wrapper { 
-          flex: 1; background: rgba(255,255,255,0.05); border-radius: 20px; 
-          padding: 10px 15px; cursor: text; transition: background 0.3s;
+          flex: 1; 
+          background: rgba(255, 255, 255, 0.05); 
+          border-radius: 20px; 
+          padding: 10px 16px; 
+          cursor: text; 
+          transition: background-color 0.2s;
+          border: 1px solid rgba(255, 255, 255, 0.03);
         }
-        .composer-input-wrapper:hover { background: rgba(255,255,255,0.08); }
+
+        .composer-input-wrapper:hover { 
+          background: rgba(255, 255, 255, 0.08); 
+        }
+
         .composer-input-wrapper textarea { 
-          width: 100%; border: none; background: transparent; color: white; 
-          resize: none; outline: none; font-size: 1rem; font-family: inherit;
+          width: 100%; 
+          border: none; 
+          background: transparent; 
+          color: white; 
+          resize: none; 
+          outline: none; 
+          font-size: 0.95rem; 
+          font-family: inherit;
           min-height: 24px;
+          line-height: 1.4;
         }
-        .composer-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0 10px 0; }
-        .composer-actions { display: flex; justify-content: space-around; }
+
+        .composer-divider { 
+          height: 1px; 
+          background: rgba(255, 255, 255, 0.08); 
+          margin: 12px 0 8px 0; 
+        }
+
+        .composer-actions { 
+          display: flex; 
+          justify-content: space-around; 
+        }
+
         .action-item { 
-          display: flex; align-items: center; gap: 8px; padding: 8px 12px; 
-          border-radius: 8px; cursor: pointer; transition: background 0.3s;
+          display: flex; 
+          align-items: center; 
+          gap: 8px; 
+          padding: 8px 12px; 
+          border-radius: 8px; 
+          cursor: pointer; 
+          transition: background-color 0.2s;
+          flex: 1;
+          justify-content: center;
         }
-        .action-item:hover { background: rgba(255,255,255,0.05); }
-        .action-icon { font-size: 1.2rem; }
-        .action-label { color: #b0b3b8; font-size: 0.9rem; font-weight: 600; }
+
+        .action-item:hover { 
+          background-color: rgba(255, 255, 255, 0.05); 
+        }
+
+        .action-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .icon-blue {
+          color: #00E5FF;
+          filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.2));
+        }
+
+        .icon-green {
+          color: #45bd62;
+          filter: drop-shadow(0 0 4px rgba(69, 189, 98, 0.2));
+        }
+
+        .icon-yellow {
+          color: #f7b928;
+          filter: drop-shadow(0 0 4px rgba(247, 185, 40, 0.2));
+        }
+
+        .action-label { 
+          color: #b0b3b8; 
+          font-size: 0.85rem; 
+          font-weight: 600; 
+        }
         
         .selected-anime-tag { 
-          background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.2); 
-          border-radius: 8px; padding: 8px 12px; margin-top: 15px; display: flex; 
-          justify-content: space-between; align-items: center; color: #00E5FF;
+          background: rgba(0, 229, 255, 0.06); 
+          border: 1px solid rgba(0, 229, 255, 0.15); 
+          border-radius: 8px; 
+          padding: 6px 12px; 
+          margin-top: 12px; 
+          display: flex; 
+          align-items: center; 
+          gap: 6px;
+          color: #00E5FF;
         }
-        .selected-anime-tag button { background: none; border: none; color: #00E5FF; font-size: 1.2rem; cursor: pointer; }
 
-        .anime-search-box { margin-top: 15px; position: relative; }
+        .tag-label {
+          font-size: 0.8rem;
+          opacity: 0.8;
+        }
+
+        .tag-name {
+          font-size: 0.85rem;
+          flex: 1;
+        }
+
+        .tag-remove-btn { 
+          background: transparent; 
+          border: none; 
+          color: #00E5FF; 
+          cursor: pointer; 
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+        }
+
+        .tag-remove-btn:hover {
+          background-color: rgba(0, 229, 255, 0.1);
+        }
+
+        .anime-search-box { 
+          margin-top: 12px; 
+          position: relative; 
+        }
+
         .anime-search-box input { 
-          width: 100%; background: #1c1e21; border: 1px solid rgba(255,255,255,0.1); 
-          padding: 10px; border-radius: 8px; color: white; 
+          width: 100%; 
+          background: rgba(255, 255, 255, 0.05); 
+          border: 1px solid rgba(255, 255, 255, 0.08); 
+          padding: 10px 14px; 
+          border-radius: 10px; 
+          color: white; 
+          outline: none;
+          font-size: 0.9rem;
+          transition: border-color 0.2s;
         }
+
+        .anime-search-box input:focus {
+          border-color: #00E5FF;
+        }
+
         .anime-results-list { 
-          position: absolute; top: 100%; left: 0; right: 0; background: #242526; 
-          border: 1px solid #3e4042; border-radius: 8px; z-index: 100; max-height: 200px; overflow-y: auto;
-          box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+          position: absolute; 
+          top: 100%; 
+          left: 0; 
+          right: 0; 
+          background: #18191a; 
+          border: 1px solid rgba(255, 255, 255, 0.1); 
+          border-radius: 10px; 
+          z-index: 100; 
+          max-height: 220px; 
+          overflow-y: auto;
+          box-shadow: 0 12px 24px rgba(0,0,0,0.6);
+          margin-top: 6px;
         }
+
         .anime-result-item { 
-          padding: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.2s;
+          padding: 8px 12px; 
+          display: flex; 
+          align-items: center; 
+          gap: 12px; 
+          cursor: pointer; 
+          transition: background-color 0.2s;
         }
-        .anime-result-item:hover { background: #3a3b3c; }
-        .anime-result-item img { width: 30px; height: 40px; object-fit: cover; border-radius: 4px; }
+
+        .anime-result-item:hover { 
+          background-color: rgba(255, 255, 255, 0.05); 
+        }
+
+        .anime-result-item img { 
+          width: 32px; 
+          height: 44px; 
+          object-fit: cover; 
+          border-radius: 6px; 
+        }
+
+        .anime-result-item span {
+          color: #e4e6eb;
+          font-size: 0.9rem;
+          font-weight: 500;
+        }
         
-        .composer-preview { position: relative; margin-top: 15px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
-        .composer-preview img { width: 100%; max-height: 300px; object-fit: cover; }
+        .composer-preview { 
+          position: relative; 
+          margin-top: 12px; 
+          border-radius: 10px; 
+          overflow: hidden; 
+          border: 1px solid rgba(255, 255, 255, 0.08); 
+        }
+
+        .composer-preview img { 
+          width: 100%; 
+          max-height: 280px; 
+          object-fit: cover; 
+        }
+
         .remove-media { 
-          position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); 
-          border: none; color: white; width: 30px; height: 30px; border-radius: 50%; 
-          cursor: pointer; font-size: 20px; 
+          position: absolute; 
+          top: 8px; 
+          right: 8px; 
+          background: rgba(0, 0, 0, 0.7); 
+          border: none; 
+          color: white; 
+          width: 28px; 
+          height: 28px; 
+          border-radius: 50%; 
+          cursor: pointer; 
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.2s;
+        }
+
+        .remove-media:hover {
+          background-color: rgba(0,0,0,0.9);
+        }
+
+        .composer-footer {
+          margin-top: 12px;
+        }
+
+        .btn-publish-post {
+          width: 100%;
+          background-color: #00E5FF;
+          color: black;
+          border: none;
+          padding: 10px;
+          border-radius: 8px;
+          font-weight: 700;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: filter 0.2s, transform 0.1s;
+        }
+
+        .btn-publish-post:hover {
+          filter: brightness(1.1);
+        }
+
+        .btn-publish-post:active {
+          transform: scale(0.99);
+        }
+
+        .animate-fade-in {
+          animation: fadeIn 0.25s ease-out;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-5px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+          .action-label {
+            display: none;
+          }
         }
       `}</style>
     </Card>
