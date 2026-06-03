@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -17,7 +17,7 @@ model User {
   premiumUntil DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
-  avatarUrl    String?   @db.LongText
+  avatarUrl    String?   @db.Text
   bio          String?
   
   // Datos Personales
@@ -251,7 +251,7 @@ model Post {
   userId    String
   animeId   Int?
   content   String   @db.Text
-  mediaUrl  String?  @db.LongText
+  mediaUrl  String?  @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -747,7 +747,7 @@ enum ReportStatus {
 model UserStory {
   id        String   @id @default(uuid())
   userId    String
-  mediaUrl  String   @db.LongText // Imagen o video en Base64/URL
+  mediaUrl  String   @db.Text // Imagen o video en Base64/URL
   caption   String?  @db.Text
   expiresAt DateTime
   createdAt DateTime @default(now())
