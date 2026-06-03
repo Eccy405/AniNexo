@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function AuthCallbackPage() {
+function AuthCallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -20,6 +20,10 @@ export default function AuthCallbackPage() {
     }
   }, [token, router]);
 
+  return null;
+}
+
+export default function AuthCallbackPage() {
   return (
     <div style={{ 
       height: '100vh', 
@@ -31,6 +35,10 @@ export default function AuthCallbackPage() {
       color: 'white',
       fontFamily: 'sans-serif'
     }}>
+      <Suspense fallback={null}>
+        <AuthCallbackInner />
+      </Suspense>
+
       <div className="spinner"></div>
       <h2 style={{ marginTop: '20px', color: '#00E5FF' }}>Sincronizando con AniNexo...</h2>
       <p style={{ color: '#555' }}>Casi listo, estamos preparando tu aventura.</p>
