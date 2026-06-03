@@ -10,6 +10,7 @@ interface Message {
   senderId: string;
   content: string;
   createdAt: string;
+  conversationId?: string;
 }
 
 export function ChatWindow({ chat }: { chat: any }) {
