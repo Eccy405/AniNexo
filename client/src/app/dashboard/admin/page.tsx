@@ -143,9 +143,9 @@ export default function AdminEnterprisePage() {
           <div style={{ maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
              <Card style={{ padding: '25px' }}>
                 <h3 style={{ marginBottom: '20px' }}>Control de Infraestructura</h3>
-                <ConfigToggle label="Modo Mantenimiento" description="Bloquea el acceso a todos los usuarios no-admin." active={flags.maintenance} onChange={(v) => handleUpdateFlag('MAINTENANCE_MODE', v)} />
-                <ConfigToggle label="Registros Públicos" description="Permitir que nuevos usuarios se unan." active={flags.registration} onChange={(v) => handleUpdateFlag('DISABLE_REGISTRATIONS', !v)} />
-                <ConfigToggle label="IA Nexo Activa" description="Servicio global de inteligencia artificial." active={flags.nexo} onChange={(v) => handleUpdateFlag('NEXO_ACTIVE', v)} />
+                <ConfigToggle label="Modo Mantenimiento" description="Bloquea el acceso a todos los usuarios no-admin." active={flags.maintenance} onChange={(v: boolean) => handleUpdateFlag('MAINTENANCE_MODE', v)} />
+                <ConfigToggle label="Registros Públicos" description="Permitir que nuevos usuarios se unan." active={flags.registration} onChange={(v: boolean) => handleUpdateFlag('DISABLE_REGISTRATIONS', !v)} />
+                <ConfigToggle label="IA Nexo Activa" description="Servicio global de inteligencia artificial." active={flags.nexo} onChange={(v: boolean) => handleUpdateFlag('NEXO_ACTIVE', v)} />
              </Card>
           </div>
         )}
@@ -192,14 +192,21 @@ function SuggestionItem({ text, type }: any) {
   );
 }
 
-function ConfigToggle({ label, description, active, onChange }: any) {
+interface ConfigToggleProps {
+  label: string;
+  description: string;
+  active: boolean;
+  onChange: (v: boolean) => void;
+}
+
+function ConfigToggle({ label, description, active, onChange }: ConfigToggleProps) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 0', borderBottom: '1px solid #1a1a1c' }}>
       <div>
         <h4 style={{ margin: 0, color: '#eee' }}>{label}</h4>
         <p style={{ margin: 0, fontSize: '0.75rem', color: '#555' }}>{description}</p>
       </div>
-      <input type="checkbox" checked={active} onChange={(e) => onChange(e.target.checked)} style={{ width: '40px', height: '20px', cursor: 'pointer' }} />
+      <input type="checkbox" checked={active} onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.checked)} style={{ width: '40px', height: '20px', cursor: 'pointer' }} />
     </div>
   );
 }
