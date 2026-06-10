@@ -31,21 +31,29 @@ export function setupSockets(io: Server) {
 
   // Middleware de Autenticación para Sockets (Global)
   io.use((socket, next) => {
-    const token = socket.handshake.auth.token;
-    if (!token) {
+    let token = socket.handshake.auth.token;
+    if (!token || token === 'null' || token === 'undefined') {
+      logger.warn('[socket-auth]: No token provided in handshake or token is placeholder');
       return next(new Error('Authentication error: No token provided'));
+    }
+
+    // Limpiar prefijo "Bearer " si existe
+    if (token.startsWith('Bearer ')) {
+      token = token.substring(7);
     }
 
     try {
       const secret = process.env.JWT_SECRET;
       if (!secret) {
+        logger.error('[socket-auth]: JWT_SECRET not configured on the server');
         return next(new Error('Authentication error: JWT_SECRET not configured on the server'));
       }
       const decoded = jwt.verify(token, secret) as any;
       socket.data.user = decoded;
       next();
 
-    } catch (err) {
+    } catch (err: any) {
+      logger.error(`[socket-auth]: Token validation failed. Token prefix: "${token ? token.substring(0, 15) : ''}...". Error: ${err.message}`);
       next(new Error('Authentication error: Invalid token'));
     }
   });

@@ -13,9 +13,9 @@ export function useSocket(conversationId?: string) {
   useEffect(() => {
     const token = localStorage.getItem('token');
     
-    // SI NO HAY TOKEN, NO HACEMOS NADA. 
+    // SI NO HAY TOKEN O ES UN STRING DE RELLENO, NO HACEMOS NADA. 
     // Esto evita errores de "Invalid Token" en la consola para invitados.
-    if (!token) return;
+    if (!token || token === 'null' || token === 'undefined') return;
 
     if (!socketRef.current) {
       const newSocket = io(SOCKET_URL, {

@@ -8,6 +8,8 @@ export class AdminController {
       const postCount = await prisma.post.count();
       const commentCount = await prisma.comment.count();
       const premiumUsers = await prisma.user.count({ where: { isPremium: true } });
+      const verifiedUsers = await prisma.user.count({ where: { isVerified: true } });
+      const nexoInteractionsCount = await prisma.nexoInteraction.count();
 
       const recentUsers = await prisma.user.findMany({
         take: 5,
@@ -18,7 +20,7 @@ export class AdminController {
       res.status(200).json({
         success: true,
         data: {
-          metrics: { userCount, postCount, commentCount, premiumUsers },
+          metrics: { userCount, postCount, commentCount, premiumUsers, verifiedUsers, nexoInteractionsCount },
           recentUsers
         }
       });
@@ -152,9 +154,64 @@ export class AdminController {
       const users = await prisma.user.findMany({
         take: 50,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, username: true, email: true, role: true, isPremium: true, createdAt: true }
+        select: { id: true, username: true, email: true, role: true, isPremium: true, isVerified: true, createdAt: true }
       });
       res.status(200).json({ success: true, data: users });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  toggleUserRole = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = String(req.params.userId);
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+
+      const newRole = user.role === 'ADMIN' ? 'USER' : 'ADMIN';
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: { role: newRole },
+        select: { id: true, username: true, email: true, role: true, isPremium: true, isVerified: true, createdAt: true }
+      });
+
+      res.status(200).json({ success: true, data: updated });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  toggleUserVerification = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = String(req.params.userId);
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: { isVerified: !user.isVerified },
+        select: { id: true, username: true, email: true, role: true, isPremium: true, isVerified: true, createdAt: true }
+      });
+
+      res.status(200).json({ success: true, data: updated });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  toggleUserPremium = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = String(req.params.userId);
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: { isPremium: !user.isPremium },
+        select: { id: true, username: true, email: true, role: true, isPremium: true, isVerified: true, createdAt: true }
+      });
+
+      res.status(200).json({ success: true, data: updated });
     } catch (error) {
       next(error);
     }

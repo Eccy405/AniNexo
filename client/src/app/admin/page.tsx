@@ -101,6 +101,25 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleToggleUserField = async (userId: string, field: 'role' | 'premium') => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/users/${userId}/${field}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...data.data } : u));
+      } else {
+        alert(data.message || `Error al actualizar campo ${field}`);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión');
+    }
+  };
+
   if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-primary)' }}>Cargando Panel Enterprise...</div>;
 
   const renderContent = () => {
@@ -180,8 +199,26 @@ export default function AdminDashboard() {
                     <td style={{ padding: '1rem' }}>{u.role}</td>
                     <td style={{ padding: '1rem' }}>{u.isPremium ? '💎 Premium' : 'Free'}</td>
                     <td style={{ padding: '1rem' }}>
-                      <Button size="sm" variant="ghost" style={{ color: 'orange' }}>Mute</Button>
-                      <Button size="sm" variant="ghost" style={{ color: 'red' }}>Ban</Button>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          style={{ color: 'cyan', border: '1px solid cyan' }}
+                          onClick={() => handleToggleUserField(u.id, 'role')}
+                        >
+                          {u.role === 'ADMIN' ? 'Quitar Admin' : 'Hacer Admin'}
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          style={{ color: 'gold', border: '1px solid gold' }}
+                          onClick={() => handleToggleUserField(u.id, 'premium')}
+                        >
+                          {u.isPremium ? 'Quitar Premium' : 'Dar Premium'}
+                        </Button>
+                        <Button size="sm" variant="ghost" style={{ color: 'orange' }}>Mute</Button>
+                        <Button size="sm" variant="ghost" style={{ color: 'red' }}>Ban</Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -196,11 +233,21 @@ export default function AdminDashboard() {
             <h2 style={{ marginTop: 0 }}>Base de Datos de Anime (Caché)</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
               {animeCache.map((a, i) => {
-                const data = JSON.parse(a.data);
+                let data = null;
+                try {
+                  if (a.data && a.data !== 'undefined') {
+                    data = JSON.parse(a.data);
+                  }
+                } catch (e) {
+                  console.error('Error parsing anime data:', e);
+                }
+                
+                if (!data) return null;
+
                 return (
                   <div key={i} style={{ padding: '1rem', backgroundColor: '#1a1a1a', borderRadius: '8px' }}>
-                    <img src={data.coverImage.medium} alt={data.title.romaji} style={{ width: '100%', borderRadius: '4px' }} />
-                    <h4 style={{ margin: '0.5rem 0', fontSize: '0.9rem' }}>{data.title.romaji}</h4>
+                    <img src={data?.coverImage?.medium || ''} alt={data?.title?.romaji || 'Anime'} style={{ width: '100%', borderRadius: '4px' }} />
+                    <h4 style={{ margin: '0.5rem 0', fontSize: '0.9rem' }}>{data?.title?.romaji || 'Unknown'}</h4>
                     <Button size="sm" style={{ width: '100%' }}>Editar Ficha</Button>
                   </div>
                 );
