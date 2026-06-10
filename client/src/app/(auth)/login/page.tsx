@@ -10,14 +10,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ identifier?: string; password?: string; general?: string }>({});
 
-  const FORBIDDEN_CHARS = /[><=$\/]/;
+  const FORBIDDEN_CHARS = /[><=&\/]/;
 
   const handleIdentifierChange = (val: string) => {
     setIdentifier(val);
     setErrors(prev => {
       const updated = { ...prev, general: undefined };
       if (FORBIDDEN_CHARS.test(val)) {
-        updated.identifier = 'Contiene caracteres prohibidos (> < = $ /)';
+        updated.identifier = 'Contiene caracteres prohibidos (> < = & /)';
       } else {
         delete updated.identifier;
       }
@@ -30,7 +30,7 @@ export default function LoginPage() {
     setErrors(prev => {
       const updated = { ...prev, general: undefined };
       if (FORBIDDEN_CHARS.test(val)) {
-        updated.password = 'Contiene caracteres prohibidos (> < = $ /)';
+        updated.password = 'Contiene caracteres prohibidos (> < = & /)';
       } else {
         delete updated.password;
       }

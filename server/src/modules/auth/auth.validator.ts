@@ -24,8 +24,8 @@ export interface ValidationResult {
   errors: string[];
 }
 
-// Caracteres prohibidos: > < = $ /
-const FORBIDDEN_CHARS = /[><=$\/]/;
+// Caracteres prohibidos: > < = & /
+const FORBIDDEN_CHARS = /[><=&\/]/;
 
 // Nombre: solo letras (incluyendo tildes/ñ), espacios y números
 const NAME_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9 ]+$/;
@@ -43,7 +43,7 @@ export function validateRegister(data: RegisterDTO): ValidationResult {
   if (!data.firstName || data.firstName.trim().length === 0) {
     errors.push('El nombre es obligatorio.');
   } else if (FORBIDDEN_CHARS.test(data.firstName)) {
-    errors.push('El nombre contiene caracteres prohibidos (> < = $ /).');
+    errors.push('El nombre contiene caracteres prohibidos (> < = & /).');
   } else if (!NAME_REGEX.test(data.firstName.trim())) {
     errors.push('El nombre solo puede contener letras, números y espacios.');
   }
@@ -52,7 +52,7 @@ export function validateRegister(data: RegisterDTO): ValidationResult {
   if (!data.lastName || data.lastName.trim().length === 0) {
     errors.push('El apellido es obligatorio.');
   } else if (FORBIDDEN_CHARS.test(data.lastName)) {
-    errors.push('El apellido contiene caracteres prohibidos (> < = $ /).');
+    errors.push('El apellido contiene caracteres prohibidos (> < = & /).');
   } else if (!NAME_REGEX.test(data.lastName.trim())) {
     errors.push('El apellido solo puede contener letras, números y espacios.');
   }
@@ -75,7 +75,7 @@ export function validateRegister(data: RegisterDTO): ValidationResult {
   if (!data.country || data.country.trim().length === 0) {
     errors.push('El país es obligatorio.');
   } else if (FORBIDDEN_CHARS.test(data.country)) {
-    errors.push('El país contiene caracteres prohibidos (> < = $ /).');
+    errors.push('El país contiene caracteres prohibidos (> < = & /).');
   } else if (!NAME_REGEX.test(data.country.trim())) {
     errors.push('El país solo puede contener letras, números y espacios.');
   }
@@ -93,7 +93,7 @@ export function validateRegister(data: RegisterDTO): ValidationResult {
   if (!data.username || data.username.trim().length === 0) {
     errors.push('El nombre de usuario es obligatorio.');
   } else if (FORBIDDEN_CHARS.test(data.username)) {
-    errors.push('El usuario contiene caracteres prohibidos (> < = $ /).');
+    errors.push('El usuario contiene caracteres prohibidos (> < = & /).');
   } else if (!/^[A-Za-z0-9]+$/.test(data.username)) {
     errors.push('El nombre de usuario solo puede contener letras y números (sin espacios ni caracteres especiales).');
   } else if (data.username.length < 3 || data.username.length > 30) {
@@ -104,7 +104,7 @@ export function validateRegister(data: RegisterDTO): ValidationResult {
   if (!data.password) {
     errors.push('La contraseña es obligatoria.');
   } else if (FORBIDDEN_CHARS.test(data.password)) {
-    errors.push('La contraseña contiene caracteres prohibidos (> < = $ /).');
+    errors.push('La contraseña contiene caracteres prohibidos (> < = & /).');
   } else if (data.password.length < 8) {
     errors.push('La contraseña debe tener mínimo 8 caracteres.');
   } else if (data.password.length > 12) {

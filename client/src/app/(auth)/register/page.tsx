@@ -31,7 +31,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const FORBIDDEN_CHARS = /[><=$\/]/;
+  const FORBIDDEN_CHARS = /[><=&\/]/;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -41,7 +41,7 @@ export default function RegisterPage() {
     if (FORBIDDEN_CHARS.test(value)) {
       setFieldErrors(prev => ({
         ...prev,
-        [fieldName]: 'Contiene caracteres prohibidos (> < = $ /)'
+        [fieldName]: 'Contiene caracteres prohibidos (> < = & /)'
       }));
       return; // Don't update the value
     }

@@ -20,21 +20,15 @@ export interface LoginForm {
   password: string;
 }
 
-export interface FieldErrors {
-  firstName?: string;
-  email?: string;
-  username?: string;
-  password?: string;
-  confirmPassword?: string;
-}
+export type FieldErrors = Partial<Record<keyof RegisterForm, string>>;
 
-const FORBIDDEN_CHARS = /[><=$\/]/;
+const FORBIDDEN_CHARS = /[><=&\/]/;
 const NAME_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9 ]+$/;
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export function validateRegisterField(field: keyof RegisterForm, value: string, form?: Partial<RegisterForm>): string | undefined {
   if (FORBIDDEN_CHARS.test(value)) {
-    return 'Contiene caracteres prohibidos (> < = $ /)';
+    return 'Contiene caracteres prohibidos (> < = & /)';
   }
 
   switch (field) {
