@@ -240,7 +240,7 @@ export class AdminController {
 
   updateAnime = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const animeId = parseInt(req.params.id);
+      const animeId = parseInt(String(req.params.id));
       if (isNaN(animeId)) return res.status(400).json({ success: false, message: 'Invalid ID' });
       
       const { titleRomaji, description, status, episodes, coverImage } = req.body;
