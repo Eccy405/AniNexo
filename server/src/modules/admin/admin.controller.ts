@@ -228,9 +228,17 @@ export class AdminController {
 
   getAnimePersistence = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const query = req.query.q ? String(req.query.q) : '';
       const animes = await prisma.anime.findMany({
-        take: 20,
-        orderBy: { updatedAt: 'desc' }
+        take: 40,
+        orderBy: { updatedAt: 'desc' },
+        where: query ? {
+          OR: [
+            { titleRomaji: { contains: query, mode: 'insensitive' } },
+            { titleEnglish: { contains: query, mode: 'insensitive' } },
+            { titleNative: { contains: query, mode: 'insensitive' } }
+          ]
+        } : undefined
       });
       res.status(200).json({ success: true, data: animes });
     } catch (error) {

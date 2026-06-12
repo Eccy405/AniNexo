@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card } from '../../components/ui/Card/Card';
 import { Button } from '../../components/ui/Button/Button';
 import { Input } from '../../components/ui/Input/Input';
@@ -27,6 +27,8 @@ export default function AdminDashboard() {
   const [investigationQuery, setInvestigationQuery] = useState('');
   const [investigationResult, setInvestigationResult] = useState<any>(null);
   const [editingAnime, setEditingAnime] = useState<any>(null);
+  const [animeSearch, setAnimeSearch] = useState('');
+  const [animeSearchLoading, setAnimeSearchLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -389,12 +391,52 @@ export default function AdminDashboard() {
       case 'anime':
         return (
           <Card>
-            <h2 style={{ marginTop: 0 }}>Base de Datos de Anime</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
-              {animeCache.map((a, i) => (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ margin: 0 }}>Base de Datos de Anime</h2>
+              <span style={{ color: '#555', fontSize: '0.85rem' }}>{animeCache.length} resultados</span>
+            </div>
+
+            {/* Buscador */}
+            <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+              <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#555', fontSize: '1rem' }}>🔍</span>
+              <Input
+                placeholder="Buscar anime por título (Romaji, Inglés o Japonés)..."
+                value={animeSearch}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setAnimeSearch(val);
+                  setAnimeSearchLoading(true);
+                  const token = localStorage.getItem('token');
+                  const timer = setTimeout(async () => {
+                    try {
+                      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/anime${val ? `?q=${encodeURIComponent(val)}` : ''}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                      });
+                      const data = await res.json();
+                      if (data.success) setAnimeCache(data.data);
+                    } catch (err) {
+                      console.error(err);
+                    } finally {
+                      setAnimeSearchLoading(false);
+                    }
+                  }, 400);
+                  return () => clearTimeout(timer);
+                }}
+                style={{ width: '100%', paddingLeft: '2.5rem' }}
+              />
+              {animeSearchLoading && (
+                <span style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-primary)', fontSize: '0.8rem' }}>Buscando...</span>
+              )}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
+              {animeCache.length === 0 ? (
+                <p style={{ color: '#555', gridColumn: '1/-1', textAlign: 'center', padding: '3rem' }}>No se encontraron animes{animeSearch ? ` para "${animeSearch}"` : ''}.</p>
+              ) : animeCache.map((a, i) => (
                 <div key={a.id || i} style={{ padding: '1rem', backgroundColor: '#1a1a1a', borderRadius: '8px', display: 'flex', flexDirection: 'column' }}>
-                  <img src={a.coverImage || 'https://via.placeholder.com/200x300?text=No+Image'} alt={a.titleRomaji || 'Anime'} style={{ width: '100%', borderRadius: '4px', objectFit: 'cover', height: '250px' }} />
-                  <h4 style={{ margin: '0.5rem 0', fontSize: '0.9rem', flex: 1 }}>{a.titleRomaji || 'Unknown'}</h4>
+                  <img src={a.coverImage || 'https://via.placeholder.com/200x300?text=No+Image'} alt={a.titleRomaji || 'Anime'} style={{ width: '100%', borderRadius: '4px', objectFit: 'cover', height: '240px' }} />
+                  <h4 style={{ margin: '0.5rem 0', fontSize: '0.85rem', flex: 1, lineHeight: 1.3 }}>{a.titleRomaji || 'Unknown'}</h4>
+                  {a.status && <span style={{ fontSize: '0.7rem', color: a.status === 'RELEASING' ? 'lime' : '#888', marginBottom: '0.5rem' }}>{a.status}</span>}
                   <Button size="sm" style={{ width: '100%' }} onClick={() => setEditingAnime(a)}>Editar Ficha</Button>
                 </div>
               ))}
