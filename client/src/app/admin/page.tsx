@@ -20,8 +20,13 @@ export default function AdminDashboard() {
   const [telemetry, setTelemetry] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [emailLogs, setEmailLogs] = useState<any[]>([]);
+  const [historicalData, setHistoricalData] = useState<any[]>([]);
   const [maintenance, setMaintenance] = useState(false);
+  const [systemSettings, setSystemSettings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [investigationQuery, setInvestigationQuery] = useState('');
+  const [investigationResult, setInvestigationResult] = useState<any>(null);
+  const [editingAnime, setEditingAnime] = useState<any>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,8 +43,9 @@ export default function AdminDashboard() {
           'Content-Type': 'application/json'
         };
 
-        const [analyticsRes, reportsRes, usersRes, financesRes, animeRes, nexoRes, telemetryRes, logsRes, emailLogsRes] = await Promise.all([
+        const [analyticsRes, statsRes, reportsRes, usersRes, financesRes, animeRes, nexoRes, telemetryRes, logsRes, emailLogsRes, settingsRes] = await Promise.all([
           fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/analytics`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/stats`, { headers }),
           fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/reports`, { headers }),
           fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/users`, { headers }),
           fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/finances`, { headers }),
@@ -47,10 +53,12 @@ export default function AdminDashboard() {
           fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/nexo-logs`, { headers }),
           fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/telemetry`, { headers }),
           fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/logs`, { headers }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/email-logs`, { headers })
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/email-logs`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/settings`, { headers })
         ]);
         
         const analyticsData = await analyticsRes.json();
+        const statsData = await statsRes.json();
         const reportsData = await reportsRes.json();
         const usersData = await usersRes.json();
         const financesData = await financesRes.json();
@@ -59,8 +67,10 @@ export default function AdminDashboard() {
         const telemetryData = await telemetryRes.json();
         const logsData = await logsRes.json();
         const emailLogsData = await emailLogsRes.json();
+        const settingsData = await settingsRes.json();
 
         if (analyticsData.success) setMetrics(analyticsData.data);
+        if (statsData.success) setHistoricalData(statsData.data.historical);
         if (reportsData.success) setReports(reportsData.data);
         if (usersData.success) setUsers(usersData.data);
         if (financesData.success) setFinances(financesData.data);
@@ -69,6 +79,11 @@ export default function AdminDashboard() {
         if (telemetryData.success) setTelemetry(telemetryData.data);
         if (logsData.success) setAuditLogs(logsData.data);
         if (emailLogsData.success) setEmailLogs(emailLogsData.data);
+        if (settingsData.success) {
+          setSystemSettings(settingsData.data);
+          const maint = settingsData.data.find((s: any) => s.key === 'MAINTENANCE_MODE');
+          if (maint) setMaintenance(maint.value === 'true');
+        }
 
       } catch (error) {
         console.error('Error fetching admin data', error);
@@ -94,10 +109,40 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (data.success) {
         setMaintenance(!maintenance);
+        setSystemSettings(prev => {
+          const exists = prev.find(s => s.key === 'MAINTENANCE_MODE');
+          if (exists) return prev.map(s => s.key === 'MAINTENANCE_MODE' ? { ...s, value: String(!maintenance) } : s);
+          return [...prev, { key: 'MAINTENANCE_MODE', value: String(!maintenance) }];
+        });
         alert(data.message);
       }
     } catch (e) {
       alert('Error cambiando estado de mantenimiento');
+    }
+  };
+
+  const handleToggleFeatureFlag = async (key: string, currentValue: string) => {
+    const newValue = currentValue === 'true' ? 'false' : 'true';
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/feature-flag`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ key, value: newValue })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSystemSettings(prev => {
+          const exists = prev.find(s => s.key === key);
+          if (exists) return prev.map(s => s.key === key ? { ...s, value: newValue } : s);
+          return [...prev, { key, value: newValue }];
+        });
+      } else {
+        alert(data.message || 'Error al actualizar flag');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión');
     }
   };
 
@@ -117,6 +162,128 @@ export default function AdminDashboard() {
     } catch (e) {
       console.error(e);
       alert('Error de conexión');
+    }
+  };
+
+  const handleMuteUser = async (userId: string) => {
+    const reason = window.prompt('Razón del mute:');
+    if (!reason) return;
+    const hoursStr = window.prompt('Duración en horas (por defecto 24):', '24');
+    const hours = hoursStr ? parseInt(hoursStr) : 24;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/moderation/mute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ userId, reason, hours })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Usuario silenciado exitosamente.');
+      } else {
+        alert(data.message || 'Error al aplicar mute.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión.');
+    }
+  };
+
+  const handleBanUser = async (userId: string) => {
+    const reason = window.prompt('Razón del ban:');
+    if (!reason) return;
+    const daysStr = window.prompt('Duración en días (dejar en blanco para permanente):');
+    const days = daysStr ? parseInt(daysStr) : undefined;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/moderation/ban`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ userId, reason, days })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Usuario baneado exitosamente.');
+      } else {
+        alert(data.message || 'Error al aplicar ban.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión.');
+    }
+  };
+
+  const handleResolveReport = async (reportId: string, status: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/moderation/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ reportId, status, internalNote: 'Resuelto desde el panel' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReports(prev => prev.map(r => r.id === reportId ? { ...r, status } : r));
+        alert('Reporte actualizado.');
+      } else {
+        alert(data.message || 'Error al resolver reporte.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión.');
+    }
+  };
+
+  const handleInvestigate = async () => {
+    if (!investigationQuery) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/moderation/investigate/${investigationQuery.replace('@', '')}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setInvestigationResult(data.data);
+      } else {
+        alert(data.message || 'Usuario no encontrado.');
+        setInvestigationResult(null);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error al investigar usuario.');
+    }
+  };
+
+  const handleUpdateAnime = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAnime) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/anime/${editingAnime.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          titleRomaji: editingAnime.titleRomaji,
+          description: editingAnime.description,
+          status: editingAnime.status,
+          episodes: editingAnime.episodes,
+          coverImage: editingAnime.coverImage
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAnimeCache(prev => prev.map(a => a.id === editingAnime.id ? data.data : a));
+        setEditingAnime(null);
+        alert('Anime actualizado exitosamente.');
+      } else {
+        alert(data.message || 'Error al actualizar anime.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión.');
     }
   };
 
@@ -148,19 +315,11 @@ export default function AdminDashboard() {
             
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
               <Card>
-                <h2 style={{ marginTop: 0 }}>Crecimiento de Usuarios (Simulado)</h2>
+                <h2 style={{ marginTop: 0 }}>Crecimiento de Usuarios</h2>
                 <StatsChart 
                   title="Nuevos Usuarios por Día" 
-                  dataKey="count" 
-                  data={[
-                    {date: '2026-05-01', count: 12},
-                    {date: '2026-05-02', count: 18},
-                    {date: '2026-05-03', count: 15},
-                    {date: '2026-05-04', count: 25},
-                    {date: '2026-05-05', count: 30},
-                    {date: '2026-05-06', count: 22},
-                    {date: '2026-05-10', count: 35},
-                  ]} 
+                  dataKey="newUsers" 
+                  data={historicalData} 
                 />
               </Card>
               <Card>
@@ -216,8 +375,8 @@ export default function AdminDashboard() {
                         >
                           {u.isPremium ? 'Quitar Premium' : 'Dar Premium'}
                         </Button>
-                        <Button size="sm" variant="ghost" style={{ color: 'orange' }}>Mute</Button>
-                        <Button size="sm" variant="ghost" style={{ color: 'red' }}>Ban</Button>
+                        <Button size="sm" variant="ghost" style={{ color: 'orange' }} onClick={() => handleMuteUser(u.id)}>Mute</Button>
+                        <Button size="sm" variant="ghost" style={{ color: 'red' }} onClick={() => handleBanUser(u.id)}>Ban</Button>
                       </div>
                     </td>
                   </tr>
@@ -230,29 +389,73 @@ export default function AdminDashboard() {
       case 'anime':
         return (
           <Card>
-            <h2 style={{ marginTop: 0 }}>Base de Datos de Anime (Caché)</h2>
+            <h2 style={{ marginTop: 0 }}>Base de Datos de Anime</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
-              {animeCache.map((a, i) => {
-                let data = null;
-                try {
-                  if (a.data && a.data !== 'undefined') {
-                    data = JSON.parse(a.data);
-                  }
-                } catch (e) {
-                  console.error('Error parsing anime data:', e);
-                }
-                
-                if (!data) return null;
-
-                return (
-                  <div key={i} style={{ padding: '1rem', backgroundColor: '#1a1a1a', borderRadius: '8px' }}>
-                    <img src={data?.coverImage?.medium || ''} alt={data?.title?.romaji || 'Anime'} style={{ width: '100%', borderRadius: '4px' }} />
-                    <h4 style={{ margin: '0.5rem 0', fontSize: '0.9rem' }}>{data?.title?.romaji || 'Unknown'}</h4>
-                    <Button size="sm" style={{ width: '100%' }}>Editar Ficha</Button>
-                  </div>
-                );
-              })}
+              {animeCache.map((a, i) => (
+                <div key={a.id || i} style={{ padding: '1rem', backgroundColor: '#1a1a1a', borderRadius: '8px', display: 'flex', flexDirection: 'column' }}>
+                  <img src={a.coverImage || 'https://via.placeholder.com/200x300?text=No+Image'} alt={a.titleRomaji || 'Anime'} style={{ width: '100%', borderRadius: '4px', objectFit: 'cover', height: '250px' }} />
+                  <h4 style={{ margin: '0.5rem 0', fontSize: '0.9rem', flex: 1 }}>{a.titleRomaji || 'Unknown'}</h4>
+                  <Button size="sm" style={{ width: '100%' }} onClick={() => setEditingAnime(a)}>Editar Ficha</Button>
+                </div>
+              ))}
             </div>
+
+            {editingAnime && (
+              <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                <div style={{ backgroundColor: '#111', padding: '2rem', borderRadius: '12px', width: '500px', maxWidth: '90%' }}>
+                  <h3 style={{ marginTop: 0 }}>Editar Anime: {editingAnime.titleRomaji}</h3>
+                  <form onSubmit={handleUpdateAnime} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#888' }}>Título (Romaji)</label>
+                      <Input 
+                        value={editingAnime.titleRomaji || ''} 
+                        onChange={(e) => setEditingAnime({...editingAnime, titleRomaji: e.target.value})} 
+                        style={{ width: '100%' }} 
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#888' }}>Descripción</label>
+                      <textarea 
+                        value={editingAnime.description || ''} 
+                        onChange={(e) => setEditingAnime({...editingAnime, description: e.target.value})} 
+                        style={{ width: '100%', minHeight: '100px', backgroundColor: 'transparent', border: '1px solid #333', color: '#fff', padding: '0.8rem', borderRadius: '8px' }} 
+                      />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#888' }}>Estado</label>
+                        <Input 
+                          value={editingAnime.status || ''} 
+                          onChange={(e) => setEditingAnime({...editingAnime, status: e.target.value})} 
+                          style={{ width: '100%' }} 
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#888' }}>Episodios</label>
+                        <Input 
+                          type="number"
+                          value={editingAnime.episodes || ''} 
+                          onChange={(e) => setEditingAnime({...editingAnime, episodes: e.target.value})} 
+                          style={{ width: '100%' }} 
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#888' }}>URL de Portada</label>
+                      <Input 
+                        value={editingAnime.coverImage || ''} 
+                        onChange={(e) => setEditingAnime({...editingAnime, coverImage: e.target.value})} 
+                        style={{ width: '100%' }} 
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                      <Button variant="ghost" type="button" onClick={() => setEditingAnime(null)}>Cancelar</Button>
+                      <Button variant="primary" type="submit">Guardar Cambios</Button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </Card>
         );
 
@@ -273,8 +476,8 @@ export default function AdminDashboard() {
                       <small style={{ color: '#555' }}>Por: @{r.reporter.username} - {new Date(r.createdAt).toLocaleString()}</small>
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <Button variant="ghost" style={{ border: '1px solid #444' }}>Investigar</Button>
-                      <Button variant="ghost" style={{ border: '1px solid red', color: 'red' }}>Sancionar</Button>
+                      <Button variant="ghost" style={{ border: '1px solid #444' }} onClick={() => handleResolveReport(r.id, 'DISMISSED')}>Ignorar</Button>
+                      <Button variant="ghost" style={{ border: '1px solid red', color: 'red' }} onClick={() => handleResolveReport(r.id, 'RESOLVED')}>Sancionar</Button>
                     </div>
                   </div>
                 ))}
@@ -283,10 +486,48 @@ export default function AdminDashboard() {
 
             <Card>
               <h2 style={{ marginTop: 0 }}>Investigación de Usuario</h2>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <Input placeholder="Buscar @username para ver historial de sanciones..." style={{ flex: 1 }} />
-                <Button variant="primary">Ver Auditoría</Button>
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                <Input 
+                  placeholder="Buscar @username para ver historial de sanciones..." 
+                  style={{ flex: 1 }} 
+                  value={investigationQuery}
+                  onChange={(e) => setInvestigationQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleInvestigate()}
+                />
+                <Button variant="primary" onClick={handleInvestigate}>Ver Auditoría</Button>
               </div>
+
+              {investigationResult && (
+                <div style={{ padding: '1rem', backgroundColor: '#111', borderRadius: '8px' }}>
+                  <h3 style={{ marginTop: 0, color: 'var(--color-primary)' }}>Resultados para @{investigationResult.username}</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div>
+                      <h4 style={{ color: 'red' }}>Bans ({investigationResult.bans.length})</h4>
+                      <ul style={{ paddingLeft: '1rem', color: '#888', fontSize: '0.9rem' }}>
+                        {investigationResult.bans.map((b: any, i: number) => <li key={i}>{b.reason}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 style={{ color: 'orange' }}>Mutes ({investigationResult.mutes.length})</h4>
+                      <ul style={{ paddingLeft: '1rem', color: '#888', fontSize: '0.9rem' }}>
+                        {investigationResult.mutes.map((m: any, i: number) => <li key={i}>{m.reason}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 style={{ color: 'cyan' }}>Advertencias ({investigationResult.warnings.length})</h4>
+                      <ul style={{ paddingLeft: '1rem', color: '#888', fontSize: '0.9rem' }}>
+                        {investigationResult.warnings.map((w: any, i: number) => <li key={i}>{w.reason}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 style={{ color: '#ccc' }}>Reportes Recibidos ({investigationResult.reportsReceived.length})</h4>
+                      <ul style={{ paddingLeft: '1rem', color: '#888', fontSize: '0.9rem' }}>
+                        {investigationResult.reportsReceived.map((r: any, i: number) => <li key={i}>{r.reason} ({r.status})</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
             </Card>
           </div>
         );
@@ -531,17 +772,28 @@ export default function AdminDashboard() {
               <div>
                 <h3>Feature Flags</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', backgroundColor: '#1a1a1a', borderRadius: '8px' }}>
-                    <span>Registro de Usuarios</span>
-                    <Button size="sm">ON</Button>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', backgroundColor: '#1a1a1a', borderRadius: '8px' }}>
-                    <span>IA Nexo (Public)</span>
-                    <Button size="sm">ON</Button>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', backgroundColor: '#1a1a1a', borderRadius: '8px' }}>
-                    <span>Pagos Premium</span>
-                    <Button size="sm" variant="ghost" style={{ border: '1px solid #333' }}>OFF</Button>
+                  {systemSettings.filter((s: any) => s.key !== 'MAINTENANCE_MODE').map((s: any, i: number) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', backgroundColor: '#1a1a1a', borderRadius: '8px' }}>
+                      <span>{s.key}</span>
+                      <Button 
+                        size="sm" 
+                        variant={s.value === 'true' ? 'primary' : 'ghost'} 
+                        style={s.value !== 'true' ? { border: '1px solid #333' } : undefined}
+                        onClick={() => handleToggleFeatureFlag(s.key, s.value)}
+                      >
+                        {s.value === 'true' ? 'ON' : 'OFF'}
+                      </Button>
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                    <Input id="newFlagKey" placeholder="Nueva Flag (EJ: REGISTRO_PUBLICO)" style={{ flex: 1 }} />
+                    <Button onClick={() => {
+                      const input = document.getElementById('newFlagKey') as HTMLInputElement;
+                      if (input.value) {
+                        handleToggleFeatureFlag(input.value.toUpperCase(), 'false');
+                        input.value = '';
+                      }
+                    }}>Añadir</Button>
                   </div>
                 </div>
               </div>

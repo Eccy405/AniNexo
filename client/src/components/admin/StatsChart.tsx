@@ -13,7 +13,7 @@ export function StatsChart({ data, dataKey, color = "#00E5FF", title }: StatsCha
   return (
     <div style={{ width: '100%', height: '300px', marginTop: '20px' }}>
       <h4 style={{ marginBottom: '15px', color: '#888' }}>{title}</h4>
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minHeight={300} minWidth={10}>
         <AreaChart data={data}>
           <defs>
             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">

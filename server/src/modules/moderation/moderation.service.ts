@@ -113,9 +113,14 @@ export class ModerationService {
     });
   }
 
-  async getUserModerationHistory(userId: string) {
-    return await prisma.user.findUnique({
-      where: { id: userId },
+  async getUserModerationHistory(identifier: string) {
+    return await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: identifier },
+          { username: identifier }
+        ]
+      },
       include: {
         warnings: { orderBy: { createdAt: 'desc' } },
         mutes: { orderBy: { createdAt: 'desc' } },

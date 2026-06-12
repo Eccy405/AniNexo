@@ -99,6 +99,15 @@ export class AdminController {
     }
   };
 
+  getSystemSettings = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const settings = await prisma.systemSettings.findMany();
+      res.status(200).json({ success: true, data: settings });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getAuditLogs = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const logs = await prisma.moderationLog.findMany({
@@ -224,6 +233,30 @@ export class AdminController {
         orderBy: { updatedAt: 'desc' }
       });
       res.status(200).json({ success: true, data: animes });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updateAnime = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const animeId = parseInt(req.params.id);
+      if (isNaN(animeId)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+      
+      const { titleRomaji, description, status, episodes, coverImage } = req.body;
+      
+      const updated = await prisma.anime.update({
+        where: { id: animeId },
+        data: {
+          titleRomaji,
+          description,
+          status,
+          episodes: episodes ? parseInt(episodes) : undefined,
+          coverImage
+        }
+      });
+      
+      res.status(200).json({ success: true, data: updated, message: 'Anime actualizado' });
     } catch (error) {
       next(error);
     }
