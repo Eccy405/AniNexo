@@ -44,6 +44,10 @@ export function validateRegisterField(field: keyof RegisterForm, value: string, 
 
     case 'birthDate':
       if (!value) return 'La fecha de nacimiento es obligatoria';
+      const birth = new Date(value);
+      const today = new Date();
+      if (isNaN(birth.getTime())) return 'Fecha inválida';
+      if (birth >= today) return 'La fecha no puede ser en el futuro';
       break;
 
     case 'gender':

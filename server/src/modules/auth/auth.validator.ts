@@ -62,6 +62,14 @@ export function validateRegister(data: RegisterDTO): ValidationResult {
     errors.push('La fecha de nacimiento es obligatoria.');
   } else if (FORBIDDEN_CHARS.test(data.birthDate)) {
     errors.push('La fecha de nacimiento contiene caracteres prohibidos.');
+  } else {
+    const birth = new Date(data.birthDate);
+    const today = new Date();
+    if (isNaN(birth.getTime())) {
+      errors.push('La fecha de nacimiento no es válida.');
+    } else if (birth >= today) {
+      errors.push('La fecha de nacimiento no puede ser en el futuro.');
+    }
   }
 
   // --- Género ---
