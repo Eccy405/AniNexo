@@ -14,14 +14,14 @@ export class SearchController {
         return res.status(200).json({ success: true, data: { animes: [], users: [] } });
       }
 
-      console.log(`[SearchController] Buscando localmente: "${query}"`);
+      console.log(`[SearchController] Buscando localmente (case-insensitive): "${query}"`);
       // 1. Buscar Animes Locales
       let animes = await prisma.anime.findMany({
         where: {
           OR: [
-            { titleRomaji: { contains: query } },
-            { titleEnglish: { contains: query } },
-            { titleNative: { contains: query } }
+            { titleRomaji: { contains: query, mode: 'insensitive' } },
+            { titleEnglish: { contains: query, mode: 'insensitive' } },
+            { titleNative: { contains: query, mode: 'insensitive' } }
           ]
         },
         take: 5,
@@ -35,28 +35,39 @@ export class SearchController {
         }
       });
 
-      // 1.5 Activación modo Híbrido (Si no hay local, buscar API)
-      if (animes.length === 0) {
-        console.log(`[SearchController] Sin resultados locales. Activando búsqueda externa para: "${query}"`);
-        const externalAnimes = await animeService.searchExternal(query);
-        // Mapear al formato que espera el controlador
-        animes = externalAnimes.map((a: any) => ({
-          id: a.id,
-          titleRomaji: a.titleRomaji,
-          titleEnglish: a.titleEnglish,
-          coverImage: a.coverImage,
-          type: a.format,
-          averageScore: a.averageScore
-        }));
+      // 1.5 Activación modo Híbrido (Si hay menos de 5 resultados locales, buscar API)
+      if (animes.length < 5) {
+        console.log(`[SearchController] Pocos resultados locales (${animes.length}). Activando búsqueda externa para: "${query}"`);
+        await animeService.searchExternal(query);
+
+        // Query again to get updated results (now including the synced external ones)
+        animes = await prisma.anime.findMany({
+          where: {
+            OR: [
+              { titleRomaji: { contains: query, mode: 'insensitive' } },
+              { titleEnglish: { contains: query, mode: 'insensitive' } },
+              { titleNative: { contains: query, mode: 'insensitive' } }
+            ]
+          },
+          take: 5,
+          select: {
+            id: true,
+            titleRomaji: true,
+            titleEnglish: true,
+            coverImage: true,
+            type: true,
+            averageScore: true
+          }
+        });
       }
 
       // 2. Buscar Usuarios (Personas)
       const users = await prisma.user.findMany({
         where: {
           OR: [
-            { username: { contains: query } },
-            { firstName: { contains: query } },
-            { lastName: { contains: query } }
+            { username: { contains: query, mode: 'insensitive' } },
+            { firstName: { contains: query, mode: 'insensitive' } },
+            { lastName: { contains: query, mode: 'insensitive' } }
           ]
         },
         take: 5,

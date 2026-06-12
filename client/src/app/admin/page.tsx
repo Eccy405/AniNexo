@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Card } from '../../components/ui/Card/Card';
 import { Button } from '../../components/ui/Button/Button';
 import { Input } from '../../components/ui/Input/Input';
@@ -29,6 +29,7 @@ export default function AdminDashboard() {
   const [editingAnime, setEditingAnime] = useState<any>(null);
   const [animeSearch, setAnimeSearch] = useState('');
   const [animeSearchLoading, setAnimeSearchLoading] = useState(false);
+  const searchTimeoutRef = useRef<any>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -406,8 +407,11 @@ export default function AdminDashboard() {
                   const val = e.target.value;
                   setAnimeSearch(val);
                   setAnimeSearchLoading(true);
+                  if (searchTimeoutRef.current) {
+                    clearTimeout(searchTimeoutRef.current);
+                  }
                   const token = localStorage.getItem('token');
-                  const timer = setTimeout(async () => {
+                  searchTimeoutRef.current = setTimeout(async () => {
                     try {
                       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/anime${val ? `?q=${encodeURIComponent(val)}` : ''}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
@@ -420,7 +424,6 @@ export default function AdminDashboard() {
                       setAnimeSearchLoading(false);
                     }
                   }, 400);
-                  return () => clearTimeout(timer);
                 }}
                 style={{ width: '100%', paddingLeft: '2.5rem' }}
               />

@@ -26,8 +26,22 @@ export const TopNavbar: React.FC = () => {
         console.error("Error parsing user from localStorage", e);
       }
     }
+
+    const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.search-box')) {
+        setShowSearchResults(false);
+      }
+      if (!target.closest('.user-menu-container')) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('click', handleDocumentClick);
     
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('click', handleDocumentClick);
+    };
   }, []);
 
   useEffect(() => {
@@ -77,6 +91,102 @@ export const TopNavbar: React.FC = () => {
 
   return (
     <nav className={`top-navbar ${scrolled ? 'scrolled' : ''}`}>
+      <style>{`
+        .search-results-dropdown {
+          position: absolute !important;
+          top: 100% !important;
+          right: 0 !important;
+          left: auto !important;
+          width: 380px !important;
+          max-height: 400px !important;
+          overflow-y: auto !important;
+          background: rgba(10, 10, 10, 0.98) !important;
+          backdrop-filter: blur(25px) !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border-radius: 16px !important;
+          margin-top: 10px !important;
+          padding: 15px !important;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8) !important;
+          z-index: 3000 !important;
+          display: block !important;
+        }
+
+        .search-section {
+          margin-bottom: 15px !important;
+        }
+        .search-section:last-child {
+          margin-bottom: 0 !important;
+        }
+
+        .section-title {
+          font-size: 0.75rem !important;
+          color: #888 !important;
+          text-transform: uppercase !important;
+          font-weight: 800 !important;
+          margin-bottom: 8px !important;
+          letter-spacing: 1px !important;
+        }
+
+        .search-result-item {
+          display: flex !important;
+          align-items: center !important;
+          gap: 12px !important;
+          padding: 8px !important;
+          border-radius: 10px !important;
+          text-decoration: none !important;
+          transition: background 0.2s !important;
+          cursor: pointer !important;
+        }
+
+        .search-result-item:hover {
+          background: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        .search-result-item img {
+          width: 45px !important;
+          height: 60px !important;
+          border-radius: 8px !important;
+          object-fit: cover !important;
+          flex-shrink: 0 !important;
+        }
+
+        .search-result-item .avatar-res {
+          width: 45px !important;
+          height: 45px !important;
+          border-radius: 50% !important;
+          object-fit: cover !important;
+          flex-shrink: 0 !important;
+        }
+
+        .res-info {
+          flex: 1 !important;
+          min-width: 0 !important;
+        }
+
+        .res-title {
+          color: white !important;
+          font-weight: 700 !important;
+          font-size: 0.9rem !important;
+          margin: 0 !important;
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+        }
+
+        .res-meta {
+          color: #aaa !important;
+          font-size: 0.75rem !important;
+          margin-top: 2px !important;
+        }
+
+        .no-results {
+          color: #888 !important;
+          font-size: 0.9rem !important;
+          text-align: center !important;
+          padding: 20px 0 !important;
+          margin: 0 !important;
+        }
+      `}</style>
       <div className="nav-left">
         <Link href="/dashboard" className="logo">ANINEXO</Link>
         <div className="nav-links">
