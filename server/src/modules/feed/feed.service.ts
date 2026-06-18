@@ -40,7 +40,7 @@ export class FeedService {
         },
         _count: { select: { comments: true, likes: true } },
         likes: true,
-        anime: { select: { id: true, title: true } }
+        anime: { select: { id: true, titleRomaji: true, titleEnglish: true } }
       }
     });
     return posts;

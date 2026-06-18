@@ -35,7 +35,8 @@ export function AnimeSocialFeed({ animeId, animeTitle }: { animeId: number, anim
       <div className="composer-section" style={{ marginBottom: '30px' }}>
         <CreatePost 
           onPostCreated={fetchAnimeFeed} 
-          defaultAnimeId={animeId} 
+          defaultAnimeId={animeId}
+          defaultAnime={{ id: animeId, title: animeTitle }}
         />
       </div>
 

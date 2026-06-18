@@ -1,19 +1,27 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { BookOpen, Image as ImageIcon, Smile, X, Plus } from 'lucide-react';
+import { BookOpen, Image as ImageIcon, Smile, X, Lock } from 'lucide-react';
 import { Button } from '../ui/Button/Button';
 import { Card } from '../ui/Card/Card';
 
-export function CreatePost({ onPostCreated, defaultAnimeId }: { onPostCreated: () => void, defaultAnimeId?: number }) {
+interface AnimeOption {
+  id: number;
+  title?: string;
+  titleRomaji?: string;
+  coverImage?: string;
+}
+
+export function CreatePost({ onPostCreated, defaultAnimeId, defaultAnime }: { onPostCreated: () => void, defaultAnimeId?: number, defaultAnime?: AnimeOption }) {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [animeSearch, setAnimeSearch] = useState('');
   const [animeResults, setAnimeResults] = useState<any[]>([]);
-  const [selectedAnime, setSelectedAnime] = useState<any>(null);
+  const [selectedAnime, setSelectedAnime] = useState<AnimeOption | null>(defaultAnime || null);
   const [showAnimeSearch, setShowAnimeSearch] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isAnimeLocked = !!defaultAnime; // When coming from anime page, tag is fixed
   
   const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
   const user = userStr ? JSON.parse(userStr) : null;
@@ -22,9 +30,11 @@ export function CreatePost({ onPostCreated, defaultAnimeId }: { onPostCreated: (
     if (animeSearch.length > 2) {
       const delay = setTimeout(async () => {
         try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/anime/search-external?q=${animeSearch}`);
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/search/global?q=${encodeURIComponent(animeSearch)}`);
           const data = await res.json();
-          setAnimeResults(data.data || []);
+          if (data.success) {
+            setAnimeResults(data.data.animes || []);
+          }
         } catch (e) { console.error(e); }
       }, 500);
       return () => clearTimeout(delay);
@@ -70,7 +80,7 @@ export function CreatePost({ onPostCreated, defaultAnimeId }: { onPostCreated: (
 
       setContent('');
       setMediaUrl(null);
-      setSelectedAnime(null);
+      setSelectedAnime(defaultAnime || null); // restore lock if from anime page
       setShowAnimeSearch(false);
       onPostCreated();
     } catch (error) {
@@ -100,10 +110,13 @@ export function CreatePost({ onPostCreated, defaultAnimeId }: { onPostCreated: (
       </div>
 
       {selectedAnime && (
-        <div className="selected-anime-tag animate-fade-in">
+        <div className={`selected-anime-tag animate-fade-in ${isAnimeLocked ? 'locked' : ''}`}>
           <span className="tag-label">🏷️ Anime Mencionado:</span>
-          <strong className="tag-name">{selectedAnime.titleRomaji}</strong>
-          <button className="tag-remove-btn" onClick={() => setSelectedAnime(null)}><X size={14} /></button>
+          <strong className="tag-name">{selectedAnime.title || selectedAnime.titleRomaji}</strong>
+          {isAnimeLocked 
+            ? <span className="tag-lock" title="Auto-etiquetado desde esta página"><Lock size={12} /></span>
+            : <button className="tag-remove-btn" onClick={() => setSelectedAnime(null)}><X size={14} /></button>
+          }
         </div>
       )}
 
@@ -132,7 +145,7 @@ export function CreatePost({ onPostCreated, defaultAnimeId }: { onPostCreated: (
                   setAnimeSearch('');
                 }}>
                   <img src={a.coverImage} alt="" />
-                  <span>{a.titleRomaji}</span>
+                  <span>{a.title || a.titleRomaji}</span>
                 </div>
               ))}
             </div>
@@ -143,10 +156,18 @@ export function CreatePost({ onPostCreated, defaultAnimeId }: { onPostCreated: (
       <div className="composer-divider" />
 
       <div className="composer-actions">
-        <div className="action-item" onClick={() => setShowAnimeSearch(!showAnimeSearch)}>
-          <BookOpen size={20} className="action-icon icon-blue" />
-          <span className="action-label">Mencionar Anime</span>
-        </div>
+        {!isAnimeLocked && (
+          <div className="action-item" onClick={() => setShowAnimeSearch(!showAnimeSearch)}>
+            <BookOpen size={20} className="action-icon icon-blue" />
+            <span className="action-label">Mencionar Anime</span>
+          </div>
+        )}
+        {isAnimeLocked && (
+          <div className="action-item disabled">
+            <BookOpen size={20} className="action-icon icon-blue" />
+            <span className="action-label" style={{ color: '#00E5FF', opacity: 0.7 }}>Anime auto-etiquetado</span>
+          </div>
+        )}
         <div className="action-item" onClick={() => fileInputRef.current?.click()}>
           <ImageIcon size={20} className="action-icon icon-green" />
           <span className="action-label">Foto/video</span>
@@ -287,6 +308,12 @@ export function CreatePost({ onPostCreated, defaultAnimeId }: { onPostCreated: (
           color: #00E5FF;
         }
 
+        .selected-anime-tag.locked {
+          background: rgba(0, 229, 255, 0.04);
+          border-style: dashed;
+          border-color: rgba(0, 229, 255, 0.2);
+        }
+
         .tag-label {
           font-size: 0.8rem;
           opacity: 0.8;
@@ -312,6 +339,21 @@ export function CreatePost({ onPostCreated, defaultAnimeId }: { onPostCreated: (
 
         .tag-remove-btn:hover {
           background-color: rgba(0, 229, 255, 0.1);
+        }
+
+        .tag-lock {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          color: rgba(0, 229, 255, 0.5);
+        }
+
+        .action-item.disabled {
+          cursor: default;
+          opacity: 0.8;
+          pointer-events: none;
         }
 
         .anime-search-box { 

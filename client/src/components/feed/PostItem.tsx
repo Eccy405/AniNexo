@@ -21,8 +21,9 @@ interface PostData {
   animeId?: number;
   anime?: {
     id: number;
-    titleRomaji: string;
-    coverImage: string;
+    titleRomaji?: string;
+    titleEnglish?: string;
+    coverImage?: string;
   };
   createdAt: string;
   user: {
@@ -138,7 +139,7 @@ export function PostItem({ post }: { post: PostData }) {
             {post.user.isPremium && <span className="premium-star">★ Premium</span>}
             {post.anime && (
               <a href={`/dashboard/anime/${post.anime.id}`} className="anime-mention-badge">
-                🏷️ {post.anime.titleRomaji}
+                🏷️ {post.anime.titleRomaji || post.anime.titleEnglish}
               </a>
             )}
           </div>
