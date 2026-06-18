@@ -2,6 +2,8 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+process.env.DIRECT_URL = process.env.DIRECT_URL || process.env.DATABASE_URL;
+
 import express, { json, urlencoded } from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
