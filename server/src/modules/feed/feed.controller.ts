@@ -17,16 +17,59 @@ export class FeedController {
       const content = req.body.content as string;
       const mediaUrl = req.body.mediaUrl as string | undefined;
       const animeId = req.body.animeId;
+      const isPrivate = req.body.isPrivate as boolean | undefined;
 
       if (!userId || (!content && !mediaUrl)) {
         return res.status(400).json({ success: false, message: 'Usuario y contenido (o medio) son obligatorios' });
       }
 
-      const post = await this.feedService.createPost(userId, content, animeId ? Number(animeId) : undefined, mediaUrl);
+      const post = await this.feedService.createPost(userId, content, animeId ? Number(animeId) : undefined, mediaUrl, isPrivate);
 
       res.status(201).json({
         success: true,
         data: post
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updatePost = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.body.userId as string;
+      const postId = req.params.postId as string;
+      const content = req.body.content as string;
+      const isPrivate = req.body.isPrivate as boolean | undefined;
+
+      if (!userId || !postId) {
+        return res.status(400).json({ success: false, message: 'Usuario y postId son obligatorios' });
+      }
+
+      const post = await this.feedService.updatePost(userId, postId, content, isPrivate);
+
+      res.status(200).json({
+        success: true,
+        data: post
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  deletePost = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.body.userId as string;
+      const postId = req.params.postId as string;
+
+      if (!userId || !postId) {
+        return res.status(400).json({ success: false, message: 'Usuario y postId son obligatorios' });
+      }
+
+      await this.feedService.deletePost(userId, postId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Publicación eliminada'
       });
     } catch (error) {
       next(error);

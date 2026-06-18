@@ -37,17 +37,18 @@ export class SocialController {
       const userId = req.body.userId as string;
       const postId = req.body.postId as string | undefined;
       const commentId = req.body.commentId as string | undefined;
+      const reaction = req.body.reaction as string | undefined;
 
       if (!userId) {
         return res.status(400).json({ success: false, message: 'userId es requerido' });
       }
 
-      const result = await this.socialService.toggleLike(userId, postId, commentId);
+      const result = await this.socialService.toggleLike(userId, postId, commentId, reaction);
 
       res.status(200).json({
         success: true,
         data: result,
-        message: result.liked ? 'Me gusta agregado' : 'Me gusta removido'
+        message: result.liked ? 'Reacción agregada' : 'Reacción removida'
       });
     } catch (error) {
       next(error);

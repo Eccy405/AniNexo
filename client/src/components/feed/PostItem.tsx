@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { ThumbsUp, MessageSquare, Share2, MoreHorizontal, X, Send } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { ThumbsUp, MessageSquare, Share2, MoreHorizontal, X, Send, Heart, Smile, Frown, Angry } from 'lucide-react';
 import { Card } from '../ui/Card/Card';
 
 interface CommentData {
@@ -12,6 +12,12 @@ interface CommentData {
     username: string;
     avatarUrl: string;
   };
+}
+
+interface LikeData {
+  id: string;
+  userId: string;
+  reaction: string;
 }
 
 interface PostData {
@@ -27,6 +33,7 @@ interface PostData {
   };
   createdAt: string;
   user: {
+    id: string;
     username: string;
     avatarUrl: string;
     isPremium: boolean;
@@ -35,30 +42,47 @@ interface PostData {
     comments: number;
     likes: number;
   };
-  likes?: { userId: string }[];
+  likes?: LikeData[];
   comments?: CommentData[];
+  isPrivate?: boolean;
 }
+
+const reactionIcons: Record<string, { icon: any; label: string; color: string }> = {
+  LIKE: { icon: ThumbsUp, label: 'Me gusta', color: '#00E5FF' },
+  LOVE: { icon: Heart, label: 'Me encanta', color: '#ff4759' },
+  WOW: { icon: Smile, label: 'Wow', color: '#ffa502' },
+  SAD: { icon: Frown, label: 'Triste', color: '#5f67b7' },
+  ANGRY: { icon: Angry, label: 'Enojado', color: '#ff4759' }
+};
 
 export function PostItem({ post }: { post: PostData }) {
   const [likesCount, setLikesCount] = useState(post._count?.likes || 0);
-  const [isLiked, setIsLiked] = useState(() => {
+  const [userReaction, setUserReaction] = useState<string | null>(() => {
     try {
       const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
       if (userStr && post.likes) {
         const user = JSON.parse(userStr);
-        return post.likes.some((like: any) => like.userId === user.id);
+        const like = post.likes.find((l: any) => l.userId === user.id);
+        return like?.reaction || null;
       }
     } catch (e) {}
-    return false;
+    return null;
   });
-
+  const [showReactions, setShowReactions] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [commentsList, setCommentsList] = useState<CommentData[]>(post.comments || []);
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [showPost, setShowPost] = useState(true);
+  const [showMenu, setShowMenu] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(post.content);
+  const [editIsPrivate, setEditIsPrivate] = useState(post.isPrivate || false);
 
-  const handleLike = async () => {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const reactionsRef = useRef<HTMLDivElement>(null);
+
+  const handleReaction = async (reaction: string) => {
     try {
       const userStr = localStorage.getItem('user');
       const token = localStorage.getItem('token');
@@ -72,16 +96,103 @@ export function PostItem({ post }: { post: PostData }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ userId: user.id, postId: post.id })
+        body: JSON.stringify({ userId: user.id, postId: post.id, reaction })
       });
 
       const data = await res.json();
       if (data.success) {
-        setIsLiked(data.data.liked);
-        setLikesCount(prev => data.data.liked ? prev + 1 : Math.max(0, prev - 1));
+        if (data.data.liked) {
+          setUserReaction(reaction);
+          setLikesCount(prev => prev + 1);
+        } else {
+          setUserReaction(null);
+          setLikesCount(prev => Math.max(0, prev - 1));
+        }
       }
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const handleEdit = async () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      if (!userStr || !token) return;
+
+      const user = JSON.parse(userStr);
+      setIsSubmittingComment(true);
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post/${post.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          userId: user.id, 
+          content: editContent,
+          isPrivate: editIsPrivate
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setIsEditing(false);
+        post.content = data.data.content;
+        post.isPrivate = data.data.isPrivate;
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      if (!userStr || !token) return;
+
+      const user = JSON.parse(userStr);
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post/${post.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ userId: user.id })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setShowPost(false);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+      if (reactionsRef.current && !reactionsRef.current.contains(e.target as Node)) {
+        setShowReactions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLike = async () => {
+    if (userReaction) {
+      await handleReaction(''); // Will remove the like
+    } else {
+      await handleReaction('LIKE');
     }
   };
 
@@ -124,6 +235,16 @@ export function PostItem({ post }: { post: PostData }) {
 
   if (!showPost) return null;
 
+  // Get current user ID for ownership check
+  let currentUserId: string | null = null;
+  try {
+    const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+    if (userStr) {
+      currentUserId = JSON.parse(userStr).id;
+    }
+  } catch (e) {}
+  const isOwner = currentUserId === post.user.id;
+
   return (
     <Card className="fb-post-card">
       {/* Header */}
@@ -142,20 +263,49 @@ export function PostItem({ post }: { post: PostData }) {
                 🏷️ {post.anime.titleRomaji || post.anime.titleEnglish}
               </a>
             )}
+            {post.isPrivate && <span className="private-badge">🔒 Privado</span>}
           </div>
           <div className="post-time">
             {new Date(post.createdAt).toLocaleDateString()} • 🌎
           </div>
         </div>
-        <div className="header-actions">
-          <button className="icon-btn-header"><MoreHorizontal size={18} /></button>
-          <button className="icon-btn-header" onClick={() => setShowPost(false)}><X size={18} /></button>
+        <div className="header-actions" ref={menuRef}>
+          {isOwner && (
+            <div className="menu-container">
+              <button className="icon-btn-header" onClick={() => setShowMenu(!showMenu)}>
+                <MoreHorizontal size={18} />
+              </button>
+              {showMenu && (
+                <div className="post-menu">
+                  <button onClick={() => { setIsEditing(true); setShowMenu(false); }}>
+                    Editar publicación
+                  </button>
+                  <button onClick={() => { setEditIsPrivate(!editIsPrivate); if (isEditing) handleEdit(); }}>
+                    {post.isPrivate ? 'Hacer pública' : 'Hacer privada'}
+                  </button>
+                  <button onClick={handleDelete} className="delete-btn">
+                    Eliminar publicación
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Content */}
       <div className="post-content">
-        <p>{post.content}</p>
+        {isEditing ? (
+          <textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            onBlur={handleEdit}
+            className="edit-content-input"
+            autoFocus
+          />
+        ) : (
+          <p>{post.content}</p>
+        )}
       </div>
 
       {/* Media */}
@@ -184,10 +334,34 @@ export function PostItem({ post }: { post: PostData }) {
 
       {/* Action Buttons */}
       <div className="post-actions">
-        <button className={`action-btn ${isLiked ? 'active' : ''}`} onClick={handleLike}>
-          <ThumbsUp size={18} />
-          <span>Me gusta</span>
-        </button>
+        <div className="like-wrapper" ref={reactionsRef}>
+          <button 
+            className={`action-btn ${userReaction ? 'active' : ''}`} 
+            onClick={handleLike}
+            onMouseEnter={() => setShowReactions(true)}
+          >
+          {(() => {
+              const ReactionIcon = userReaction && reactionIcons[userReaction] ? reactionIcons[userReaction].icon : null;
+              return ReactionIcon ? <ReactionIcon size={18} /> : <ThumbsUp size={18} />;
+            })()}
+            <span>{userReaction && reactionIcons[userReaction] ? reactionIcons[userReaction].label : 'Me gusta'}</span>
+          </button>
+          {showReactions && (
+            <div className="reactions-popup" onMouseLeave={() => setShowReactions(false)}>
+              {Object.entries(reactionIcons).map(([type, { icon: Icon, label, color }]) => (
+                <button
+                  key={type}
+                  className="reaction-option"
+                  onClick={() => { handleReaction(type); setShowReactions(false); }}
+                  style={{ color }}
+                  title={label}
+                >
+                  <Icon size={24} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button className={`action-btn ${showComments ? 'active-comments' : ''}`} onClick={() => setShowComments(!showComments)}>
           <MessageSquare size={18} />
           <span>Comentar</span>
@@ -542,6 +716,115 @@ export function PostItem({ post }: { post: PostData }) {
           font-size: 0.8rem;
           color: #6b6b6b;
           padding: 8px;
+        }
+
+        .like-wrapper {
+          position: relative;
+        }
+
+        .reactions-popup {
+          position: absolute;
+          bottom: 100%;
+          left: 0;
+          background: rgba(30, 30, 30, 0.95);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 24px;
+          padding: 8px 12px;
+          display: flex;
+          gap: 8px;
+          margin-bottom: 8px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+          z-index: 10;
+        }
+
+        .reaction-option {
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          font-size: 20px;
+          padding: 4px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.2s;
+        }
+
+        .reaction-option:hover {
+          transform: scale(1.2);
+        }
+
+        /* Post Menu */
+        .menu-container {
+          position: relative;
+        }
+
+        .post-menu {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          background: rgba(30, 30, 30, 0.95);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 8px;
+          padding: 8px 0;
+          margin-top: 8px;
+          min-width: 180px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+          z-index: 10;
+        }
+
+        .post-menu button {
+          width: 100%;
+          background: transparent;
+          border: none;
+          color: #e4e6eb;
+          padding: 10px 16px;
+          text-align: left;
+          cursor: pointer;
+          font-size: 0.85rem;
+          transition: background-color 0.2s;
+        }
+
+        .post-menu button:hover {
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        .post-menu .delete-btn {
+          color: #ff4759;
+        }
+
+        .post-menu .delete-btn:hover {
+          background: rgba(255, 71, 89, 0.15);
+        }
+
+        /* Edit Content */
+        .edit-content-input {
+          width: 100%;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 8px;
+          padding: 12px;
+          color: white;
+          font-size: 0.95rem;
+          resize: vertical;
+          min-height: 80px;
+        }
+
+        .edit-content-input:focus {
+          outline: none;
+          border-color: #00E5FF;
+        }
+
+        /* Private Badge */
+        .private-badge {
+          background: rgba(255, 71, 89, 0.15);
+          color: #ff6b6b;
+          padding: 1px 6px;
+          border-radius: 4px;
+          font-size: 0.7rem;
+          font-weight: 600;
         }
 
         /* Comment form */

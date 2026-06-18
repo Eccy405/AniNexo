@@ -38,7 +38,8 @@ export function useSocket(conversationId?: string) {
       });
 
       newSocket.on('connect_error', (err) => {
-        console.error('Socket connection error:', err.message);
+        // Downgrade to warn — auth token may not be ready yet on first load
+        console.warn('[Socket] connect_error:', err.message);
       });
 
       socketRef.current = newSocket;

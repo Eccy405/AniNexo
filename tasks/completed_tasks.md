@@ -22,3 +22,5 @@
 - [x] Crear el Sistema Dinámico de Perfiles de Usuario (Avatar y Biografía).
 - [x] Desarrollar Endpoints de Listas de Seguimiento de Anime (Base de datos y Endpoints).
 - [x] Construir el Feed Social Global (Posts y Comentarios).
+- [x] Agregar funcionalidades de posts: editar, eliminar, privado/público.
+- [x] Implementar reacciones múltiples (Like, Love, Wow, Sad, Angry).

@@ -20,11 +20,18 @@ export function CreatePost({ onPostCreated, defaultAnimeId, defaultAnime }: { on
   const [animeResults, setAnimeResults] = useState<any[]>([]);
   const [selectedAnime, setSelectedAnime] = useState<AnimeOption | null>(defaultAnime || null);
   const [showAnimeSearch, setShowAnimeSearch] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isAnimeLocked = !!defaultAnime; // When coming from anime page, tag is fixed
   
-  const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
-  const user = userStr ? JSON.parse(userStr) : null;
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) setUser(JSON.parse(userStr));
+    } catch (e) {}
+  }, []);
 
   useEffect(() => {
     if (animeSearch.length > 2) {
@@ -62,7 +69,7 @@ export function CreatePost({ onPostCreated, defaultAnimeId, defaultAnime }: { on
       const token = localStorage.getItem('token');
       if (!user || !token) throw new Error('No estás autenticado');
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post`, {
+const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -72,7 +79,8 @@ export function CreatePost({ onPostCreated, defaultAnimeId, defaultAnime }: { on
           userId: user.id, 
           content, 
           mediaUrl, 
-          animeId: selectedAnime?.id || defaultAnimeId 
+          animeId: selectedAnime?.id || defaultAnimeId,
+          isPrivate
         })
       });
 
@@ -176,6 +184,12 @@ export function CreatePost({ onPostCreated, defaultAnimeId, defaultAnime }: { on
         <div className="action-item">
           <Smile size={20} className="action-icon icon-yellow" />
           <span className="action-label">Sentimiento</span>
+        </div>
+        <div className="action-item privacy-toggle" onClick={() => setIsPrivate(!isPrivate)}>
+          <Lock size={20} className="action-icon" style={{ color: isPrivate ? '#ff6b6b' : '#888' }} />
+          <span className="action-label" style={{ color: isPrivate ? '#ff6b6b' : '#888' }}>
+            {isPrivate ? 'Privada' : 'Pública'}
+          </span>
         </div>
       </div>
 

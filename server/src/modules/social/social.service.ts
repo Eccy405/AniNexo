@@ -65,9 +65,12 @@ export class SocialService {
     }
   }
 
-  // Like/Unlike a Post or Comment with Counters
-  async toggleLike(userId: string, postId?: string, commentId?: string) {
+// Like/Unlike a Post or Comment with Counters and Multi-Reactions
+   async toggleLike(userId: string, postId?: string, commentId?: string, reaction?: string) {
     if (!postId && !commentId) throw new Error('Debes proporcionar un postId o un commentId');
+
+    const validReactions = ['LIKE', 'LOVE', 'WOW', 'SAD', 'ANGRY'];
+    const reactionType = reaction && validReactions.includes(reaction) ? reaction as any : 'LIKE';
 
     if (postId) {
       const existingLike = await prisma.like.findUnique({
@@ -75,24 +78,50 @@ export class SocialService {
       });
 
       if (existingLike) {
-        await prisma.$transaction([
-          prisma.like.delete({ where: { id: existingLike.id } }),
-          prisma.post.update({
-            where: { id: postId },
-            data: { likesCount: { decrement: 1 } }
-          })
-        ]);
-        return { liked: false };
+        if (existingLike.reaction === reactionType) {
+          // Same reaction: remove it
+          await prisma.$transaction([
+            prisma.like.delete({ where: { id: existingLike.id } }),
+            prisma.post.update({
+              where: { id: postId },
+              data: { likesCount: { decrement: 1 } }
+            })
+          ]);
+          return { liked: false, reaction: null };
+        } else {
+          // Different reaction: update it
+          await prisma.$transaction([
+            prisma.like.update({
+              where: { id: existingLike.id },
+              data: { reaction: reactionType as any }
+            }),
+            prisma.post.update({
+              where: { id: postId },
+              data: { likesCount: { increment: 1 } }
+            })
+          ]);
+          
+          const post = await prisma.post.findUnique({ where: { id: postId }, select: { userId: true } });
+          if (post && post.userId !== userId) {
+            notificationService.createNotification(post.userId, 'LIKE', {
+              title: '¡Reaccionaron a tu publicación!',
+              message: `Un usuario ha reaccionado con ${reactionType.toLowerCase()} a tu publicación.`,
+              referenceId: postId
+            }).catch(err => logger.error('[Social]: Error enviando notificación like', err));
+          }
+          
+          return { liked: true, reaction: reactionType };
+        }
       } else {
+        // New like
         await prisma.$transaction([
-          prisma.like.create({ data: { userId, postId } }),
+          prisma.like.create({ data: { userId, postId, reaction: reactionType as any } }),
           prisma.post.update({
             where: { id: postId },
             data: { likesCount: { increment: 1 } }
           })
         ]);
         
-        // Notificación opcional
         const post = await prisma.post.findUnique({ where: { id: postId }, select: { userId: true } });
         if (post && post.userId !== userId) {
           notificationService.createNotification(post.userId, 'LIKE', {
@@ -102,34 +131,34 @@ export class SocialService {
           }).catch(err => logger.error('[Social]: Error enviando notificación like', err));
         }
 
-        return { liked: true };
+        return { liked: true, reaction: reactionType };
       }
     }
 
     if (commentId) {
        const existingLike = await prisma.like.findUnique({
-        where: { userId_commentId: { userId, commentId } }
-      });
+         where: { userId_commentId: { userId, commentId } }
+       });
 
-      if (existingLike) {
-        await prisma.$transaction([
-          prisma.like.delete({ where: { id: existingLike.id } }),
-          prisma.comment.update({
-            where: { id: commentId },
-            data: { likesCount: { decrement: 1 } }
-          })
-        ]);
-        return { liked: false };
-      } else {
-        await prisma.$transaction([
-          prisma.like.create({ data: { userId, commentId } }),
-          prisma.comment.update({
-            where: { id: commentId },
-            data: { likesCount: { increment: 1 } }
-          })
-        ]);
-        return { liked: true };
-      }
+       if (existingLike) {
+         await prisma.$transaction([
+           prisma.like.delete({ where: { id: existingLike.id } }),
+           prisma.comment.update({
+             where: { id: commentId },
+             data: { likesCount: { decrement: 1 } }
+           })
+         ]);
+         return { liked: false };
+       } else {
+         await prisma.$transaction([
+           prisma.like.create({ data: { userId, commentId, reaction: reactionType as any } }),
+           prisma.comment.update({
+             where: { id: commentId },
+             data: { likesCount: { increment: 1 } }
+           })
+         ]);
+         return { liked: true };
+       }
     }
 
     throw new Error('Estado inválido para el Like');
