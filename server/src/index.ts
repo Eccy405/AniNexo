@@ -122,7 +122,8 @@ import { startWorkers } from './workers';
 startWorkers();
 startJobs();
 
-const PORT = process.env.PORT || 3001;
-httpServer.listen(PORT, () => {
-  logger.info(`[server]: Server is running at http://localhost:${PORT}`);
+const PORT = parseInt(process.env.PORT || '3001', 10);
+const HOST = '0.0.0.0';
+httpServer.listen(PORT, HOST, () => {
+  logger.info(`[server]: Server is running at http://${HOST}:${PORT}`);
 });
