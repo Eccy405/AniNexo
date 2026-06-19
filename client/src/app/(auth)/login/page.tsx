@@ -66,7 +66,7 @@ export default function LoginPage() {
         // Redirección inteligente por rol
         const role = userObj?.role;
         if (role === 'ADMIN' || role === 'SUPERADMIN') {
-          window.location.href = '/dashboard/admin';
+          window.location.href = '/admin';
         } else {
           window.location.href = '/dashboard/community';
         }
