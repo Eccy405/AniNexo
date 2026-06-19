@@ -128,4 +128,44 @@ export class SocialController {
       next(error);
     }
   };
+
+  getFollowers = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.params.userId as string;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const followers = await this.socialService.getFollowers(userId, limit, offset);
+      res.status(200).json({ success: true, data: followers });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getFollowing = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.params.userId as string;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const following = await this.socialService.getFollowing(userId, limit, offset);
+      res.status(200).json({ success: true, data: following });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  checkFollowing = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const followerId = req.query.followerId as string;
+      const followingId = req.query.followingId as string;
+      if (!followerId || !followingId) {
+        return res.status(400).json({ success: false, message: 'followerId y followingId son requeridos' });
+      }
+      const following = await this.socialService.isFollowing(followerId, followingId);
+      res.status(200).json({ success: true, data: { following } });
+    } catch (error) {
+      next(error);
+    }
+  };
 }

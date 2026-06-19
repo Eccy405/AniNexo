@@ -119,7 +119,8 @@ export class AuthService {
         email: user.email,
         username: user.username,
         role: user.role,
-        isPremium: user.isPremium
+        isPremium: user.isPremium,
+        isVerified: user.isVerified
       },
       token
     };

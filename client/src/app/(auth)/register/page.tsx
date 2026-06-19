@@ -139,7 +139,8 @@ export default function RegisterPage() {
       const data = await res.json();
       if (data.success) {
         localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(userData));
+        const verifiedUser = { ...userData, isVerified: true };
+        localStorage.setItem('user', JSON.stringify(verifiedUser));
         setStep('profiling');
       } else {
         setError('Código incorrecto. Revisa tu correo.');

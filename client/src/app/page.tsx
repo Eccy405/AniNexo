@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { GuestButton } from '../components/auth/GuestButton';
 import Link from 'next/link';
+import { NexusTitle, HiveCanvas } from '../components/nexus-engine';
 
 export default function Home() {
   useEffect(() => {
@@ -35,6 +36,14 @@ export default function Home() {
               <Link href="/register" className="btn-hero-primary">Comenzar Ahora</Link>
               <Link href="/about" className="btn-hero-secondary">Conocer la Visión</Link>
            </div>
+        </div>
+      </section>
+
+      {/* NEXUS ENGINE 3D SECTION */}
+      <section className="py-20 bg-[#020202] relative z-10 w-full">
+        <NexusTitle />
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <HiveCanvas />
         </div>
       </section>
 

@@ -89,3 +89,22 @@ export const isAdmin = async (req: AuthRequest, res: Response, next: NextFunctio
     return res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
+export const requireVerified = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const user = req.user;
+    if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    if (!user.isVerified) {
+      return res.status(403).json({ 
+        success: false, 
+        action: 'VERIFICATION_REQUIRED',
+        message: 'Debes verificar tu cuenta para realizar acciones sociales.' 
+      });
+    }
+
+    next();
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};

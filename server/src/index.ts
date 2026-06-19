@@ -24,6 +24,8 @@ import adminRoutes from './modules/admin/admin.routes';
 import premiumRoutes from './modules/premium/premium.routes';
 import notificationRoutes from './modules/notification/notification.routes';
 import analyticsRoutes from './modules/admin/analytics.routes';
+import groupRoutes from './modules/groups/group.routes';
+import friendRoutes from './modules/friends/friend.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { maintenanceMiddleware } from './middleware/maintenance.middleware';
 import { setupSockets } from './sockets';
@@ -108,6 +110,32 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/premium', premiumRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/friends', friendRoutes);
+
+// ── Image proxy (strips CORS restrictions from external CDNs) ─────────────────
+import axios from 'axios';
+app.get('/api/proxy/image', async (req, res) => {
+  const url = req.query.url as string;
+  if (!url || !/^https:\/\/(s\d+\.anilist\.co|cdn\.myanimelist\.net|img\.anili\.st)\//.test(url)) {
+    return res.status(400).send('Invalid or disallowed image URL');
+  }
+  try {
+    const upstream = await axios.get(url, {
+      responseType: 'stream',
+      timeout: 8000,
+      headers: { 'User-Agent': 'AniNexo/1.0' }
+    });
+    res.removeHeader('Access-Control-Allow-Credentials');
+    res.set('Content-Type', String(upstream.headers['content-type'] || 'image/jpeg'));
+    res.set('Cache-Control', 'public, max-age=86400, immutable');
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    upstream.data.pipe(res);
+  } catch {
+    res.status(502).send('Image fetch failed');
+  }
+});
 
 app.use(errorHandler);
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ThumbsUp, MessageSquare, Share2, MoreHorizontal, X, Send, Heart, Smile, Frown, Angry } from 'lucide-react';
+import { ThumbsUp, MessageSquare, Share2, MoreHorizontal, X, Send } from 'lucide-react';
 import { Card } from '../ui/Card/Card';
 
 interface CommentData {
@@ -47,12 +47,12 @@ interface PostData {
   isPrivate?: boolean;
 }
 
-const reactionIcons: Record<string, { icon: any; label: string; color: string }> = {
-  LIKE: { icon: ThumbsUp, label: 'Me gusta', color: '#00E5FF' },
-  LOVE: { icon: Heart, label: 'Me encanta', color: '#ff4759' },
-  WOW: { icon: Smile, label: 'Wow', color: '#ffa502' },
-  SAD: { icon: Frown, label: 'Triste', color: '#5f67b7' },
-  ANGRY: { icon: Angry, label: 'Enojado', color: '#ff4759' }
+const reactionIcons: Record<string, { emoji: string; label: string; color: string }> = {
+  LIKE: { emoji: '👍', label: 'Me gusta', color: '#00E5FF' },
+  LOVE: { emoji: '❤️', label: 'Me encanta', color: '#ff4759' },
+  WOW: { emoji: '😲', label: 'Wow', color: '#ffa502' },
+  SAD: { emoji: '😢', label: 'Triste', color: '#5f67b7' },
+  ANGRY: { emoji: '😠', label: 'Enojado', color: '#ff4759' }
 };
 
 export function PostItem({ post }: { post: PostData }) {
@@ -78,11 +78,17 @@ export function PostItem({ post }: { post: PostData }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
   const [editIsPrivate, setEditIsPrivate] = useState(post.isPrivate || false);
+  const [showBurst, setShowBurst] = useState(false);
+  const [burstReaction, setBurstReaction] = useState<string | null>(null);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const reactionsRef = useRef<HTMLDivElement>(null);
 
   const handleReaction = async (reaction: string) => {
+    setBurstReaction(reaction);
+    setShowBurst(true);
+    setTimeout(() => setShowBurst(false), 1000);
+    
     try {
       const userStr = localStorage.getItem('user');
       const token = localStorage.getItem('token');
@@ -245,7 +251,7 @@ export function PostItem({ post }: { post: PostData }) {
   } catch (e) {}
   const isOwner = currentUserId === post.user.id;
 
-  return (
+return (
     <Card className="fb-post-card">
       {/* Header */}
       <div className="post-header">
@@ -280,7 +286,7 @@ export function PostItem({ post }: { post: PostData }) {
                   <button onClick={() => { setIsEditing(true); setShowMenu(false); }}>
                     Editar publicación
                   </button>
-                  <button onClick={() => { setEditIsPrivate(!editIsPrivate); if (isEditing) handleEdit(); }}>
+                  <button onClick={() => { setEditIsPrivate(!editIsPrivate); handleEdit(); }}>
                     {post.isPrivate ? 'Hacer pública' : 'Hacer privada'}
                   </button>
                   <button onClick={handleDelete} className="delete-btn">
@@ -319,9 +325,23 @@ export function PostItem({ post }: { post: PostData }) {
       <div className="post-stats">
         <div className="reactions-count">
           <div className="react-icons-bubbles">
-            <span className="react-bubble like">👍</span>
-            <span className="react-bubble heart">❤️</span>
-            <span className="react-bubble wow">😲</span>
+            {post.likes && Object.entries(
+              post.likes.reduce((acc: Record<string, number>, like: LikeData) => {
+                if (!acc[like.reaction]) acc[like.reaction] = 0;
+                acc[like.reaction]++;
+                return acc;
+              }, {} as Record<string, number>)
+            ).map(([reaction, count]) => (
+              reactionIcons[reaction] ? (
+                <span 
+                  key={reaction} 
+                  className="react-bubble-preview" 
+                  title={`${count} ${reactionIcons[reaction].label}`}
+                >
+                  {reactionIcons[reaction].emoji}
+                </span>
+              ) : null
+            ))}
           </div>
           <span className="stats-number">{likesCount}</span>
         </div>
@@ -337,26 +357,27 @@ export function PostItem({ post }: { post: PostData }) {
         <div className="like-wrapper" ref={reactionsRef}>
           <button 
             className={`action-btn ${userReaction ? 'active' : ''}`} 
-            onClick={handleLike}
+            onClick={() => handleLike()}
             onMouseEnter={() => setShowReactions(true)}
           >
-          {(() => {
-              const ReactionIcon = userReaction && reactionIcons[userReaction] ? reactionIcons[userReaction].icon : null;
-              return ReactionIcon ? <ReactionIcon size={18} /> : <ThumbsUp size={18} />;
-            })()}
+            {userReaction && reactionIcons[userReaction] ? (
+              <span className="reaction-emoji">{reactionIcons[userReaction].emoji}</span>
+            ) : (
+              <ThumbsUp size={18} />
+            )}
             <span>{userReaction && reactionIcons[userReaction] ? reactionIcons[userReaction].label : 'Me gusta'}</span>
           </button>
           {showReactions && (
             <div className="reactions-popup" onMouseLeave={() => setShowReactions(false)}>
-              {Object.entries(reactionIcons).map(([type, { icon: Icon, label, color }]) => (
+              {Object.entries(reactionIcons).map(([type, { emoji, label }]) => (
                 <button
                   key={type}
                   className="reaction-option"
                   onClick={() => { handleReaction(type); setShowReactions(false); }}
-                  style={{ color }}
                   title={label}
                 >
-                  <Icon size={24} />
+                  <span className="reaction-popup-emoji">{emoji}</span>
+                  <span className="reaction-popup-label">{label}</span>
                 </button>
               ))}
             </div>
@@ -371,6 +392,15 @@ export function PostItem({ post }: { post: PostData }) {
           <span>Compartir</span>
         </button>
       </div>
+
+      {/* Burst Animation */}
+      {showBurst && burstReaction && (
+        <div className="reaction-burst">
+          <span className="burst-emoji">
+            {reactionIcons[burstReaction]?.emoji || '👍'}
+          </span>
+        </div>
+      )}
 
       {/* Comments Drawer */}
       {showComments && (
@@ -573,23 +603,15 @@ export function PostItem({ post }: { post: PostData }) {
           gap: 6px;
         }
 
-        .react-icons-bubbles {
-          display: flex;
-          align-items: center;
-        }
+.react-icons-bubbles {
+           display: flex;
+           align-items: center;
+         }
 
-        .react-bubble {
-          font-size: 0.85rem;
-          margin-right: -4px;
-          background: #18191a;
-          border-radius: 50%;
-          width: 18px;
-          height: 18px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+         .react-bubble-preview {
+           font-size: 18px;
+           margin-right: -4px;
+         }
 
         .stats-number {
           margin-left: 6px;
@@ -718,116 +740,143 @@ export function PostItem({ post }: { post: PostData }) {
           padding: 8px;
         }
 
-        .like-wrapper {
-          position: relative;
-        }
+.like-wrapper {
+           position: relative;
+         }
 
-        .reactions-popup {
-          position: absolute;
-          bottom: 100%;
-          left: 0;
-          background: rgba(30, 30, 30, 0.95);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 24px;
-          padding: 8px 12px;
-          display: flex;
-          gap: 8px;
-          margin-bottom: 8px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-          z-index: 10;
-        }
+.reactions-popup {
+           position: absolute;
+           bottom: 100%;
+           left: 0;
+           background: rgba(30, 30, 30, 0.95);
+           backdrop-filter: blur(10px);
+           border: 1px solid rgba(255, 255, 255, 0.1);
+           border-radius: 24px;
+           padding: 8px 12px;
+           display: flex;
+           gap: 8px;
+           margin-bottom: 8px;
+           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+           z-index: 10;
+         }
 
-        .reaction-option {
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          font-size: 20px;
-          padding: 4px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: transform 0.2s;
-        }
+         .reaction-option {
+           background: transparent;
+           border: none;
+           cursor: pointer;
+           padding: 4px;
+           border-radius: 50%;
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           justify-content: center;
+           transition: transform 0.2s;
+           width: 40px;
+         }
 
-        .reaction-option:hover {
-          transform: scale(1.2);
-        }
+         .reaction-option:hover {
+           transform: scale(1.2);
+         }
 
-        /* Post Menu */
-        .menu-container {
-          position: relative;
-        }
+         .reaction-popup-emoji {
+           font-size: 24px;
+         }
 
-        .post-menu {
-          position: absolute;
-          top: 100%;
-          right: 0;
-          background: rgba(30, 30, 30, 0.95);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 8px;
-          padding: 8px 0;
-          margin-top: 8px;
-          min-width: 180px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-          z-index: 10;
-        }
+         .reaction-emoji {
+           font-size: 18px;
+         }
 
-        .post-menu button {
-          width: 100%;
-          background: transparent;
-          border: none;
-          color: #e4e6eb;
-          padding: 10px 16px;
-          text-align: left;
-          cursor: pointer;
-          font-size: 0.85rem;
-          transition: background-color 0.2s;
-        }
+         .burst-emoji {
+           font-size: 60px;
+           animation: burstAnim 1s ease-out forwards;
+         }
 
-        .post-menu button:hover {
-          background: rgba(255, 255, 255, 0.08);
-        }
+         .reaction-burst {
+           position: fixed;
+           top: 0;
+           left: 0;
+           width: 100vw;
+           height: 100vh;
+           pointer-events: none;
+           z-index: 1000;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+         }
 
-        .post-menu .delete-btn {
-          color: #ff4759;
-        }
+         /* Post Menu */
+         .menu-container {
+           position: relative;
+         }
 
-        .post-menu .delete-btn:hover {
-          background: rgba(255, 71, 89, 0.15);
-        }
+         .post-menu {
+           position: absolute;
+           top: 100%;
+           right: 0;
+           background: rgba(30, 30, 30, 0.95);
+           backdrop-filter: blur(10px);
+           border: 1px solid rgba(255, 255, 255, 0.1);
+           border-radius: 8px;
+           padding: 8px 0;
+           margin-top: 8px;
+           min-width: 180px;
+           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+           z-index: 10;
+         }
 
-        /* Edit Content */
-        .edit-content-input {
-          width: 100%;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 8px;
-          padding: 12px;
-          color: white;
-          font-size: 0.95rem;
-          resize: vertical;
-          min-height: 80px;
-        }
+         .post-menu button {
+           width: 100%;
+           background: transparent;
+           border: none;
+           color: #e4e6eb;
+           padding: 10px 16px;
+           text-align: left;
+           cursor: pointer;
+           font-size: 0.85rem;
+           transition: background-color 0.2s;
+         }
 
-        .edit-content-input:focus {
-          outline: none;
-          border-color: #00E5FF;
-        }
+         .post-menu button:hover {
+           background: rgba(255, 255, 255, 0.08);
+         }
 
-        /* Private Badge */
-        .private-badge {
-          background: rgba(255, 71, 89, 0.15);
-          color: #ff6b6b;
-          padding: 1px 6px;
-          border-radius: 4px;
-          font-size: 0.7rem;
-          font-weight: 600;
-        }
+         .post-menu .delete-btn {
+           color: #ff4759;
+         }
 
-        /* Comment form */
+         .post-menu .delete-btn:hover {
+           background: rgba(255, 71, 89, 0.15);
+         }
+
+         /* Edit Content */
+         .edit-content-input {
+           width: 100%;
+           background: rgba(255, 255, 255, 0.05);
+           border: 1px solid rgba(255, 255, 255, 0.1);
+           border-radius: 8px;
+           padding: 12px;
+           color: white;
+           font-size: 0.95rem;
+           resize: vertical;
+           min-height: 80px;
+         }
+
+         .edit-content-input:focus {
+           outline: none;
+           border-color: #00E5FF;
+         }
+
+         /* Private Badge */
+         .private-badge {
+           background: rgba(255, 71, 89, 0.15);
+           color: #ff6b6b;
+           padding: 1px 6px;
+           border-radius: 4px;
+           font-size: 0.7rem;
+           font-weight: 600;
+         }
+
+         /* Comment form */
         .comment-form {
           display: flex;
           gap: 8px;
@@ -894,11 +943,17 @@ export function PostItem({ post }: { post: PostData }) {
           animation: fadeIn 0.25s ease-out;
         }
 
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-5px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+@keyframes fadeIn {
+           from { opacity: 0; transform: translateY(-5px); }
+           to { opacity: 1; transform: translateY(0); }
+         }
+
+         @keyframes burstAnim {
+           0% { transform: scale(0) rotate(0deg); opacity: 0; }
+           20% { transform: scale(1.2) rotate(10deg); opacity: 1; }
+           100% { transform: scale(2) rotate(-10deg) translateY(-50px); opacity: 0; }
+         }
+       `}</style>
     </Card>
   );
 }

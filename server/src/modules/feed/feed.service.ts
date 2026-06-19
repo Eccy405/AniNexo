@@ -60,6 +60,7 @@ export class FeedService {
   async getGlobalFeed(limit: number = 20) {
     const posts = await prisma.post.findMany({
       take: limit,
+      where: { isPrivate: false },
       orderBy: { createdAt: 'desc' },
       include: {
         user: { select: { id: true, username: true, avatarUrl: true, isPremium: true } },

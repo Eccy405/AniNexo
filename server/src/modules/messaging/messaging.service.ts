@@ -108,4 +108,76 @@ export class MessagingService {
       }
     });
   }
+
+  async createGroupChat(adminId: string, name: string, participantIds: string[], avatar?: string, theme?: string) {
+    return await prisma.conversation.create({
+      data: {
+        isGroup: true,
+        name,
+        adminId,
+        avatar,
+        theme,
+        participants: {
+          create: participantIds.map(userId => ({ userId }))
+        }
+      },
+      include: {
+        participants: {
+          include: { user: { select: { id: true, username: true, avatarUrl: true } } }
+        }
+      }
+    });
+  }
+
+  async addParticipants(conversationId: string, participantIds: string[], adminId: string) {
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: { adminId: true, isGroup: true }
+    });
+
+    if (!conversation?.isGroup) {
+      throw new Error('Esta conversación no es un grupo');
+    }
+    if (conversation.adminId !== adminId) {
+      throw new Error('Solo el administrador puede agregar participantes');
+    }
+
+    const existingParticipants = await prisma.conversationParticipant.findMany({
+      where: { conversationId }
+    });
+    const existingUserIds = existingParticipants.map((p: { userId: string }) => p.userId);
+
+    const newParticipants = participantIds.filter(id => !existingUserIds.includes(id));
+
+    if (newParticipants.length > 0) {
+      await prisma.conversationParticipant.createMany({
+        data: newParticipants.map(userId => ({ userId, conversationId }))
+      });
+    }
+
+    return prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        participants: {
+          include: { user: { select: { id: true, username: true, avatarUrl: true } } }
+        }
+      }
+    });
+  }
+
+  async getConversation(conversationId: string) {
+    return await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        participants: {
+          include: { user: { select: { id: true, username: true, avatarUrl: true } } }
+        },
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          take: 100,
+          include: { sender: { select: { username: true, avatarUrl: true } } }
+        }
+      }
+    });
+  }
 }

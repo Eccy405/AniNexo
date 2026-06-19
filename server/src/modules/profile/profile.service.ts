@@ -38,6 +38,10 @@ export class ProfileService {
           include: {
             _count: { select: { likes: true, comments: true } }
           }
+        },
+        collections: {
+          take: 20,
+          orderBy: { updatedAt: 'desc' }
         }
       }
     });

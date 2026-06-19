@@ -49,50 +49,60 @@ model User {
   isVerified      Boolean   @default(false)
   verificationCode String?
   
-  // Relations
-  posts           Post[]
-  comments        Comment[]
-  likes           Like[]
-  followers       Follow[]       @relation("Following")
-  following       Follow[]       @relation("Followers")
-  animeLists      AnimeList[]
-  notifications    Notification[]
-  notificationPreferences NotificationPreference[]
-  pushSubscriptions PushSubscription[]
-  badges          UserBadge[]
-  blocksMade      Block[]        @relation("Blocker")
-  blocksReceived  Block[]        @relation("Blocked")
-  mutes           Mute[]
-  reportsMade     Report[]       @relation("Reporter")
-  reportsReceived Report[]       @relation("Reported")
-  warnings        Warning[]
-  bans            Ban[]
+// Relations
+   posts           Post[]
+   comments        Comment[]
+   likes           Like[]
+   followers       Follow[]       @relation("Following")
+   following       Follow[]       @relation("Followers")
+   animeLists      AnimeList[]
+   notifications    Notification[]
+   notificationPreferences NotificationPreference[]
+   pushSubscriptions PushSubscription[]
+   badges          UserBadge[]
+   blocksMade      Block[]        @relation("Blocker")
+   blocksReceived  Block[]        @relation("Blocked")
+   mutes           Mute[]
+   reportsMade     Report[]       @relation("Reporter")
+   reportsReceived Report[]       @relation("Reported")
+   warnings        Warning[]
+   bans            Ban[]
 
-  // Nexo IA
-  nexoMemories             NexoMemory[]
-  nexoInteractions         NexoInteraction[]
-  conversationParticipants ConversationParticipant[]
-  messages                 Message[]
-  donations                Donation[]
-  searchLogs               SearchLog[]
-  // Security
-  sessions                 UserSession[]
-  refreshTokens            RefreshToken[]
-  securityLogs             SecurityLog[]
-  oauthAccounts            OAuthAccount[]
-  telemetryEvents          TelemetryEvent[]
-  
-  appeals                  Appeal[]
-  moderationLogs           ModerationLog[] @relation("ModeratedUser")
-  moderatorActions         ModerationLog[] @relation("ModeratorActions")
-  warningsIssued           Warning[]       @relation("WarnedBy")
-  mutesIssued              Mute[]          @relation("MutedBy")
-  bansIssued               Ban[]           @relation("BannedBy")
-  viewHistory              ViewHistory[]
-  stories                  UserStory[]
+   // Nexo IA
+   nexoMemories             NexoMemory[]
+   nexoInteractions         NexoInteraction[]
+   conversationParticipants ConversationParticipant[]
+   messages                 Message[]
+   donations                Donation[]
+   searchLogs               SearchLog[]
+   // Security
+   sessions                 UserSession[]
+   refreshTokens            RefreshToken[]
+   securityLogs             SecurityLog[]
+   oauthAccounts            OAuthAccount[]
+   telemetryEvents          TelemetryEvent[]
+   
+   appeals                  Appeal[]
+   moderationLogs           ModerationLog[] @relation("ModeratedUser")
+   moderatorActions         ModerationLog[] @relation("ModeratorActions")
+   warningsIssued           Warning[]       @relation("WarnedBy")
+   mutesIssued              Mute[]          @relation("MutedBy")
+   bansIssued               Ban[]           @relation("BannedBy")
+   viewHistory              ViewHistory[]
+   stories                  UserStory[]
+   
+// Groups
+    groupsCreated Group[]
+    groupMemberships GroupMember[]
+    
+    // Friends
+    friendshipsInitiated Friendship[] @relation("UserFriends")
+    friendshipsReceived  Friendship[] @relation("FriendUser")
+    
+    // Collection
+    collections UserCollection[]
 
-
-  @@map("user")
+   @@map("user")
 }
 
 model UserIntelligence {
@@ -663,6 +673,9 @@ model Conversation {
   id           String                    @id @default(uuid())
   isGroup      Boolean                   @default(false)
   name         String?
+  adminId      String?
+  avatar       String?
+  theme        String?
   participants ConversationParticipant[]
   messages     Message[]
   createdAt    DateTime                  @default(now())
@@ -760,16 +773,80 @@ enum ReportStatus {
 model UserStory {
   id        String   @id @default(uuid())
   userId    String
-  mediaUrl  String   @db.Text // Imagen o video en Base64/URL
+  mediaUrl  String   @db.Text
   caption   String?  @db.Text
   expiresAt DateTime
   createdAt DateTime @default(now())
   
-  // Views (JSON array of user IDs)
-  viewedBy  Json?    // ["user-id-1", "user-id-2"]
+  viewedBy  Json?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
   @@map("userstory")
+}
+
+model Group {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  animeId     Int
+  coverImage  String?
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isPublic    Boolean  @default(true)
+
+  creator User @relation(fields: [createdBy], references: [id])
+  members GroupMember[]
+
+  @@map("group")
+}
+
+model GroupMember {
+  id       String   @id @default(uuid())
+  groupId  String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("groupmember")
+}
+
+model UserCollection {
+  id        String   @id @default(uuid())
+  userId    String
+  animeId   Int
+  status    WatchStatus @default(PLAN_TO_WATCH)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, animeId])
+  @@map("usercollection")
+}
+
+model Friendship {
+  id        String   @id @default(uuid())
+  userId    String
+  friendId  String
+  status    FriendshipStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User @relation("UserFriends", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("FriendUser", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+  @@map("friendship")
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
 }

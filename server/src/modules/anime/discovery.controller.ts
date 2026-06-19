@@ -88,4 +88,20 @@ export class DiscoveryController {
       next(error);
     }
   };
+
+  /**
+   * GET /anime/discovery/nexus
+   * Devuelve AnimeNode[] para el Nexus Engine (hexagonal hive).
+   * Cacheado en memoria 10 min. Sin autenticación requerida.
+   */
+  getNexusData = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const nodes = await this.discoveryService.getNexusData();
+      // Cabecera de caché HTTP para el browser/CDN
+      res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
+      res.status(200).json({ success: true, data: nodes });
+    } catch (error) {
+      next(error);
+    }
+  };
 }

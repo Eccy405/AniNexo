@@ -22,5 +22,10 @@
 - [x] Crear el Sistema Dinámico de Perfiles de Usuario (Avatar y Biografía).
 - [x] Desarrollar Endpoints de Listas de Seguimiento de Anime (Base de datos y Endpoints).
 - [x] Construir el Feed Social Global (Posts y Comentarios).
-- [x] Agregar funcionalidades de posts: editar, eliminar, privado/público.
+- [x] Implementar funcionalidades de posts: editar, eliminar, privado/público.
 - [x] Implementar reacciones múltiples (Like, Love, Wow, Sad, Angry).
+- [x] Agregar botones en vista de anime: Crear Grupo y Agregar a Colección.
+- [x] Crear módulos de Group y UserCollection en backend.
+- [x] **Sistema de Follow funcional:** Botón seguir/dejar de seguir con verificación de usuarios.
+- [x] **Listas de Seguidores/Siguiendo:** Modales para ver quién sigue a un usuario y a quién sigue.
+- [x] **Chat en perfiles:** Envío de mensajes en tiempo real vía Socket.IO.

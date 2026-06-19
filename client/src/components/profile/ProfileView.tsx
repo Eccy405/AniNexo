@@ -7,14 +7,18 @@ import { OnboardingWizard } from '../auth/OnboardingWizard';
 import { EditProfileModal } from './EditProfileModal';
 import { CreatePost } from '../feed/CreatePost';
 import { PostItem } from '../feed/PostItem';
+import { UserListModal } from './UserListModal';
+import { ChatModal } from './ChatModal';
+import { useSocket } from '../../hooks/useSocket';
 
 
 interface ProfileViewProps {
   profile: any;
   animeList: any[];
+  collection?: any[];
 }
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfile, animeList }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfile, animeList, collection: initialCollection = [] }) => {
   const [profile, setProfile] = React.useState(initialProfile);
   const [showProfiling, setShowProfiling] = useState(false);
   const [stories, setStories] = useState<any[]>([]);
@@ -25,6 +29,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [showEditModal, setShowEditModal] = React.useState(false);
   const [currentUser, setCurrentUser] = React.useState<any>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  
+  const { socket, isConnected } = useSocket(conversationId || undefined);
   const themeColor = profile.themeColor || '#00E5FF';
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -58,15 +73,31 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
   }, [profile.id]);
 
   useEffect(() => {
-    const u = localStorage.getItem('user');
-    if (u) {
-      try {
-        const parsed = JSON.parse(u);
-        setCurrentUser(parsed);
-      } catch (e) {
-        console.error("Error parsing user", e);
+    const loadUser = async () => {
+      const u = localStorage.getItem('user');
+      if (u) {
+        try {
+          const parsed = JSON.parse(u);
+          // Refresh user data from backend to get updated isVerified status
+          if (parsed?.id) {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/profile/${parsed.username}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.success) {
+                const freshUser = { ...parsed, ...data.data };
+                localStorage.setItem('user', JSON.stringify(freshUser));
+                setCurrentUser(freshUser);
+                return;
+              }
+            }
+          }
+          setCurrentUser(parsed);
+        } catch (e) {
+          console.error("Error parsing user", e);
+        }
       }
-    }
+    };
+    loadUser();
   }, []);
 
   useEffect(() => {
@@ -118,6 +149,203 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
       localStorage.setItem('user', JSON.stringify({ ...u, themeColor: updatedData.themeColor }));
     }
   };
+
+  // Check if current user follows this profile
+  useEffect(() => {
+    if (currentUser?.id && profile?.id) {
+      checkFollowingStatus();
+      checkFriendshipStatus();
+    }
+  }, [currentUser, profile?.id]);
+
+  const checkFriendshipStatus = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/friends/list/${currentUser?.id}`
+      );
+      const data = await res.json();
+      if (data.success) {
+        const isFriend = data.data.some((f: any) => f.id === profile.id);
+        setFriendRequested(isFriend);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const [friendRequested, setFriendRequested] = useState(false);
+
+  const handleAddFriend = async () => {
+    if (!currentUser?.id || !profile?.id) return;
+    
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/friends/request`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.id, friendId: profile.id })
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        showToast('¡Solicitud de amistad enviada!', 'success');
+        setFriendRequested(true);
+      } else {
+        showToast(data.message || 'Error al enviar solicitud', 'error');
+      }
+    } catch (err) {
+      showToast('Error de conexión', 'error');
+    }
+  };
+
+  const checkFollowingStatus = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/social/following/check?followerId=${currentUser.id}&followingId=${profile.id}`
+      );
+      const data = await res.json();
+      if (data.success) {
+        setIsFollowing(data.data.following);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Handle follow/unfollow
+  const handleToggleFollow = async () => {
+    if (!currentUser?.id || !profile?.id || followLoading) return;
+    
+    setFollowLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/social/follow`,
+        {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            followerId: currentUser.id,
+            followingId: profile.id
+          })
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setIsFollowing(data.data.followed);
+        setProfile((prev: any) => ({
+          ...prev,
+          _count: {
+            ...prev._count,
+            followers: data.data.followed ? prev._count.followers + 1 : prev._count.followers - 1
+          }
+        }));
+        showToast(data.data.followed ? '¡Ahora sigues a este usuario!' : 'Has dejado de seguir', 'success');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error al seguir usuario', 'error');
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  // Handle message button - create or get conversation
+  const handleStartMessage = async () => {
+    if (!currentUser?.id || !profile?.id) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/messaging/conversation`,
+        {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            userA: currentUser.id,
+            userB: profile.id
+          })
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setConversationId(data.data.id);
+        setShowChatModal(true);
+        fetchMessages(data.data.id);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error al iniciar conversación', 'error');
+    }
+  };
+
+  const fetchMessages = async (convId: string) => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/messaging/${convId}`
+      );
+      const data = await res.json();
+      if (data.success) {
+        setChatMessages(data.data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Send message via socket
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || !socket || !currentUser?.id || !conversationId) return;
+
+    setIsSending(true);
+    const newMsg = {
+      conversationId: conversationId,
+      senderId: currentUser.id,
+      content: chatInput
+    };
+
+    socket.emit('send_message', newMsg);
+    setChatMessages(prev => [...prev, {
+      ...newMsg,
+      id: Date.now(),
+      createdAt: new Date().toISOString(),
+      sender: { username: currentUser.username, avatarUrl: currentUser.avatarUrl }
+    }]);
+    setChatInput('');
+    setTimeout(() => {
+      const el = document.querySelector('.chat-messages');
+      el?.scrollTo(0, el.scrollHeight);
+    }, 100);
+    setIsSending(false);
+  };
+
+  // Listen for messages
+  useEffect(() => {
+    if (!socket || !conversationId) return;
+
+    const handleNewMessage = (msg: any) => {
+      if (msg.conversationId === conversationId) {
+        setChatMessages(prev => [...prev, msg]);
+        setTimeout(() => {
+          const el = document.querySelector('.chat-messages');
+          el?.scrollTo(0, el.scrollHeight);
+        }, 100);
+      }
+    };
+
+    socket.on('new_message', handleNewMessage);
+    return () => {
+      socket.off('new_message', handleNewMessage);
+    };
+  }, [socket, conversationId]);
 
   if (showProfiling) {
     return (
@@ -195,15 +423,98 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
           <p className="bio">{profile.bio || 'Este usuario prefiere mantener el misterio...'}</p>
           
           <div className="stats-row">
-            <div className="stat"><strong>{profile._count?.followers || 0}</strong> Seguidores</div>
-            <div className="stat"><strong>{profile._count?.following || 0}</strong> Siguiendo</div>
+            <div className="stat clickable" onClick={() => setShowFollowersModal(true)}>
+              <strong>{profile._count?.followers || 0}</strong> Seguidores
+            </div>
+            <div className="stat clickable" onClick={() => setShowFollowingModal(true)}>
+              <strong>{profile._count?.following || 0}</strong> Siguiendo
+            </div>
           </div>
 
-          {!isOwnProfile && (
-            <div className="actions">
-              <button className="btn-follow" style={{ backgroundColor: themeColor }}>Seguir</button>
-              <button className="btn-msg">Mensaje</button>
-            </div>
+{!isOwnProfile && (
+             <div className="actions">
+               <button 
+                 className="btn-follow" 
+                 style={{ 
+                   backgroundColor: isFollowing ? '#444' : themeColor,
+                   opacity: followLoading || !currentUser?.isVerified ? 0.5 : 1,
+                   cursor: !currentUser?.isVerified ? 'not-allowed' : 'pointer'
+                 }} 
+                 onClick={handleToggleFollow}
+                 disabled={followLoading || !currentUser?.isVerified}
+                 title={!currentUser?.isVerified ? 'Verifica tu cuenta para seguir usuarios' : ''}
+               >
+                 {isFollowing ? 'Siguiendo' : 'Seguir'}
+               </button>
+               <button 
+                 className="btn-msg" 
+                 onClick={handleStartMessage}
+                 disabled={!currentUser?.isVerified}
+                 title={!currentUser?.isVerified ? 'Verifica tu cuenta para enviar mensajes' : ''}
+                 style={{ opacity: !currentUser?.isVerified ? 0.5 : 1, cursor: !currentUser?.isVerified ? 'not-allowed' : 'pointer' }}
+               >
+                 Mensaje
+               </button>
+               <button 
+                 className="btn-msg" 
+                 onClick={handleAddFriend}
+                 disabled={friendRequested || !currentUser?.isVerified}
+                 style={{ 
+                   opacity: friendRequested || !currentUser?.isVerified ? 0.5 : 1, 
+                   cursor: friendRequested || !currentUser?.isVerified ? 'not-allowed' : 'pointer' 
+                 }}
+                 title={friendRequested ? 'Ya es amigo o solicitud enviada' : !currentUser?.isVerified ? 'Verifica tu cuenta para agregar amigos' : 'Agregar amigo'}
+               >
+                 {friendRequested ? 'Amigo/Agregado' : 'Agregar amigo'}
+               </button>
+             </div>
+           )}
+
+          {/* Followers Modal */}
+          {showFollowersModal && (
+            <UserListModal type="followers" userId={profile.id} onClose={() => setShowFollowersModal(false)} />
+          )}
+
+          {/* Following Modal */}
+          {showFollowingModal && (
+            <UserListModal type="following" userId={profile.id} onClose={() => setShowFollowingModal(false)} />
+          )}
+
+          {/* Chat Modal */}
+          {showChatModal && (
+            <ChatModal 
+              profile={profile}
+              currentUser={currentUser}
+              conversationId={conversationId}
+              chatMessages={chatMessages}
+              chatInput={chatInput}
+              isConnected={isConnected}
+              isSending={isSending}
+              setChatInput={setChatInput}
+              onSendMessage={(content: string) => {
+                if (!socket) return;
+                setIsSending(true);
+                const newMsg = {
+                  conversationId: conversationId,
+                  senderId: currentUser?.id,
+                  content
+                };
+                socket.emit('send_message', newMsg);
+                setChatMessages(prev => [...prev, {
+                  ...newMsg,
+                  id: Date.now(),
+                  createdAt: new Date().toISOString(),
+                  sender: { username: currentUser?.username, avatarUrl: currentUser?.avatarUrl }
+                }]);
+                setChatInput('');
+                setTimeout(() => {
+                  const el = document.querySelector('.chat-messages');
+                  el?.scrollTo(0, el.scrollHeight);
+                }, 100);
+                setIsSending(false);
+              }}
+              onClose={() => setShowChatModal(false)}
+            />
           )}
         </div>
       </Card>
@@ -337,26 +648,44 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
         </div>
       </div>
 
-      <div className="list-section">
-        <h2>Colección de Anime</h2>
-        {animeList.length > 0 ? (
-          <div className="anime-grid">
-            {animeList.map((entry: any) => (
-              <div key={entry.id} className="anime-item-card">
-                <div className="poster-wrap">
-                  <img src={entry.anime.coverImage} alt={entry.anime.title} />
-                </div>
-                <div className="poster-info">
-                  <p className="entry-status">{entry.status}</p>
-                  <div className="progress-bar"><div className="fill" style={{ width: '60%', backgroundColor: themeColor }}></div></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="empty-list">Este usuario aún no ha añadido animes a su lista.</p>
-        )}
-      </div>
+<div className="list-section">
+         <h2>Colección de Anime</h2>
+         {initialCollection && initialCollection.length > 0 ? (
+           <div className="anime-grid">
+             {initialCollection.map((entry: any) => (
+               <div key={entry.animeId} className="anime-item-card">
+                 <a href={`/dashboard/anime/${entry.animeId}`} style={{ textDecoration: 'none' }}>
+                   <div className="poster-wrap">
+                     <img src={entry.anime?.coverImage || '/default-anime.png'} alt={entry.anime?.title || 'Anime'} />
+                   </div>
+                   <div className="poster-info">
+                     <p className="entry-status">{entry.status.replace(/_/g, ' ')}</p>
+                     <span className="entry-status" style={{ fontSize: '0.65rem', opacity: 0.6 }}>
+                       {entry.anime?.titleRomaji || entry.anime?.titleEnglish || 'Título desconocido'}
+                     </span>
+                   </div>
+                 </a>
+               </div>
+             ))}
+           </div>
+         ) : animeList && animeList.length > 0 ? (
+           <div className="anime-grid">
+             {animeList.map((entry: any) => (
+               <div key={entry.id} className="anime-item-card">
+                 <div className="poster-wrap">
+                   <img src={entry.anime.coverImage} alt={entry.anime.title} />
+                 </div>
+                 <div className="poster-info">
+                   <p className="entry-status">{entry.status}</p>
+                   <div className="progress-bar"><div className="fill" style={{ width: '60%', backgroundColor: themeColor }}></div></div>
+                 </div>
+               </div>
+             ))}
+           </div>
+         ) : (
+           <p className="empty-list">Este usuario aún no ha añadido animes a su lista.</p>
+         )}
+       </div>
 
       {/* Story Viewer Modal */}
       {selectedStoryGroup && (
@@ -516,6 +845,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
         .post-body { margin: 15px 0; color: #ddd; font-size: 1.1rem; line-height: 1.5; }
         .post-footer { display: flex; gap: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; }
         .post-stat { font-size: 0.9rem; font-weight: 800; color: #666; }
+        .stat.clickable { cursor: pointer; }
+        .stat.clickable:hover strong { text-decoration: underline; }
+        .modal-overlay { 
+          position: fixed; 
+          inset: 0; 
+          background: rgba(0,0,0,0.85); 
+          backdrop-filter: blur(10px); 
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .cursor-pointer { cursor: pointer; }
         
         @media (max-width: 768px) {
           .profile-header-card { flex-direction: column; align-items: center; text-align: center; }

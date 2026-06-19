@@ -5,6 +5,10 @@ import { AnimeService } from './anime.service';
 
 const ANILIST_URL = 'https://graphql.anilist.co';
 
+// ─── In-memory cache for Nexus Engine ───────────────────────────────────────
+const NEXUS_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const nexusCache = new Map<string, { data: any[]; expiresAt: number }>();
+
 export class DiscoveryService {
   private animeService: AnimeService;
 
@@ -380,5 +384,117 @@ export class DiscoveryService {
     animes.forEach(anime => {
       this.animeService.syncWithExternal(anime.id).catch(() => {});
     });
+  }
+
+  /**
+   * Nexus Engine: Devuelve un catálogo grande de animes populares.
+   * Estrategia: Caché en memoria (10 min) → DB local → AniList como fallback.
+   * Responde con AnimeNode[] directamente (sin anidamiento).
+   */
+  async getNexusData(): Promise<any[]> {
+    const cacheKey = 'nexus_catalog';
+    const cached = nexusCache.get(cacheKey);
+
+    // 1. Servir desde caché si es válido
+    if (cached && cached.expiresAt > Date.now()) {
+      logger.info('[DiscoveryService] Nexus: Serving from memory cache');
+      return cached.data;
+    }
+
+    logger.info('[DiscoveryService] Nexus: Building catalog...');
+
+    // 2. Intentar DB local primero (la más rápida y sin rate-limit)
+    const localCount = await prisma.anime.count();
+
+    if (localCount >= 50) {
+      // Tenemos suficientes animes en DB — servir desde ahí
+      const animes = await prisma.anime.findMany({
+        where: { coverImage: { not: null } },
+        orderBy: { popularity: 'desc' },
+        take: 200,
+        include: { genres: true }
+      });
+
+      const nodes = animes
+        .filter(a => a.coverImage)
+        .map(a => this.mapLocalToNexusNode(a));
+
+      nexusCache.set(cacheKey, { data: nodes, expiresAt: Date.now() + NEXUS_CACHE_TTL_MS });
+      logger.info(`[DiscoveryService] Nexus: Serving ${nodes.length} animes from DB`);
+      return nodes;
+    }
+
+    // 3. Fallback AniList — fetch trending + popular top 100
+    logger.info('[DiscoveryService] Nexus: DB is thin, fetching from AniList...');
+    const query = `
+      query {
+        trending: Page(page: 1, perPage: 50) {
+          media(type: ANIME, sort: TRENDING_DESC, status_in: [RELEASING, FINISHED]) {
+            id title { romaji english } coverImage { extraLarge }
+            averageScore status genres popularity
+          }
+        }
+        popular: Page(page: 1, perPage: 50) {
+          media(type: ANIME, sort: POPULARITY_DESC) {
+            id title { romaji english } coverImage { extraLarge }
+            averageScore status genres popularity
+          }
+        }
+      }
+    `;
+
+    try {
+      const response = await axios.post(ANILIST_URL, { query });
+      const { trending, popular } = response.data.data;
+
+      const seenIds = new Set<number>();
+      const combined: any[] = [];
+
+      for (const item of [...(trending?.media || []), ...(popular?.media || [])]) {
+        if (seenIds.has(item.id) || !item.coverImage?.extraLarge) continue;
+        seenIds.add(item.id);
+        combined.push({
+          id:         item.id,
+          title:      item.title.romaji || item.title.english || 'Anime',
+          coverImage: item.coverImage.extraLarge,
+          score:      item.averageScore || 0,
+          status:     item.status || 'FINISHED',
+          genres:     item.genres || []
+        });
+      }
+
+      // Persist async (no bloqueante)
+      this.persistMany(combined.map(a => ({ id: a.id })));
+
+      nexusCache.set(cacheKey, { data: combined, expiresAt: Date.now() + NEXUS_CACHE_TTL_MS });
+      logger.info(`[DiscoveryService] Nexus: AniList returned ${combined.length} animes`);
+      return combined;
+    } catch (error) {
+      logger.error('[DiscoveryService] Nexus: AniList fetch failed, using DB fallback', error);
+
+      // Último recurso: lo que haya en DB aunque sea poco
+      const fallback = await prisma.anime.findMany({
+        where: { coverImage: { not: null } },
+        orderBy: { popularity: 'desc' },
+        take: 50,
+        include: { genres: true }
+      });
+
+      const nodes = fallback.map(a => this.mapLocalToNexusNode(a));
+      nexusCache.set(cacheKey, { data: nodes, expiresAt: Date.now() + NEXUS_CACHE_TTL_MS });
+      return nodes;
+    }
+  }
+
+  /** Mapea un anime de Prisma al formato AnimeNode del Nexus Engine */
+  private mapLocalToNexusNode(anime: any): object {
+    return {
+      id:         anime.id,
+      title:      anime.titleRomaji || anime.titleEnglish || 'Anime',
+      coverImage: anime.coverImage || '',
+      score:      anime.averageScore || 0,
+      status:     anime.status || 'FINISHED',
+      genres:     anime.genres ? anime.genres.map((g: any) => g.name) : []
+    };
   }
 }

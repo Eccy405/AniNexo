@@ -8,10 +8,15 @@ const badgeService = new BadgeService();
 
 export class SocialService {
   
-  // Follow/Unfollow a user with Counters
-  async toggleFollow(followerId: string, followingId: string) {
+// Follow/Unfollow a user with Counters
+   async toggleFollow(followerId: string, followingId: string) {
     if (followerId === followingId) {
       throw new Error('No puedes seguirte a ti mismo');
+    }
+
+    const follower = await prisma.user.findUnique({ where: { id: followerId }, select: { isVerified: true } });
+    if (!follower?.isVerified) {
+      throw new Error('VERIFICATION_REQUIRED');
     }
 
     const existingFollow = await prisma.follow.findUnique({
@@ -231,28 +236,72 @@ export class SocialService {
     return user;
   }
 
-  // Obtener el Feed para un usuario (Optimizado con contadores)
-  async getFeed(userId: string, limit: number = 20, offset: number = 0) {
-    const following = await prisma.follow.findMany({
-      where: { followerId: userId },
-      select: { followingId: true }
-    });
-    const followingIds = following.map(f => f.followingId);
-    followingIds.push(userId);
+// Obtener el Feed para un usuario (Optimizado con contadores)
+   async getFeed(userId: string, limit: number = 20, offset: number = 0) {
+     const following = await prisma.follow.findMany({
+       where: { followerId: userId },
+       select: { followingId: true }
+     });
+     const followingIds = following.map(f => f.followingId);
+     followingIds.push(userId);
 
-    return prisma.post.findMany({
-      where: {
-        userId: { in: followingIds }
-      },
-      include: {
-        user: {
-          select: { id: true, username: true, avatarUrl: true, isPremium: true }
-        },
-        likes: { where: { userId }, select: { id: true } }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      skip: offset
-    });
-  }
+     return prisma.post.findMany({
+       where: {
+         userId: { in: followingIds }
+       },
+       include: {
+         user: {
+           select: { id: true, username: true, avatarUrl: true, isPremium: true }
+         },
+         likes: { where: { userId }, select: { id: true } }
+       },
+       orderBy: { createdAt: 'desc' },
+       take: limit,
+       skip: offset
+     });
+   }
+
+   // Obtener seguidores de un usuario
+   async getFollowers(userId: string, limit: number = 50, offset: number = 0) {
+     const followers = await prisma.follow.findMany({
+       where: { followingId: userId },
+       include: {
+         follower: {
+           select: { id: true, username: true, avatarUrl: true, isPremium: true }
+         }
+       },
+       skip: offset,
+       take: limit,
+       orderBy: { createdAt: 'desc' }
+     });
+
+     return followers.map(f => f.follower);
+   }
+
+   // Obtener usuarios que sigue un usuario
+   async getFollowing(userId: string, limit: number = 50, offset: number = 0) {
+     const following = await prisma.follow.findMany({
+       where: { followerId: userId },
+       include: {
+         following: {
+           select: { id: true, username: true, avatarUrl: true, isPremium: true }
+         }
+       },
+       skip: offset,
+       take: limit,
+       orderBy: { createdAt: 'desc' }
+     });
+
+     return following.map(f => f.following);
+   }
+
+   // Verificar si el usuario actual sigue al usuario objetivo
+   async isFollowing(followerId: string, followingId: string) {
+     const follow = await prisma.follow.findUnique({
+       where: {
+         followerId_followingId: { followerId, followingId }
+       }
+     });
+     return !!follow;
+   }
 }

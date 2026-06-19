@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NexoAlert } from '../../../../components/ui/NexoAlert';
 import { AnimeSocialFeed } from '../../../../components/anime/AnimeSocialFeed';
+import { Users, BookOpen } from 'lucide-react';
 
 type TabType = 'overview' | 'characters' | 'staff' | 'stats' | 'social';
 
@@ -20,6 +21,9 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [visibleChars, setVisibleChars] = useState(50);
   const [syncing, setSyncing] = useState(false);
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [addingToCollection, setAddingToCollection] = useState(false);
 
   useEffect(() => {
     const loadData = async (force: boolean = false) => {
@@ -84,16 +88,58 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
           <div className="poster-main">
             <Image src={anime.coverImage.extraLarge} alt={title} fill className="poster-img" />
           </div>
-          <div className="header-text-main">
-            <h1 className="anime-title-h1">{title}</h1>
-            <div className="quick-tags">
-              <span className="q-tag">{anime.season} {anime.seasonYear}</span>
-              <span className="q-tag">{anime.type}</span>
-              <span className="q-tag score">⭐ {anime.averageScore}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
+<div className="header-text-main">
+             <h1 className="anime-title-h1">{title}</h1>
+             <div className="quick-tags">
+               <span className="q-tag">{anime.season} {anime.seasonYear}</span>
+               <span className="q-tag">{anime.type}</span>
+               <span className="q-tag score">⭐ {anime.averageScore}%</span>
+             </div>
+           </div>
+           
+           {/* Action Buttons */}
+           <div className="anime-actions">
+             <button 
+               className="btn-create-group"
+               onClick={() => setShowGroupModal(true)}
+               title="Crear grupo temático"
+             >
+               <Users size={20} />
+               <span>Crear Grupo</span>
+             </button>
+             <button 
+               className="btn-add-collection"
+               onClick={async () => {
+                 setAddingToCollection(true);
+                 try {
+                   const userStr = localStorage.getItem('user');
+                   const token = localStorage.getItem('token');
+                   if (!userStr || !token) return;
+                   const user = JSON.parse(userStr);
+                   
+                   await fetch('/api/groups/collection/add', {
+                     method: 'POST',
+                     headers: {
+                       'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${token}`
+                     },
+                     body: JSON.stringify({ userId: user.id, animeId: anime.id })
+                   });
+                 } catch (e) {
+                   alert('Error al agregar a la colección');
+                 } finally {
+                   setAddingToCollection(false);
+                 }
+               }}
+               disabled={addingToCollection}
+               title="Agregar a mi colección"
+             >
+               <BookOpen size={20} />
+               <span>{addingToCollection ? 'Agregando...' : 'Agregar a Colección'}</span>
+             </button>
+           </div>
+         </div>
+       </div>
 
       {/* TAB BAR */}
       <nav className="tab-navigation">
@@ -323,6 +369,52 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
         </main>
       </div>
 
+      {/* Modal para crear grupo */}
+      {showGroupModal && (
+        <div className="modal-overlay" onClick={() => setShowGroupModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Crear Grupo Temático</h3>
+            <input 
+              type="text" 
+              placeholder="Nombre del grupo" 
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              className="modal-input"
+            />
+            <div className="modal-actions">
+              <button onClick={() => setShowGroupModal(false)} className="btn-modal-cancel">Cancelar</button>
+              <button 
+                onClick={async () => {
+                  if (!groupName.trim()) return;
+                  const userStr = localStorage.getItem('user');
+                  const token = localStorage.getItem('token');
+                  if (!userStr || !token) return;
+                  const user = JSON.parse(userStr);
+                  
+                  await fetch('/api/groups/create', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ 
+                      userId: user.id, 
+                      animeId: anime.id, 
+                      name: groupName 
+                    })
+                  });
+                  setShowGroupModal(false);
+                  setGroupName('');
+                }}
+                className="btn-modal-create"
+              >
+                Crear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         .anime-page { background: #050505; color: #fff; min-height: 100vh; font-family: 'Inter', sans-serif; }
         
@@ -430,9 +522,120 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
         .score-row { display: flex; align-items: center; gap: 15px; }
         .score-label { width: 50px; font-size: 0.8rem; font-weight: 800; color: #666; }
         .score-bar-bg { flex: 1; height: 10px; background: #1a1a1a; border-radius: 10px; overflow: hidden; }
-        .score-bar-fill { height: 100%; background: #00E5FF; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 229, 255, 0.4); }
-        .score-count { width: 60px; font-size: 0.8rem; font-weight: 800; color: #ddd; text-align: right; }
-      `}</style>
+.score-bar-fill { height: 100%; background: #00E5FF; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 229, 255, 0.4); }
+         .score-count { width: 60px; font-size: 0.8rem; font-weight: 800; color: #ddd; text-align: right; }
+
+         /* Anime Actions (Groups & Collection Buttons) */
+         .anime-actions {
+           display: flex;
+           gap: 15px;
+           margin-left: auto;
+           margin-top: 40px;
+         }
+
+         .btn-create-group, .btn-add-collection {
+           display: flex;
+           align-items: center;
+           gap: 8px;
+           padding: 12px 20px;
+           border-radius: 12px;
+           border: none;
+           font-weight: 800;
+           cursor: pointer;
+           transition: all 0.3s;
+           font-size: 0.9rem;
+         }
+
+         .btn-create-group {
+           background: rgba(255, 255, 255, 0.05);
+           color: #00E5FF;
+           border: 1px solid rgba(0, 229, 255, 0.2);
+         }
+
+         .btn-create-group:hover {
+           background: rgba(0, 229, 255, 0.1);
+           transform: translateY(-2px);
+           box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+         }
+
+         .btn-add-collection {
+           background: rgba(69, 189, 98, 0.1);
+           color: #45bd62;
+           border: 1px solid rgba(69, 189, 98, 0.2);
+         }
+
+         .btn-add-collection:hover:not(:disabled) {
+           background: rgba(69, 189, 98, 0.2);
+           transform: translateY(-2px);
+           box-shadow: 0 0 20px rgba(69, 189, 98, 0.2);
+         }
+
+         /* Modal */
+         .modal-overlay {
+           position: fixed;
+           top: 0;
+           left: 0;
+           width: 100vw;
+           height: 100vh;
+           background: rgba(0, 0, 0, 0.7);
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           z-index: 1000;
+           backdrop-filter: blur(5px);
+         }
+
+         .modal-content {
+           background: #111;
+           border: 1px solid rgba(255, 255, 255, 0.1);
+           border-radius: 16px;
+           padding: 30px;
+           min-width: 350px;
+           max-width: 90%;
+         }
+
+         .modal-content h3 {
+           margin: 0 0 20px 0;
+           color: #00E5FF;
+           font-weight: 900;
+         }
+
+         .modal-input {
+           width: 100%;
+           padding: 15px;
+           background: rgba(255, 255, 255, 0.05);
+           border: 1px solid rgba(255, 255, 255, 0.1);
+           border-radius: 10px;
+           color: white;
+           font-size: 1rem;
+           margin-bottom: 20px;
+         }
+
+         .modal-actions {
+           display: flex;
+           gap: 10px;
+           justify-content: flex-end;
+         }
+
+         .btn-modal-cancel, .btn-modal-create {
+           padding: 10px 20px;
+           border-radius: 8px;
+           border: none;
+           font-weight: 800;
+           cursor: pointer;
+         }
+
+         .btn-modal-cancel {
+           background: transparent;
+           color: #888;
+           border: 1px solid rgba(255, 255, 255, 0.1);
+         }
+
+         .btn-modal-create {
+           background: #00E5FF;
+           color: #000;
+         }
+       `}</style>
     </div>
   );
 }

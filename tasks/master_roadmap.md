@@ -18,17 +18,16 @@
 - [x] Funciones y panel Premium.
 - [x] Panel Admin, Moderación y Analytics.
 
-## Fase 4: Notificaciones y Social Pro
+## Fase 4: Social Pro Avanzado
 - [x] Sistema de Notificaciones en Tiempo Real (Toasts).
 - [x] Gamificación automatizada (Badges & Triggers).
 - [x] Algoritmos de Feed y Tendencias Globales.
+- [x] Reacciones múltiples (Like, Love, Wow, Sad, Angry).
+- [x] Menú contextual de posts (editar, eliminar, privacidad).
+- [x] Grupos temáticos por anime.
+- [x] Colección de anime en perfiles.
 
 ## Fase 5: Mensajería Avanzada y Nexo Premium
-- [x] Chat flotante (Messenger Style).
-- [x] Estados Online e Indicadores de Escritura.
-- [x] Chat persistente con IA Nexo para Premium.
-
-## Fase 6: Multimedia y Grupos (Próxima)
 - [ ] Soporte para archivos adjuntos y multimedia.
-- [ ] Grupos de chat temáticos por anime.
+- [ ] Grupos de chat temáticos por anime (lista completa).
 - [ ] Salas de voz (WebRTC).

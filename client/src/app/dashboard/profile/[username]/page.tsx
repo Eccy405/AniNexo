@@ -25,6 +25,16 @@ async function getListData(username: string) {
   }
 }
 
+async function getCollectionData(username: string) {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/profile/${username}`, { cache: 'no-store' });
+    const data = await res.json();
+    return data.success ? data.data.collections : [];
+  } catch (error) {
+    return [];
+  }
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { username } = await params;
   const profile = await getProfileData(username);
@@ -51,10 +61,11 @@ export default async function ProfilePage({ params }: PageProps) {
   const { username } = await params;
   const profile = await getProfileData(username);
   const animeList = await getListData(username);
+  const collection = await getCollectionData(username);
 
   if (!profile) return <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>Usuario no encontrado</div>;
 
   return (
-    <ProfileView profile={profile} animeList={animeList} />
+    <ProfileView profile={profile} animeList={animeList} collection={collection} />
   );
 }

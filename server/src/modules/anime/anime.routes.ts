@@ -9,6 +9,7 @@ const discoveryController = new DiscoveryController();
 
 // Discovery Routes
 router.get('/discovery/home', optionalAuthenticate, discoveryController.getHomeData);
+router.get('/discovery/nexus', discoveryController.getNexusData);
 router.get('/discovery/genre/:genre', discoveryController.getByGenre);
 router.get('/discovery/category/:category', discoveryController.getByCategory);
 router.get('/discovery/search', discoveryController.advancedSearch);
