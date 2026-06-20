@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ThumbsUp, MessageSquare, Share2, MoreHorizontal, X, Send } from 'lucide-react';
+import { ThumbsUp, MessageSquare, Share2, MoreHorizontal, X, Send, Bookmark } from 'lucide-react';
 import { Card } from '../ui/Card/Card';
 
 interface CommentData {
@@ -80,6 +80,10 @@ export function PostItem({ post }: { post: PostData }) {
   const [editIsPrivate, setEditIsPrivate] = useState(post.isPrivate || false);
   const [showBurst, setShowBurst] = useState(false);
   const [burstReaction, setBurstReaction] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareContent, setShareContent] = useState('');
+  const [isSharing, setIsSharing] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const reactionsRef = useRef<HTMLDivElement>(null);
@@ -110,6 +114,7 @@ export function PostItem({ post }: { post: PostData }) {
         if (data.data.liked) {
           setUserReaction(reaction);
           setLikesCount(prev => prev + 1);
+          await addMemory(user.id, post.id);
         } else {
           setUserReaction(null);
           setLikesCount(prev => Math.max(0, prev - 1));
@@ -231,11 +236,98 @@ export function PostItem({ post }: { post: PostData }) {
       if (data.success) {
         setCommentsList(prev => [...prev, data.data]);
         setNewComment('');
+        await addMemory(user.id, post.id);
       }
     } catch (error) {
       console.error(error);
     } finally {
       setIsSubmittingComment(false);
+    }
+  };
+
+  const handleSavePost = async () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      if (!userStr || !token) return;
+
+      const user = JSON.parse(userStr);
+
+      if (isSaved) {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post/${post.id}/save`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ userId: user.id })
+        });
+        setIsSaved(false);
+      } else {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post/${post.id}/save`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ userId: user.id })
+        });
+        setIsSaved(true);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleShareSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shareContent.trim()) return;
+
+    try {
+      const userStr = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      if (!userStr || !token) return;
+
+      const user = JSON.parse(userStr);
+      setIsSharing(true);
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post/${post.id}/share`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          content: shareContent.trim()
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setShowShareModal(false);
+        setShareContent('');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const addMemory = async (userId: string, postId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/memory/interaction`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ userId, postId })
+      });
+    } catch (error) {
+      console.error('Error adding memory:', error);
     }
   };
 
@@ -276,26 +368,31 @@ return (
           </div>
         </div>
         <div className="header-actions" ref={menuRef}>
-          {isOwner && (
-            <div className="menu-container">
+          <div className="menu-container">
+            <button className="icon-btn-header save-btn" onClick={handleSavePost} title={isSaved ? 'Quitar de guardado' : 'Guardar publicación'}>
+              <Bookmark size={18} fill={isSaved ? 'var(--color-primary)' : 'none'} />
+            </button>
+          </div>
+          <div className="menu-container">
+            {isOwner && (
               <button className="icon-btn-header" onClick={() => setShowMenu(!showMenu)}>
                 <MoreHorizontal size={18} />
               </button>
-              {showMenu && (
-                <div className="post-menu">
-                  <button onClick={() => { setIsEditing(true); setShowMenu(false); }}>
-                    Editar publicación
-                  </button>
-                  <button onClick={() => { setEditIsPrivate(!editIsPrivate); handleEdit(); }}>
-                    {post.isPrivate ? 'Hacer pública' : 'Hacer privada'}
-                  </button>
-                  <button onClick={handleDelete} className="delete-btn">
-                    Eliminar publicación
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+            )}
+            {showMenu && (
+              <div className="post-menu">
+                <button onClick={() => { setIsEditing(true); setShowMenu(false); }}>
+                  Editar publicación
+                </button>
+                <button onClick={() => { setEditIsPrivate(!editIsPrivate); handleEdit(); }}>
+                  {post.isPrivate ? 'Hacer pública' : 'Hacer privada'}
+                </button>
+                <button onClick={handleDelete} className="delete-btn">
+                  Eliminar publicación
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -383,17 +480,39 @@ return (
             </div>
           )}
         </div>
-        <button className={`action-btn ${showComments ? 'active-comments' : ''}`} onClick={() => setShowComments(!showComments)}>
-          <MessageSquare size={18} />
-          <span>Comentar</span>
-        </button>
-        <button className="action-btn">
-          <Share2 size={18} />
-          <span>Compartir</span>
-        </button>
-      </div>
+<button className={`action-btn ${showComments ? 'active-comments' : ''}`} onClick={() => setShowComments(!showComments)}>
+           <MessageSquare size={18} />
+           <span>Comentar</span>
+         </button>
+         <button className="action-btn" onClick={() => setShowShareModal(true)}>
+           <Share2 size={18} />
+           <span>Compartir</span>
+         </button>
+       </div>
 
-      {/* Burst Animation */}
+       {/* Share Modal */}
+       {showShareModal && (
+         <div className="share-modal-overlay" onClick={() => setShowShareModal(false)}>
+           <div className="share-modal-content" onClick={(e) => e.stopPropagation()}>
+             <h3>Compartir publicación</h3>
+             <p className="original-author">De: @{post.user.username}</p>
+             <textarea
+               placeholder="¿Qué quieres decir? (opcional)"
+               value={shareContent}
+               onChange={(e) => setShareContent(e.target.value)}
+               className="share-textarea"
+             />
+             <div className="share-actions">
+               <button onClick={() => setShowShareModal(false)} className="btn-cancel">Cancelar</button>
+               <button onClick={handleShareSubmit} disabled={isSharing} className="btn-share">
+                 {isSharing ? 'Compartiendo...' : 'Compartir'}
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+
+{/* Burst Animation */}
       {showBurst && burstReaction && (
         <div className="reaction-burst">
           <span className="burst-emoji">
@@ -948,12 +1067,102 @@ return (
            to { opacity: 1; transform: translateY(0); }
          }
 
-         @keyframes burstAnim {
-           0% { transform: scale(0) rotate(0deg); opacity: 0; }
-           20% { transform: scale(1.2) rotate(10deg); opacity: 1; }
-           100% { transform: scale(2) rotate(-10deg) translateY(-50px); opacity: 0; }
-         }
-       `}</style>
-    </Card>
-  );
-}
+@keyframes burstAnim {
+            0% { transform: scale(0) rotate(0deg); opacity: 0; }
+            20% { transform: scale(1.2) rotate(10deg); opacity: 1; }
+            100% { transform: scale(2) rotate(-10deg) translateY(-50px); opacity: 0; }
+          }
+
+          /* Share Modal */
+          .share-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .share-modal-content {
+            background: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            min-width: 360px;
+            max-width: 90%;
+          }
+
+          .share-modal-content h3 {
+            margin: 0 0 10px 0;
+            color: var(--color-primary);
+            font-weight: 900;
+          }
+
+          .original-author {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+          }
+
+          .share-textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            color: white;
+            font-size: 0.9rem;
+            min-height: 80px;
+            resize: vertical;
+            outline: none;
+            margin-bottom: 16px;
+          }
+
+          .share-textarea:focus {
+            border-color: var(--color-primary);
+          }
+
+          .share-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+          }
+
+          .btn-cancel, .btn-share {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 800;
+            cursor: pointer;
+          }
+
+          .btn-cancel {
+            background: transparent;
+            color: #888;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+          }
+
+          .btn-share {
+            background: var(--color-primary);
+            color: black;
+          }
+
+          .btn-share:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+
+          /* Save Button */
+          .save-btn {
+            color: var(--color-primary);
+          }
+
+          .save-btn:hover {
+            background-color: rgba(0, 229, 255, 0.1);
+          }
+        `}</style>
+      </Card>
+    );
+  }

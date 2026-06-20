@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Users } from 'lucide-react';
+import { FriendsModal } from '../profile/FriendsModal';
 
 export const TopNavbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -12,6 +14,7 @@ export const TopNavbar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ animes: any[], users: any[] }>({ animes: [], users: [] });
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -267,11 +270,22 @@ export const TopNavbar: React.FC = () => {
            </AnimatePresence>
         </div>
         
-        <div className="icon-group">
-           <Link href="/dashboard/premium" className="premium-link">PREMIUM</Link>
-           <button className="nav-icon-btn">🔔</button>
-           
-           <div className="user-menu-container">
+<div className="icon-group">
+            <Link href="/dashboard/premium" className="premium-link">PREMIUM</Link>
+            <button className="nav-icon-btn" onClick={() => setShowFriendsModal(true)} title="Ver amigos">
+              <Users size={18} />
+            </button>
+            <button className="nav-icon-btn">🔔</button>
+
+            {showFriendsModal && user && (
+              <FriendsModal
+                userId={user.id}
+                onClose={() => setShowFriendsModal(false)}
+                currentUser={user}
+              />
+            )}
+
+            <div className="user-menu-container">
              <div className="user-avatar" onClick={() => setShowDropdown(!showDropdown)}>
                {user?.avatarUrl ? <img src={user.avatarUrl} alt="User" /> : <span>{user?.username?.charAt(0) || 'U'}</span>}
              </div>

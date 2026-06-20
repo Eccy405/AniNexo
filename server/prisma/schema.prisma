@@ -102,6 +102,12 @@ model User {
     // Collection
     collections UserCollection[]
 
+    // Saved Posts
+    savedPosts SavedPost[]
+
+    // Memories
+    postMemories PostMemory[]
+
    @@map("user")
 }
 
@@ -277,6 +283,8 @@ model Post {
   anime    Anime?    @relation(fields: [animeId], references: [id], onDelete: SetNull)
   comments Comment[]
   likes    Like[]
+  savedBy  SavedPost[]
+  memories PostMemory[]
 
   @@index([createdAt(sort: Desc)])
   @@map("post")
@@ -849,4 +857,42 @@ enum FriendshipStatus {
   PENDING
   ACCEPTED
   BLOCKED
+}
+
+model SavedPost {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("savedpost")
+}
+
+model FriendNickname {
+  id       String @id @default(uuid())
+  userId   String
+  friendId String
+  nickname String
+
+  @@unique([userId, friendId])
+  @@map("friendnickname")
+}
+
+model PostMemory {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  type      String   // INTERACTION (like/comment) or SHARE
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId, type])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("postmemory")
 }

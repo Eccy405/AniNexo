@@ -9,5 +9,6 @@ router.get('/anime/:animeId', groupController.getAnimeGroups);
 router.post('/join', groupController.joinGroup);
 router.post('/collection/add', groupController.addToCollection);
 router.get('/collection/:userId', groupController.getUserCollection);
+router.get('/', groupController.getAllGroups);
 
 export default router;

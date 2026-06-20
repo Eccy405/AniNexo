@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { FeedList } from '../../../components/feed/FeedList';
+import { FriendsModal } from '../../../components/profile/FriendsModal';
+import { SavedPostsModal } from '../../../components/feed/SavedPostsModal';
+import { MemoriesModal } from '../../../components/feed/MemoriesModal';
 import { 
   Sparkles, 
   Users, 
@@ -53,6 +56,10 @@ export default function CommunityPage() {
   const [userFriends, setUserFriends] = useState<any[]>([]);
   const [conversations, setConversations] = useState<any[]>([]);
   const [showChatBubble, setShowChatBubble] = useState(false);
+
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [showSavedModal, setShowSavedModal] = useState(false);
+  const [showMemoriesModal, setShowMemoriesModal] = useState(false);
 
   const contacts = [
     { id: '1', name: 'Meta AI', avatar: 'https://ui-avatars.com/api/?name=Meta+AI&background=6200ea&color=fff', isAI: true, verified: true },
@@ -201,12 +208,12 @@ export default function CommunityPage() {
   );
 
   const leftNavItems = [
-    { label: 'Nexo AI', icon: <Sparkles size={20} className="icon-glow" />, href: '/dashboard/chat', color: '#00E5FF' },
-    { label: 'Amigos', icon: <Users size={20} />, href: '/dashboard/community' },
-    { label: 'Recuerdos', icon: <History size={20} />, href: '#' },
-    { label: 'Guardado', icon: <Bookmark size={20} />, href: '#' },
-    { label: 'Logros y Medallas', icon: <Award size={20} />, href: '#' },
-    { label: 'Grupos temáticos', icon: <Compass size={20} />, href: '#' }
+    { label: 'Nexo AI', icon: <Sparkles size={20} className="icon-glow" />, href: '/dashboard/chat', color: '#00E5FF', action: null },
+    { label: 'Amigos', icon: <Users size={20} />, href: '#', color: '#00E5FF', action: () => setShowFriendsModal(true) },
+    { label: 'Recuerdos', icon: <History size={20} />, href: '#', color: '#ffa500', action: () => setShowMemoriesModal(true) },
+    { label: 'Guardado', icon: <Bookmark size={20} />, href: '#', color: '#4CAF50', action: () => setShowSavedModal(true) },
+    { label: 'Logros y Medallas', icon: <Award size={20} />, href: '#', color: '#FFD700', action: null },
+    { label: 'Grupos temáticos', icon: <Compass size={20} />, href: '/dashboard/groups', color: '#9C27B0', action: null }
   ];
 
   const shortcuts = [
@@ -232,13 +239,22 @@ export default function CommunityPage() {
               <span className="link-label">{user?.username || 'Mi Perfil'}</span>
             </Link>
 
-            {leftNavItems.map((item, idx) => (
-              <Link key={idx} href={item.href} className="sidebar-link">
-                <span className="icon-wrapper" style={{ color: item.color || 'var(--color-primary)' }}>
-                  {item.icon}
-                </span>
-                <span className="link-label">{item.label}</span>
-              </Link>
+{leftNavItems.map((item, idx) => (
+              item.action ? (
+                <button key={idx} className="sidebar-link" onClick={item.action}>
+                  <span className="icon-wrapper" style={{ color: item.color || 'var(--color-primary)' }}>
+                    {item.icon}
+                  </span>
+                  <span className="link-label">{item.label}</span>
+                </button>
+              ) : (
+                <Link key={idx} href={item.href} className="sidebar-link">
+                  <span className="icon-wrapper" style={{ color: item.color || 'var(--color-primary)' }}>
+                    {item.icon}
+                  </span>
+                  <span className="link-label">{item.label}</span>
+                </Link>
+              )
             ))}
 
             <button className="sidebar-link show-more" onClick={() => setShowAllLeftItems(!showAllLeftItems)}>
@@ -527,11 +543,32 @@ export default function CommunityPage() {
                      </button>
                    </div>
                  </div>
-               </div>
-             )}
+</div>
+                )}
 
-          </div>
-        </aside>
+              {/* Modales de Amigos, Guardado y Recuerdos */}
+              {showFriendsModal && user && (
+                <FriendsModal
+                  userId={user.id}
+                  onClose={() => setShowFriendsModal(false)}
+                  currentUser={user}
+                />
+              )}
+              {showSavedModal && user && (
+                <SavedPostsModal
+                  userId={user.id}
+                  onClose={() => setShowSavedModal(false)}
+                />
+              )}
+              {showMemoriesModal && user && (
+                <MemoriesModal
+                  userId={user.id}
+                  onClose={() => setShowMemoriesModal(false)}
+                />
+              )}
+
+           </div>
+         </aside>
 
       </div>
 

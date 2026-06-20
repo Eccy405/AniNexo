@@ -104,4 +104,124 @@ export class FriendService {
       avatarUrl: r.user.avatarUrl
     }));
   }
+
+  async removeFriend(userId: string, friendId: string) {
+    await prisma.friendship.deleteMany({
+      where: {
+        OR: [
+          { userId, friendId, status: 'ACCEPTED' },
+          { userId: friendId, friendId: userId, status: 'ACCEPTED' }
+        ]
+      }
+    });
+
+    await prisma.friendNickname.deleteMany({
+      where: {
+        OR: [
+          { userId, friendId },
+          { userId: friendId, friendId: userId }
+        ]
+      }
+    });
+
+    return { removed: true };
+  }
+
+  async setFriendNickname(userId: string, friendId: string, nickname: string) {
+    const friendship = await prisma.friendship.findFirst({
+      where: {
+        OR: [
+          { userId, friendId, status: 'ACCEPTED' },
+          { userId: friendId, friendId: userId, status: 'ACCEPTED' }
+        ]
+      }
+    });
+
+    if (!friendship) {
+      throw new Error('No son amigos');
+    }
+
+    return prisma.friendNickname.upsert({
+      where: { userId_friendId: { userId, friendId } },
+      create: { userId, friendId, nickname },
+      update: { nickname }
+    });
+  }
+
+  async getFriendNickname(userId: string, friendId: string) {
+    const nickname = await prisma.friendNickname.findUnique({
+      where: { userId_friendId: { userId, friendId } }
+    });
+
+    return nickname?.nickname || null;
+  }
+
+  async getUserFriendsWithNicknames(userId: string) {
+    const friends = await this.getFriends(userId);
+
+    const friendsWithNicknames = await Promise.all(
+      friends.map(async (friend: any) => {
+        const nickname = await this.getFriendNickname(userId, friend.id);
+        return { ...friend, nickname: nickname || friend.username };
+      })
+    );
+
+    return friendsWithNicknames;
+  }
+
+  async sendMessageToFriend(userId: string, friendId: string, content: string) {
+    const friendship = await prisma.friendship.findFirst({
+      where: {
+        OR: [
+          { userId, friendId, status: 'ACCEPTED' },
+          { userId: friendId, friendId: userId, status: 'ACCEPTED' }
+        ]
+      }
+    });
+
+    if (!friendship) {
+      throw new Error('No son amigos');
+    }
+
+    let conversation = await prisma.conversation.findFirst({
+      where: {
+        isGroup: false,
+        participants: {
+          some: { userId: userId }
+        },
+        AND: {
+          participants: {
+            some: { userId: friendId }
+          }
+        }
+      }
+    });
+
+    if (!conversation) {
+      conversation = await prisma.conversation.create({
+        data: {
+          isGroup: false,
+          participants: {
+            create: [
+              { userId },
+              { userId: friendId }
+            ]
+          }
+        }
+      });
+    }
+
+    const message = await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        senderId: userId,
+        content
+      },
+      include: {
+        sender: { select: { id: true, username: true, avatarUrl: true } }
+      }
+    });
+
+    return { conversationId: conversation.id, message };
+  }
 }

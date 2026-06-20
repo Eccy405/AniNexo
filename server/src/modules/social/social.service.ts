@@ -7,8 +7,15 @@ const notificationService = new NotificationService();
 const badgeService = new BadgeService();
 
 export class SocialService {
+  private async upsertInteractionMemory(userId: string, postId: string) {
+    return prisma.postMemory.upsert({
+      where: { userId_postId_type: { userId, postId, type: 'INTERACTION' } },
+      create: { userId, postId, type: 'INTERACTION' },
+      update: { createdAt: new Date() }
+    });
+  }
   
-// Follow/Unfollow a user with Counters
+ // Follow/Unfollow a user with Counters
    async toggleFollow(followerId: string, followingId: string) {
     if (followerId === followingId) {
       throw new Error('No puedes seguirte a ti mismo');
@@ -105,6 +112,7 @@ export class SocialService {
               data: { likesCount: { increment: 1 } }
             })
           ]);
+          await this.upsertInteractionMemory(userId, postId);
           
           const post = await prisma.post.findUnique({ where: { id: postId }, select: { userId: true } });
           if (post && post.userId !== userId) {
@@ -126,6 +134,7 @@ export class SocialService {
             data: { likesCount: { increment: 1 } }
           })
         ]);
+        await this.upsertInteractionMemory(userId, postId);
         
         const post = await prisma.post.findUnique({ where: { id: postId }, select: { userId: true } });
         if (post && post.userId !== userId) {
@@ -154,7 +163,7 @@ export class SocialService {
            })
          ]);
          return { liked: false };
-       } else {
+         } else {
          await prisma.$transaction([
            prisma.like.create({ data: { userId, commentId, reaction: reactionType as any } }),
            prisma.comment.update({
@@ -162,6 +171,13 @@ export class SocialService {
              data: { likesCount: { increment: 1 } }
            })
          ]);
+         const comment = await prisma.comment.findUnique({
+           where: { id: commentId },
+           select: { postId: true }
+         });
+         if (comment) {
+           await this.upsertInteractionMemory(userId, comment.postId);
+         }
          return { liked: true };
        }
     }

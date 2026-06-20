@@ -39,6 +39,16 @@ export class GroupService {
       return { joined: false, error: 'Ya estás en el grupo' };
     }
   }
+
+  async getAllGroups() {
+    return await prisma.group.findMany({
+      include: {
+        creator: { select: { username: true, avatarUrl: true } },
+        _count: { select: { members: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
 }
 
 export class CollectionService {

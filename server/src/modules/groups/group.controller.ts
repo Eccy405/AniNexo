@@ -71,4 +71,13 @@ export class GroupController {
       next(error);
     }
   };
+
+  getAllGroups = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const groups = await groupService.getAllGroups();
+      res.json({ success: true, data: groups });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
