@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Card } from '../ui/Card/Card';
 
 interface UserListModalProps {
@@ -14,11 +14,7 @@ export const UserListModal: React.FC<UserListModalProps> = ({ type, userId, onCl
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState(type === 'followers' ? 'Seguidores' : 'Siguiendo');
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const endpoint = type === 'followers' ? 'followers' : 'following';
@@ -32,7 +28,11 @@ export const UserListModal: React.FC<UserListModalProps> = ({ type, userId, onCl
     } finally {
       setLoading(false);
     }
-  };
+  }, [type, userId]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
