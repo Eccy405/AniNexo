@@ -54,7 +54,6 @@ export const metadata: Metadata = {
 };
 
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
-import StyledJsxRegistry from "@/lib/registry";
 
 export default function RootLayout({
   children,
@@ -64,10 +63,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
-        <StyledJsxRegistry>
-          <ServiceWorkerRegistration />
-          {children}
-        </StyledJsxRegistry>
+        <ServiceWorkerRegistration />
+        {children}
       </body>
     </html>
   );

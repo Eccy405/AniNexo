@@ -1,7 +1,7 @@
 import React, { ReactNode, forwardRef } from 'react';
 import styles from './Card.module.css';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   className?: string;
   role?: string;

@@ -237,15 +237,13 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
         <div className="progress-bar">
           <div 
             className="progress-fill"
-            style={{ backgroundColor: selections.themeColor }}
-            
-            animate={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
+            style={{ backgroundColor: selections.themeColor, width: `${((currentStep + 1) / STEPS.length) * 100}%`, transition: 'width 0.3s ease' }}
           />
         </div>
         <span className="step-indicator">Paso {currentStep + 1} de {STEPS.length}</span>
       </div>
 
-      <div mode="wait">
+      <div>
         <div 
           key={currentStep}
           
