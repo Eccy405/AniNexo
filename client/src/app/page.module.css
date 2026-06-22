@@ -1,142 +1,304 @@
-.page {
-  --background: #fafafa;
-  --foreground: #fff;
-
-  --text-primary: #000;
-  --text-secondary: #666;
-
-  --button-primary-hover: #383838;
-  --button-secondary-hover: #f2f2f2;
-  --button-secondary-border: #ebebeb;
-
+.landingMain {
+  background-color: var(--color-background);
+  min-height: 100vh;
+  overflow-x: hidden;
   display: flex;
-  flex: 1;
   flex-direction: column;
+  color: var(--color-text-main);
+  font-family: var(--font-family-base);
+}
+
+.floatingNav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 5%;
+  z-index: 100;
+  background: rgba(5, 5, 5, 0.7);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.navLogo {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--color-text-main);
+  letter-spacing: -1.5px;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.navActions {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+}
+
+.btnText {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  transition: color 0.3s;
+  letter-spacing: 0.5px;
+}
+
+.btnText:hover {
+  color: var(--color-text-main);
+}
+
+.btnPremiumNav {
+  background: var(--color-primary);
+  color: #000;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btnPremiumNav:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.5);
+}
+
+.welcomeBanner {
+  padding: 14rem 5% 12rem;
+  text-align: center;
+  background: radial-gradient(circle closest-corner at 50% 50%, rgba(0, 229, 255, 0.08), rgba(5, 5, 5, 0) 60%);
+  flex: 1;
+  display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-geist-sans);
-  background-color: var(--background);
+  position: relative;
 }
 
-.main {
-  display: flex;
-  flex: 1;
-  width: 100%;
-  max-width: 800px;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  background-color: var(--foreground);
-  padding: 120px 60px;
+.welcomeBanner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 0);
+  background-size: 48px 48px;
+  pointer-events: none;
 }
 
-.intro {
+.visionBadge {
+  background: rgba(0, 229, 255, 0.03);
+  color: var(--color-primary);
+  padding: 8px 16px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  display: inline-block;
+  margin-bottom: 32px;
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  text-transform: uppercase;
+}
+
+.welcomeInner h1 {
+  font-size: clamp(3.5rem, 12vw, 88px);
+  font-weight: 400;
+  color: var(--color-text-main);
+  margin-bottom: 32px;
+  line-height: 0.8;
+  letter-spacing: -0.07em;
+}
+
+.nexoGlow {
+  color: var(--color-primary);
+  text-shadow: 0 0 60px rgba(0, 229, 255, 0.7);
+}
+
+.welcomeInner p {
+  color: var(--color-text-muted);
+  font-size: 24px;
+  max-width: 850px;
+  margin: 0 auto 64px;
+  line-height: 1.5;
+  letter-spacing: -0.24px;
+  font-weight: 400;
+}
+
+.heroCta {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  gap: 16px;
+  justify-content: center;
+}
+
+.btnHeroPrimary {
+  background: var(--color-primary);
+  color: #000;
+  padding: 16px 32px;
+  border-radius: 8px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: 0.3s;
+  box-shadow: 0 0 40px rgba(0, 229, 255, 0.3);
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btnHeroSecondary {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-text-main);
+  padding: 16px 32px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: 0.3s;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btnHeroPrimary:hover { 
+  transform: translateY(-2px); 
+  box-shadow: 0 0 60px rgba(0, 229, 255, 0.5); 
+}
+.btnHeroSecondary:hover { 
+  background: rgba(255, 255, 255, 0.08); 
+  border-color: var(--color-primary);
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 32px;
+  padding: 128px 10%;
+  background: var(--color-background);
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.featureCard {
   text-align: left;
+  padding: 64px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 19.2px;
+  border: 1px solid rgba(255,255,255,0.05);
+  transition: 0.5s;
+  position: relative;
+}
+
+.featureCard:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-8px);
+  background: rgba(0, 229, 255, 0.02);
+}
+
+.featureIcon { 
+  font-size: 24px; 
+  display: block; 
+  margin-bottom: 32px; 
+  filter: drop-shadow(0 0 15px rgba(0, 229, 255, 0.4));
+}
+
+.featureCard h3 { 
+  color: var(--color-text-main); 
+  margin-bottom: 16px; 
+  font-size: 24px; 
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.featureCard p { 
+  color: var(--color-text-muted); 
+  line-height: 1.6; 
+  font-size: 16px;
+}
+
+.footerPremium {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 128px 10% 64px;
+  background-color: var(--color-background);
+}
+
+.footerContent {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 96px;
+}
+
+.footerBrand h3 { 
+  color: var(--color-text-main); 
+  margin-bottom: 16px; 
+  font-size: 1.8rem;
+  font-weight: 900;
+  letter-spacing: -2px;
+}
+
+.footerBrand p { 
+  color: var(--color-text-muted); 
+  max-width: 400px; 
+  font-size: 16px;
+}
+
+.footerLinks { 
+  display: flex; 
+  flex-direction: column; 
   gap: 24px;
 }
 
-.intro h1 {
-  max-width: 320px;
-  font-size: 40px;
-  font-weight: 600;
-  line-height: 48px;
-  letter-spacing: -2.4px;
-  text-wrap: balance;
-  color: var(--text-primary);
+.footerLinks a { 
+  color: var(--color-text-muted); 
+  text-decoration: none; 
+  font-size: 14px; 
+  font-weight: 500; 
+  transition: 0.3s;
 }
 
-.intro p {
-  max-width: 440px;
-  font-size: 18px;
-  line-height: 32px;
-  text-wrap: balance;
-  color: var(--text-secondary);
+.footerLinks a:hover { 
+  color: var(--color-primary);
 }
 
-.intro a {
-  font-weight: 500;
-  color: var(--text-primary);
+.footerBottom {
+  text-align: left;
+  color: #222;
+  font-size: 12px;
+  padding-top: 48px;
+  border-top: 1px solid rgba(255,255,255,0.02);
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
-.ctas {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  max-width: 440px;
-  gap: 16px;
-  font-size: 14px;
+/* Entrance animations */
+.animate-fadeInUp {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.8s ease-out forwards;
 }
 
-.ctas a {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 128px;
-  border: 1px solid transparent;
-  transition: 0.2s;
-  cursor: pointer;
-  width: fit-content;
-  font-weight: 500;
+.animate-delay-100 {
+  animation-delay: 0.1s;
+}
+.animate-delay-200 {
+  animation-delay: 0.2s;
+}
+.animate-delay-300 {
+  animation-delay: 0.3s;
+}
+.animate-delay-400 {
+  animation-delay: 0.4s;
+}
+.animate-delay-500 {
+  animation-delay: 0.5s;
 }
 
-a.primary {
-  background: var(--text-primary);
-  color: var(--background);
-  gap: 8px;
-}
-
-a.secondary {
-  border-color: var(--button-secondary-border);
-}
-
-/* Enable hover only on non-touch devices */
-@media (hover: hover) and (pointer: fine) {
-  a.primary:hover {
-    background: var(--button-primary-hover);
-    border-color: transparent;
-  }
-
-  a.secondary:hover {
-    background: var(--button-secondary-hover);
-    border-color: transparent;
-  }
-}
-
-@media (max-width: 600px) {
-  .main {
-    padding: 48px 24px;
-  }
-
-  .intro {
-    gap: 16px;
-  }
-
-  .intro h1 {
-    font-size: 32px;
-    line-height: 40px;
-    letter-spacing: -1.92px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .logo {
-    filter: invert();
-  }
-
-  .page {
-    --background: #000;
-    --foreground: #000;
-
-    --text-primary: #ededed;
-    --text-secondary: #999;
-
-    --button-primary-hover: #ccc;
-    --button-secondary-hover: #1a1a1a;
-    --button-secondary-border: #1a1a1a;
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

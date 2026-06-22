@@ -36,9 +36,9 @@ export class CameraController {
   private cfg: CameraConfig;
 
   /** Where we WANT the camera to be */
-  readonly target   = new THREE.Vector3(0, 0, 9);
+  readonly target   = new THREE.Vector3(0, 0, 7);
   /** Where the camera IS right now (interpolated toward target) */
-  readonly current  = new THREE.Vector3(0, 0, 9);
+  readonly current  = new THREE.Vector3(0, 0, 7);
   /** Where the camera looks */
   readonly lookAt   = new THREE.Vector3(0, 0, 0);
 
@@ -67,11 +67,11 @@ export class CameraController {
 
     // ── Scroll-driven target ──────────────────────────────────────────
     // As the user scrolls: Y drops (camera descends), Z creeps closer
-    this.target.set(
-      0,
-      -sp * maxScrollY,
-      9 - sp * 1.5
-    );
+     this.target.set(
+       0,
+       -sp * maxScrollY,
+       7 - sp * 1.2
+     );
 
     // ── Alive drift added on top ──────────────────────────────────────
     this.target.x += Math.sin(t * driftFrequency * Math.PI * 2) * driftAmplitude;

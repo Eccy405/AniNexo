@@ -32,11 +32,17 @@
   box-shadow: 0 0 0 2px rgba(229, 9, 20, 0.2);
 }
 
-.inputError {
+.error {
   border-color: var(--color-primary); /* Using primary as red/error */
 }
 
-.errorText {
+.helperText {
+  margin-top: var(--spacing-xs);
+  font-size: 0.75rem;
+  color: var(--color-primary); /* Using primary as red/error */
+}
+
+.errorMessage {
   margin-top: var(--spacing-xs);
   font-size: 0.75rem;
   color: var(--color-primary); /* Using primary as red/error */

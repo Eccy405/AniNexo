@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const STEPS = [
   {
@@ -226,35 +225,32 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
 
   return (
     <div className="onboarding-wizard">
-      <AnimatePresence>
+      <div>
         {hoveredImage && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.25 }}
-            exit={{ opacity: 0 }}
+          <div 
             className="wizard-bg-ambient"
             style={{ backgroundImage: `url(${hoveredImage})` }}
           />
         )}
-      </AnimatePresence>
+      </div>
       <div className="progress-container">
         <div className="progress-bar">
-          <motion.div 
+          <div 
             className="progress-fill"
             style={{ backgroundColor: selections.themeColor }}
-            initial={{ width: 0 }}
+            
             animate={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
           />
         </div>
         <span className="step-indicator">Paso {currentStep + 1} de {STEPS.length}</span>
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div 
+      <div mode="wait">
+        <div 
           key={currentStep}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
+          
+          
+          
           className="step-content"
         >
           <header className="step-header">
@@ -304,9 +300,9 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
                 <div className="fav-field">
                   <label>Tu Anime Favorito</label>
                   {selections.favAnime?.id ? (
-                    <motion.div 
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
+                    <div 
+                      
+                      
                       className="selected-banner"
                     >
                       <div className="banner-bg">
@@ -320,7 +316,7 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
                           setAnimeSearch('');
                         }}>Cambiar Anime</button>
                       </div>
-                    </motion.div>
+                    </div>
                   ) : (
                     <div className="search-container">
                       <div className="search-wrapper">
@@ -333,12 +329,12 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
                         />
                         {isSearchingAnime && <div className="search-loader-bar" style={{ backgroundColor: selections.themeColor }}></div>}
                       </div>
-                      <AnimatePresence>
+                      <div>
                         {animeResults.length > 0 && (
-                          <motion.div 
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
+                          <div 
+                            
+                            
+                            
                             className="results-gallery"
                           >
                             {animeResults.slice(0, 6).map(a => (
@@ -355,9 +351,9 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
                                 </div>
                               </div>
                             ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                          </div>
+                       )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -365,9 +361,9 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
                 <div className="fav-field">
                   <label>Tu Personaje Favorito</label>
                   {selections.favCharacter?.id ? (
-                    <motion.div 
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
+                    <div 
+                      
+                      
                       className="selected-banner"
                     >
                       <div className="banner-bg">
@@ -381,7 +377,7 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
                           setCharSearch('');
                         }}>Cambiar Personaje</button>
                       </div>
-                    </motion.div>
+                    </div>
                   ) : (
                     <div className="search-container">
                       <div className="search-wrapper">
@@ -394,12 +390,12 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
                         />
                         {isSearchingChar && <div className="search-loader-bar" style={{ backgroundColor: selections.themeColor }}></div>}
                       </div>
-                      <AnimatePresence>
+                      <div>
                         {charResults.length > 0 && (
-                          <motion.div 
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
+                          <div 
+                            
+                            
+                            
                             className="results-gallery"
                           >
                             {charResults.slice(0, 6).map((c: any) => (
@@ -416,9 +412,9 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
                                 </div>
                               </div>
                             ))}
-                          </motion.div>
+                          </div>
                         )}
-                      </AnimatePresence>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -545,19 +541,19 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
           </div>
 
           {/* QUICK VIEW MODAL */}
-          <AnimatePresence>
+          <div>
             {previewItem && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+              <div 
+                
+                
+                
                 className="quick-view-overlay"
                 onClick={() => setPreviewItem(null)}
               >
-                <motion.div 
-                  initial={{ scale: 0.9, y: 20 }}
-                  animate={{ scale: 1, y: 0 }}
-                  exit={{ scale: 0.9, y: 20 }}
+                <div 
+                  
+                  
+                  
                   className="quick-view-modal"
                   style={{ borderColor: selections.themeColor }}
                   onClick={e => e.stopPropagation()}
@@ -598,12 +594,12 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
                       </button>
                     </div>
                   </div>
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             )}
-          </AnimatePresence>
-        </motion.div>
-      </AnimatePresence>
+          </div>
+        </div>
+      </div>
 
       <footer className="wizard-footer">
         {currentStep > 0 && (

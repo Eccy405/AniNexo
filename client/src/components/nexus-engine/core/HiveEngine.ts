@@ -12,7 +12,7 @@ export const DEFAULT_HIVE_CONFIG: HiveConfig = {
   rows: 8,
   spacingX: 1.8,
   spacingY: 1.5,
-  radius: 12,
+  radius: 20,
   nodeCount: 64
 };
 

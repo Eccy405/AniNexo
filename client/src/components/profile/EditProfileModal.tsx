@@ -34,7 +34,6 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ profile, onC
 
       if (res.ok) {
         const result = await res.json();
-        // Actualizar datos en memoria y cerrar
         onSave(result.data);
         onClose();
       } else {
