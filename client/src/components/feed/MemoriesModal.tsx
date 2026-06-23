@@ -45,7 +45,7 @@ export const MemoriesModal: React.FC<MemoriesModalProps> = ({ userId, onClose })
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <Card className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>
             <History size={20} style={{ color: '#ffa500' }} />
@@ -217,7 +217,7 @@ export const MemoriesModal: React.FC<MemoriesModalProps> = ({ userId, onClose })
             border-radius: 3px;
           }
         `}</style>
-      </Card>
+      </div>
     </div>
   );
 };

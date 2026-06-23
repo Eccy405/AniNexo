@@ -57,7 +57,7 @@ export const SavedPostsModal: React.FC<SavedPostsModalProps> = ({ userId, onClos
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <Card className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>
             <Bookmark size={20} style={{ color: 'var(--color-primary)' }} />
@@ -196,7 +196,7 @@ export const SavedPostsModal: React.FC<SavedPostsModalProps> = ({ userId, onClos
             border-radius: 3px;
           }
         `}</style>
-      </Card>
+      </div>
     </div>
   );
 };

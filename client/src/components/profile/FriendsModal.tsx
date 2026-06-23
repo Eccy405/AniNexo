@@ -172,7 +172,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ userId, onClose, cur
           onClose={() => setShowChatModal(false)}
         />
       )}
-      <Card className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Amigos</h2>
           <button className="btn-close" onClick={onClose}>
@@ -408,7 +408,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ userId, onClose, cur
             border-radius: 3px;
           }
         `}</style>
-      </Card>
+      </div>
     </div>
   );
 };
