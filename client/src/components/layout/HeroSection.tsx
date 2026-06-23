@@ -52,7 +52,7 @@ export default function HeroSection() {
         >
           <div className={styles.visualContainer}>
             <img 
-              src="/aninexo_hero_banner.png" 
+              src="/aninexo_hero_banner.jpg" 
               alt="Universo AniNexo" 
               className={styles.bannerImage}
             />
