@@ -1,13 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
-import createDOMPurify from 'dompurify';
-import { JSDOM } from 'jsdom';
 
-const window = new JSDOM('').window;
-const DOMPurify = createDOMPurify(window as any);
+/**
+ * Sanitizador ligero sin dependencias externas.
+ * Elimina tags HTML, atributos peligrosos e inyecciones de script.
+ * Compatible con CommonJS / ts-node sin problemas de ESM.
+ */
+const sanitizeString = (input: string): string => {
+  return input
+    // Eliminar tags de script completos con contenido
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    // Eliminar tags de style completos
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
+    // Eliminar eventos inline (onclick, onload, etc.)
+    .replace(/\s+on\w+\s*=\s*["'][^"']*["']/gi, '')
+    // Eliminar href y src con javascript:
+    .replace(/href\s*=\s*["']javascript:[^"']*["']/gi, '')
+    .replace(/src\s*=\s*["']javascript:[^"']*["']/gi, '')
+    // Eliminar todos los tags HTML restantes
+    .replace(/<[^>]+>/g, '')
+    .trim();
+};
 
 const sanitize = (data: any): any => {
   if (typeof data === 'string') {
-    return DOMPurify.sanitize(data);
+    return sanitizeString(data);
   }
   if (Array.isArray(data)) {
     return data.map(v => sanitize(v));
@@ -27,7 +43,7 @@ export const sanitizerMiddleware = (req: Request, res: Response, next: NextFunct
     if (!obj || typeof obj !== 'object') return;
     for (const key in obj) {
       if (typeof obj[key] === 'string') {
-        obj[key] = DOMPurify.sanitize(obj[key]);
+        obj[key] = sanitizeString(obj[key]);
       } else if (typeof obj[key] === 'object') {
         sanitizeInPlace(obj[key]);
       }
@@ -37,6 +53,7 @@ export const sanitizerMiddleware = (req: Request, res: Response, next: NextFunct
   if (req.body) sanitizeInPlace(req.body);
   if (req.query) sanitizeInPlace(req.query);
   if (req.params) sanitizeInPlace(req.params);
-  
+
   next();
 };
+
