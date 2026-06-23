@@ -3,7 +3,7 @@
 import { ReactNode } from 'react';
 import { SocketProvider } from '../../components/auth/SocketProvider';
 import { TopNavbar } from '../../components/layout/TopNavbar';
-import { Sidebar } from '../../components/layout/Sidebar';
+// import { Sidebar } from '../../components/layout/Sidebar';
 import { NexoFloatingOrb } from '../../components/nexo/NexoFloatingOrb';
 import styles from './DashboardLayout.module.css';
 
@@ -11,7 +11,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <SocketProvider>
       <div className={styles.dashboardLayout}>
-        <Sidebar />
+        {/* <Sidebar /> */}
         <div className={styles.mainWrapper}>
           <TopNavbar />
           <main className={styles.mainContent}>

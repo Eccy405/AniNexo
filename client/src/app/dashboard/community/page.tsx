@@ -1017,21 +1017,21 @@ export default function CommunityPage() {
            width: 56px;
            height: 56px;
            border-radius: 50%;
-           background: linear-gradient(135deg, #00E5FF, #00B8D4);
+           background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
            border: none;
            color: black;
            cursor: pointer;
            display: flex;
            align-items: center;
            justify-content: center;
-           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+           box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3), 0 0 10px rgba(168, 85, 247, 0.2);
            z-index: 100;
-           transition: transform 0.2s, box-shadow 0.2s;
+           transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
          }
 
          .chat-bubble-btn:hover {
-           transform: scale(1.05);
-           box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+           transform: scale(1.08) translateY(-2px);
+           box-shadow: 0 6px 20px rgba(0, 229, 255, 0.5), 0 0 15px rgba(168, 85, 247, 0.4);
          }
 
          .chat-badge {

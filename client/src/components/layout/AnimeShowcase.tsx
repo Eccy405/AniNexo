@@ -1,4 +1,4 @@
-﻿import { motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { staggerContainer, fadeInUp } from "@/lib/animations";
 import { Section, Heading, Grid, Card, Text } from "@/components/ui";
 import Image from "next/image";
@@ -25,7 +25,7 @@ export default function AnimeShowcase() {
         <Heading as="h2" size="2xl" color="main" mb={6}>
           Anime Destacado
         </Heading>
-        <Grid columns={3} gap={4}>
+        <Grid columns={3} gap={6}>
           {animeData.map((anime) => (
             <motion.div
               key={anime.id}
@@ -34,15 +34,21 @@ export default function AnimeShowcase() {
               initial="hidden"
               animate="visible"
             >
-              <Card>
-                <Image src={anime.poster} alt={anime.title} width={400} height={300} />
-                <Text size="lg" color="main" mb={2}>
-                  {anime.title}
-                </Text>
-                <Text size="sm" color="muted">
-                  {anime.genre} · ★ {anime.rating}
-                </Text>
-              </Card>
+              <div className={styles.posterContainer}>
+                <Image 
+                  src={anime.poster} 
+                  alt={anime.title} 
+                  width={400} 
+                  height={500} 
+                  className={styles.posterImage}
+                />
+                <div className={styles.cardBadge}>★ {anime.rating}</div>
+                <div className={styles.infoOverlay}>
+                  <span className={styles.genreBadge}>{anime.genre}</span>
+                  <h3 className={styles.animeTitle}>{anime.title}</h3>
+                  <button className={styles.btnWatch}>Ver Ahora</button>
+                </div>
+              </div>
             </motion.div>
           ))}
         </Grid>

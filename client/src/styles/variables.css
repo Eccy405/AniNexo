@@ -1,11 +1,11 @@
-﻿:root {
+:root {
   --color-background: #050505; /* Dark Premium */
   --color-surface: #0a0a0a;
   --color-surface-hover: #111111;
   --color-primary: #00E5FF; /* AniNexo Cyan */
   --color-primary-hover: #00B8CC;
-  --color-secondary: #A855F7; /* AniNexo Purple */
-  --color-accent: #A855F7;
+  --color-secondary: #0052FF; /* AniNexo Electric Blue */
+  --color-accent: #0052FF;
   --color-text-main: #FFFFFF;
   --color-text-muted: #888888;
   

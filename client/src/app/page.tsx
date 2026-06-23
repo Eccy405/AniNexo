@@ -1,15 +1,13 @@
-﻿"use client";
+"use client";
 
 import styles from "./page.module.css";
 import React, { useEffect } from "react";
 import { GuestButton } from "../components/auth/GuestButton";
 import Link from "next/link";
-import { HiveCanvas } from "../components/nexus-engine/rendering/HiveCanvas";
+// import { HiveCanvas } from "../components/nexus-engine/rendering/HiveCanvas";
 import { useSiteStats } from "@/lib/hooks/useSiteStats";
 import { SiteStats } from "@/components/ui/SiteStats/SiteStats";
 import HeroSection from "@/components/layout/HeroSection";
-import AnimeShowcase from "@/components/layout/AnimeShowcase";
-import PlatformBenefits from "@/components/layout/PlatformBenefits";
 
 export default function Home() {
   const { stats, loading, error } = useSiteStats();
@@ -34,12 +32,12 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Nexus Engine Full Background */}
-      <div className={styles.nexusFull}>
+      {/* Nexus Engine Full Background (Oculto Temporalmente) */}
+      {/* <div className={styles.nexusFull}>
         <HiveCanvas />
-      </div>
+      </div> */}
 
-      {/* Hero sobre el Nexus Engine */}
+      {/* Hero sobre fondo animado CSS */}
       <HeroSection />
 
       {/* Estadísticas de la Comunidad */}
@@ -62,12 +60,6 @@ export default function Home() {
           </div>
         </section>
       )}
-
-      {/* Showcase de Anime */}
-      <AnimeShowcase />
-
-      {/* Beneficios de Plataforma */}
-      <PlatformBenefits />
 
       {/* Info Section (Características) */}
       <section className={`${styles.featuresGrid} animate-fadeInUp animate-delay-300`}>

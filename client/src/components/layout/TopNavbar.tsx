@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ViewTransition } from 'react';
-import { Users } from 'lucide-react';
+import { Users, Menu, X as CloseIcon } from 'lucide-react';
 import { FriendsModal } from '../profile/FriendsModal';
 import styles from './TopNavbar.module.css';
 
@@ -12,6 +12,7 @@ export const TopNavbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ animes: any[], users: any[] }>({ animes: [], users: [] });
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -96,8 +97,9 @@ export const TopNavbar: React.FC = () => {
   const navLinks = [
     { name: 'Inicio', href: '/dashboard' },
     { name: 'Búsqueda', href: '/dashboard/search' },
+    { name: 'Ver Anime', href: '/dashboard/watch' },
     { name: 'Comunidad', href: '/dashboard/community' },
-    { name: 'Tendencias', href: '/rankings' },
+    { name: 'IA Nexo', href: '/dashboard/nexo' },
     { name: 'Premium', href: '/dashboard/premium' },
   ];
 
@@ -231,6 +233,12 @@ export const TopNavbar: React.FC = () => {
                     <Link href={`/dashboard/profile/${user?.username}`} className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
                       <span className={styles.dIcon} aria-hidden="true">👤</span> Mi Perfil
                     </Link>
+                    <Link href="/dashboard/saved" className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
+                      <span className={styles.dIcon} aria-hidden="true">🔖</span> Guardados
+                    </Link>
+                    <Link href="/dashboard/daily" className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
+                      <span className={styles.dIcon} aria-hidden="true">🎁</span> Nexos Diarios
+                    </Link>
                     {user?.role === 'ADMIN' && (
                       <Link href="/admin" className={`${styles.dropdownItem} ${styles.adminHighlight}`} onClick={() => setShowDropdown(false)} role="menuitem">
                         <span className={styles.dIcon} aria-hidden="true">🛡️</span> Panel Admin
@@ -243,12 +251,40 @@ export const TopNavbar: React.FC = () => {
                     <button className={`${styles.dropdownItem} ${styles.logoutBtn}`} onClick={handleLogout} role="menuitem">
                       <span className={styles.dIcon} aria-hidden="true">🚪</span> Cerrar Sesión
                     </button>
-                 </div>
-               </ViewTransition>
-             )}
-           </div>
-        </div>
+                  </div>
+                </ViewTransition>
+              )}
+            </div>
+
+            {/* Hamburguesa para móviles */}
+            <button 
+              className={styles.hamburgerBtn} 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Abrir menú de navegación"
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <CloseIcon size={24} /> : <Menu size={24} />}
+            </button>
+         </div>
       </div>
+
+      {/* Mobile Drawer Overlay */}
+      {mobileMenuOpen && (
+        <div className={styles.mobileDrawer}>
+          <div className={styles.mobileLinks}>
+            {navLinks.map((link) => (
+              <Link 
+                key={link.href} 
+                href={link.href} 
+                className={`${styles.mobileNavLink} ${pathname === link.href ? styles.mobileNavLinkActive : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {link.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
