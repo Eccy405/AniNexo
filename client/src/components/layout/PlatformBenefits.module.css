@@ -1,0 +1,22 @@
+﻿.benefitsSection {
+  background: rgba(0,0,0,0.1);
+  padding: var(--spacing-lg) 0;
+}
+.benefitCard {
+  background: rgba(0,0,0,0.15);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-md);
+  text-align: center;
+  transition: transform .2s;
+}
+.benefitCard:hover { transform: translateY(-4px); }
+/* responsive flex */
+.flex-responsive {
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 768px) {
+  .flex-responsive {
+    flex-direction: row;
+  }
+}

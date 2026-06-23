@@ -1,0 +1,80 @@
+﻿.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  white-space: nowrap;
+}
+
+/* Sizes */
+.sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.md {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.lg {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+/* Variants */
+.primary {
+  background: linear-gradient(135deg, #00E5FF, #00B8CC);
+  color: #000;
+  border-color: #00E5FF;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+}
+
+.primary:hover {
+  background: linear-gradient(135deg, #00B8CC, #00E5FF);
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.secondary {
+  background: transparent;
+  color: #00E5FF;
+  border-color: #00E5FF;
+}
+
+.secondary:hover {
+  background: rgba(0, 229, 255, 0.1);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.ghost {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #00E5FF;
+}
+
+/* Disabled state */
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Focus state */
+.button:focus-visible {
+  outline: 2px solid #00E5FF;
+  outline-offset: 2px;
+}

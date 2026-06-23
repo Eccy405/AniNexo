@@ -1,0 +1,15 @@
+﻿.animeSection {
+  padding: var(--spacing-lg) 0;
+}
+.animeCard {
+  background: rgba(0,0,0,0.2);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  transition: transform .3s;
+}
+.animeCard:hover { transform: scale(1.05); }
+.animeCard img {
+  width: 100%;
+  height: auto;
+  display: block;
+}

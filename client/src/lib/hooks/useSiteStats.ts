@@ -1,3 +1,5 @@
+﻿"use client";
+
 import { useState, useEffect } from 'react';
 
 export interface SiteStats {
@@ -40,7 +42,7 @@ export const useSiteStats = () => {
         });
       } catch (err) {
         console.error('Failed to fetch site stats:', err);
-        setError('No se pudieron cargar las estadísticas');
+        setError('No se pudieron cargar las estadA-sticas');
       } finally {
         setLoading(false);
       }
