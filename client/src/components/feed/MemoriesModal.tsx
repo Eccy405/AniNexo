@@ -87,25 +87,36 @@ export const MemoriesModal: React.FC<MemoriesModalProps> = ({ userId, onClose })
           .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.9);
-            backdrop-filter: blur(15px);
-            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 99999;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            animation: fade-in 0.2s ease;
           }
+
+          @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
           .modal-content {
             width: 100%;
             max-width: 600px;
             max-height: 85vh;
-            background: var(--color-surface);
-            border: 1px solid var(--color-secondary);
-            border-radius: 20px;
+            background: rgba(10, 10, 18, 0.98);
+            backdrop-filter: blur(40px);
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            border-radius: 22px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(0,82,255,0.1);
+            animation: modal-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          }
+
+          @keyframes modal-in {
+            from { opacity: 0; transform: scale(0.88) translateY(24px); }
+            to   { opacity: 1; transform: scale(1)    translateY(0); }
           }
 
           .modal-header {
