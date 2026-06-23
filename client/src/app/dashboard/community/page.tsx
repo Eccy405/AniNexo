@@ -61,6 +61,75 @@ export default function CommunityPage() {
   const [showSavedModal, setShowSavedModal] = useState(false);
   const [showMemoriesModal, setShowMemoriesModal] = useState(false);
 
+  const [showNexoModal, setShowNexoModal] = useState(false);
+  const [showLogrosModal, setShowLogrosModal] = useState(false);
+  const [showGroupsModal, setShowGroupsModal] = useState(false);
+
+  // Nexo AI chat state
+  const [nexoMessages, setNexoMessages] = useState<any[]>([
+    { id: 1, sender: 'nexo', text: '¡Hola! Soy Nexo, tu asistente otaku personal en AniNexo. ¿De qué anime quieres hablar hoy?' }
+  ]);
+  const [nexoInput, setNexoInput] = useState('');
+  const [nexoLoading, setNexoLoading] = useState(false);
+
+  // Groups state for modal
+  const [modalGroups, setModalGroups] = useState<any[]>([]);
+  const [loadingModalGroups, setLoadingModalGroups] = useState(false);
+
+  useEffect(() => {
+    if (showGroupsModal) {
+      const fetchModalGroups = async () => {
+        try {
+          setLoadingModalGroups(true);
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/groups`);
+          const data = await res.json();
+          if (data.success) {
+            setModalGroups(data.data);
+          }
+        } catch (err) {
+          console.error('Error fetching groups in modal:', err);
+        } finally {
+          setLoadingModalGroups(false);
+        }
+      };
+      fetchModalGroups();
+    }
+  }, [showGroupsModal]);
+
+  const handleSendNexoMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nexoInput.trim()) return;
+
+    const userMsg = nexoInput.trim();
+    setNexoInput('');
+    setNexoMessages(prev => [...prev, { id: Date.now(), sender: 'user', text: userMsg }]);
+    setNexoLoading(true);
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/nexo/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId: user?.id || 'cf7c92fe-efc5-483b-b195-46c515bf6d43', 
+          message: userMsg 
+        })
+      });
+
+      const data = await res.json();
+      if (res.status === 429 || data.action === 'UPGRADE_REQUIRED') {
+        setNexoMessages(prev => [...prev, { id: Date.now(), sender: 'nexo', text: data.message }]);
+      } else if (data.success) {
+        setNexoMessages(prev => [...prev, { id: Date.now(), sender: 'nexo', text: data.data.reply }]);
+      } else {
+        setNexoMessages(prev => [...prev, { id: Date.now(), sender: 'nexo', text: 'Tuvimos un problema al responder. Inténtalo de nuevo.' }]);
+      }
+    } catch (err) {
+      setNexoMessages(prev => [...prev, { id: Date.now(), sender: 'nexo', text: 'Error al conectar con Nexo AI.' }]);
+    } finally {
+      setNexoLoading(false);
+    }
+  };
+
   const contacts = [
     { id: '1', name: 'Meta AI', avatar: 'https://ui-avatars.com/api/?name=Meta+AI&background=6200ea&color=fff', isAI: true, verified: true },
     { id: '2', name: 'Jerson Camilo Umbarila Hincapie', avatar: 'https://ui-avatars.com/api/?name=Jerson+Camilo&background=00838f&color=fff' },
@@ -208,12 +277,12 @@ export default function CommunityPage() {
   );
 
   const leftNavItems = [
-    { label: 'Nexo AI', icon: <Sparkles size={20} className="icon-glow" />, href: '/dashboard/chat', color: '#00E5FF', action: null },
+    { label: 'Nexo AI', icon: <Sparkles size={20} className="icon-glow" />, href: '#', color: '#00E5FF', action: () => setShowNexoModal(true) },
     { label: 'Amigos', icon: <Users size={20} />, href: '#', color: '#00E5FF', action: () => setShowFriendsModal(true) },
     { label: 'Recuerdos', icon: <History size={20} />, href: '#', color: '#ffa500', action: () => setShowMemoriesModal(true) },
     { label: 'Guardado', icon: <Bookmark size={20} />, href: '#', color: '#4CAF50', action: () => setShowSavedModal(true) },
-    { label: 'Logros y Medallas', icon: <Award size={20} />, href: '#', color: '#FFD700', action: null },
-    { label: 'Grupos temáticos', icon: <Compass size={20} />, href: '/dashboard/groups', color: '#9C27B0', action: null }
+    { label: 'Logros y Medallas', icon: <Award size={20} />, href: '#', color: '#FFD700', action: () => setShowLogrosModal(true) },
+    { label: 'Grupos temáticos', icon: <Compass size={20} />, href: '#', color: '#9C27B0', action: () => setShowGroupsModal(true) }
   ];
 
   const shortcuts = [
@@ -565,6 +634,201 @@ export default function CommunityPage() {
                   userId={user.id}
                   onClose={() => setShowMemoriesModal(false)}
                 />
+              )}
+
+              {/* Modal de Nexo AI */}
+              {showNexoModal && (
+                <div className="modal-overlay" onClick={() => setShowNexoModal(false)}>
+                  <div className="modal-content nexo-ai-modal" onClick={(e) => e.stopPropagation()} style={{ width: '500px', display: 'flex', flexDirection: 'column', height: '600px' }}>
+                    <button className="modal-close" onClick={() => setShowNexoModal(false)}>
+                      <X size={20} />
+                    </button>
+                    <h3>Nexo AI - Asistente Otaku</h3>
+                    <div className="nexo-chat-messages" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', margin: '15px 0', paddingRight: '5px' }}>
+                      {nexoMessages.map((msg) => (
+                        <div key={msg.id} style={{
+                          alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                          maxWidth: '85%',
+                          background: msg.sender === 'user' ? 'linear-gradient(135deg, #0052FF, #00E5FF)' : 'rgba(255, 255, 255, 0.05)',
+                          border: msg.sender === 'user' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+                          padding: '10px 14px',
+                          borderRadius: '16px',
+                          borderBottomRightRadius: msg.sender === 'user' ? '0' : '16px',
+                          borderBottomLeftRadius: msg.sender === 'nexo' ? '0' : '16px',
+                          color: '#fff',
+                          fontSize: '0.9rem',
+                          lineHeight: '1.4'
+                        }}>
+                          {msg.text}
+                        </div>
+                      ))}
+                      {nexoLoading && (
+                        <div style={{ alignSelf: 'flex-start', color: '#00E5FF', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="nexo-pulse-dot" /> Nexo está pensando...
+                        </div>
+                      )}
+                    </div>
+                    <form onSubmit={handleSendNexoMessage} style={{ display: 'flex', gap: '10px' }}>
+                      <input
+                        type="text"
+                        placeholder="Pregúntale algo a Nexo..."
+                        value={nexoInput}
+                        onChange={(e) => setNexoInput(e.target.value)}
+                        className="modal-input"
+                        disabled={nexoLoading}
+                        style={{ margin: 0, flex: 1 }}
+                      />
+                      <button type="submit" className="btn-modal-create" disabled={nexoLoading} style={{ width: '80px', padding: 0, margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        Enviar
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal de Logros y Medallas */}
+              {showLogrosModal && (
+                <div className="modal-overlay" onClick={() => setShowLogrosModal(false)}>
+                  <div className="modal-content logros-modal" onClick={(e) => e.stopPropagation()} style={{ width: '480px', maxHeight: '550px', overflowY: 'auto' }}>
+                    <button className="modal-close" onClick={() => setShowLogrosModal(false)}>
+                      <X size={20} />
+                    </button>
+                    <h3>Logros y Medallas</h3>
+                    <p style={{ fontSize: '0.9rem', color: '#777', marginBottom: '20px' }}>
+                      Completa desafíos de AniNexo para desbloquear medallas exclusivas y subir en los rankings.
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {[
+                        { title: 'Otaku en Crecimiento', desc: 'Completa la información de tu perfil', progress: 100, completed: true, color: '#00E5FF', icon: <Sparkles size={24} /> },
+                        { title: 'Primer Nexo', desc: 'Crea tu primera publicación en el feed', progress: 100, completed: true, color: '#4CAF50', icon: <Users size={24} /> },
+                        { title: 'Crítico de Anime', desc: 'Comenta en 5 publicaciones ajenas', progress: 60, completed: false, color: '#FFD700', icon: <Award size={24} /> },
+                        { title: 'Espíritu Social', desc: 'Envía 3 solicitudes de amistad', progress: 33, completed: false, color: '#ffa500', icon: <Compass size={24} /> },
+                        { title: 'Coleccionista', desc: 'Guarda 10 publicaciones de otros', progress: 10, completed: false, color: '#9C27B0', icon: <Bookmark size={24} /> }
+                      ].map((logro, idx) => (
+                        <div key={idx} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '15px',
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                          padding: '12px 16px',
+                          borderRadius: '16px',
+                        }}>
+                          <div style={{
+                            width: '46px',
+                            height: '46px',
+                            borderRadius: '12px',
+                            background: logro.completed ? `linear-gradient(135deg, rgba(0, 0, 0, 0.3), ${logro.color}33)` : 'rgba(255,255,255,0.02)',
+                            border: `1px solid ${logro.completed ? logro.color : 'rgba(255, 255, 255, 0.07)'}`,
+                            color: logro.completed ? logro.color : '#444',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}>
+                            {logro.icon}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                              <h4 style={{ margin: 0, fontSize: '0.95rem', color: logro.completed ? '#fff' : '#aaa', fontWeight: 600 }}>{logro.title}</h4>
+                              <span style={{ fontSize: '0.8rem', color: logro.completed ? logro.color : '#777', fontWeight: 600 }}>
+                                {logro.completed ? 'Completado' : `${logro.progress}%`}
+                              </span>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.78rem', color: '#777', marginBottom: '8px' }}>{logro.desc}</p>
+                            <div style={{ width: '100%', height: '5px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{ width: `${logro.progress}%`, height: '100%', background: logro.completed ? `linear-gradient(90deg, #0052FF, ${logro.color})` : logro.color, borderRadius: '3px' }} />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal de Grupos Temáticos */}
+              {showGroupsModal && (
+                <div className="modal-overlay" onClick={() => setShowGroupsModal(false)}>
+                  <div className="modal-content groups-modal" onClick={(e) => e.stopPropagation()} style={{ width: '500px', maxHeight: '550px', display: 'flex', flexDirection: 'column' }}>
+                    <button className="modal-close" onClick={() => setShowGroupsModal(false)}>
+                      <X size={20} />
+                    </button>
+                    <h3>Grupos Temáticos</h3>
+                    <p style={{ fontSize: '0.88rem', color: '#777', marginBottom: '15px' }}>
+                      Explora y únete a comunidades temáticas dedicadas a tus series favoritas.
+                    </p>
+                    
+                    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '5px' }}>
+                      {loadingModalGroups ? (
+                        <p style={{ color: '#00E5FF', fontSize: '0.9rem', textAlign: 'center', margin: '20px 0' }}>Cargando grupos...</p>
+                      ) : modalGroups.length > 0 ? (
+                        modalGroups.map((group) => (
+                          <div key={group.id} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                            padding: '12px 16px',
+                            borderRadius: '16px',
+                            gap: '12px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{
+                                width: '45px',
+                                height: '45px',
+                                borderRadius: '50%',
+                                background: 'linear-gradient(135deg, #0052FF, #00E5FF)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '1.1rem',
+                                color: '#fff',
+                                fontWeight: 700,
+                                overflow: 'hidden'
+                              }}>
+                                {group.coverImage ? (
+                                  <img src={group.coverImage} alt={group.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  <span>{group.name.charAt(0)}</span>
+                                )}
+                              </div>
+                              <div>
+                                <h4 style={{ margin: 0, fontSize: '0.92rem', color: '#fff', fontWeight: 600 }}>{group.name}</h4>
+                                <span style={{ fontSize: '0.78rem', color: '#777' }}>
+                                  {group._count?.members || 1} miembros
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              className="btn-modal-create"
+                              style={{ width: 'auto', padding: '6px 14px', fontSize: '0.8rem', borderRadius: '10px', height: 'auto', margin: 0 }}
+                              onClick={() => {
+                                alert(`¡Te has unido al grupo ${group.name}!`);
+                              }}
+                            >
+                              Unirse
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <p style={{ color: '#777', fontSize: '0.85rem', textAlign: 'center', padding: '20px' }}>No hay grupos creados aún.</p>
+                      )}
+                    </div>
+                    
+                    <button
+                      className="btn-modal-create"
+                      style={{ marginTop: '15px' }}
+                      onClick={() => {
+                        setShowGroupsModal(false);
+                        setShowGroupModal(true);
+                      }}
+                    >
+                      + Crear Nuevo Grupo
+                    </button>
+                  </div>
+                </div>
               )}
 
            </div>
