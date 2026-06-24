@@ -176,7 +176,7 @@ export const tourSteps: TourStep[] = [
   },
   {
     target: '[data-tour="community-feed"]',
-    placement: 'right',
+    placement: 'bottom',
     title: 'Feed principal',
     content:
       'El feed muestra las publicaciones más recientes de la comunidad. Puedes crear posts, reseñas de anime, compartir imágenes y expresar tu opinión con reacciones únicas.',
@@ -187,7 +187,7 @@ export const tourSteps: TourStep[] = [
   },
   {
     target: '[data-tour="community-left-sidebar"]',
-    placement: 'right',
+    placement: 'bottom',
     title: 'Menú de comunidad',
     content:
       'En el panel izquierdo puedes acceder a tu perfil, ver sugerencias de usuarios afines a tus gustos, unirte a grupos temáticos y explorar los rankings de anime.',
@@ -198,7 +198,7 @@ export const tourSteps: TourStep[] = [
   },
   {
     target: '[data-tour="community-right-sidebar"]',
-    placement: 'left',
+    placement: 'bottom',
     title: 'Tus conexiones',
     content:
       'Aquí aparecen tus amigos conectados en tiempo real. Puedes enviarles mensajes directos, ver qué anime están viendo ahora mismo e invitarlos a ver algo juntos.',
