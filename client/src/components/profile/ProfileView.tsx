@@ -383,7 +383,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
         />
       )}
       
-      <Card className="profile-header-card" style={{ borderColor: profile.isPremium ? 'gold' : themeColor }}>
+      <Card className="profile-header-card" style={{ borderColor: profile.isPremium ? 'gold' : themeColor }} data-tour="profile-header">
         <div className="avatar-section">
            <div 
             className="avatar-container cursor-pointer" 
@@ -410,7 +410,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
               </div>
             )}
             {isOwnProfile && (
-              <button className="btn-activate-dna" onClick={() => setShowProfiling(true)}>
+              <button className="btn-activate-dna" onClick={() => setShowProfiling(true)} data-tour="profile-edit-btn">
                 ⚙️ Personalizar Perfil
               </button>
             )}
@@ -550,7 +550,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
         </div>
       </div>
 
-      <div className="intelligence-grid">
+      <div className="intelligence-grid" data-tour="profile-stats">
         <Card className="intel-card">
           <h3>ADN de Anime</h3>
           <div className="affinities-list">

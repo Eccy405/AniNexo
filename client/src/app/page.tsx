@@ -18,6 +18,13 @@ export default function Home() {
     }
   }, []);
 
+  const handleTourClick = () => {
+    localStorage.removeItem('nexo-tour-completed');
+    localStorage.setItem('user', JSON.stringify({ username: 'Invitado', role: 'USER', isGuest: true }));
+    localStorage.removeItem('token');
+    window.location.href = '/dashboard';
+  };
+
   return (
     <>
       {/* Navbar Transparente Floating */}
@@ -26,6 +33,9 @@ export default function Home() {
           ANINEXO
         </Link>
         <div className={styles.navActions}>
+          <button className={styles.btnTour} onClick={handleTourClick}>
+            Tour usuario
+          </button>
           <Link href="/login" className={styles.btnText}>Iniciar Sesión</Link>
           <Link href="/register" className={styles.btnText}>Registrarse</Link>
           <GuestButton className={styles.btnPremiumNav}>Explorar sin iniciar sesión</GuestButton>

@@ -297,7 +297,7 @@ export default function CommunityPage() {
       <div className="fb-layout-container">
         
         {/* Columna Izquierda (Navegación & Accesos Directos) */}
-        <aside className="left-sidebar">
+        <aside className="left-sidebar" data-tour="community-left-sidebar">
           <div className="sidebar-scrollable">
             <Link href={`/dashboard/profile/${user?.username || ''}`} className="sidebar-link profile-item">
               <img 
@@ -308,7 +308,7 @@ export default function CommunityPage() {
               <span className="link-label">{user?.username || 'Mi Perfil'}</span>
             </Link>
 
-{leftNavItems.map((item, idx) => (
+            {leftNavItems.map((item, idx) => (
               item.action ? (
                 <button key={idx} className="sidebar-link" onClick={item.action}>
                   <span className="icon-wrapper" style={{ color: item.color || 'var(--color-primary)' }}>
@@ -355,12 +355,12 @@ export default function CommunityPage() {
         </aside>
 
         {/* Columna Central (Feed Principal) */}
-        <main className="center-feed">
+        <main className="center-feed" data-tour="community-feed">
           <FeedList />
         </main>
 
         {/* Columna Derecha (Contactos & Actividades) */}
-        <aside className="right-sidebar">
+        <aside className="right-sidebar" data-tour="community-right-sidebar">
           <div className="sidebar-scrollable">
             
             {/* Solicitudes de amistad */}

@@ -72,6 +72,26 @@
   box-shadow: 0 0 30px rgba(0, 229, 255, 0.5);
 }
 
+.btnTour {
+  background: transparent;
+  color: #00E5FF;
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btnTour:hover {
+  background: rgba(0, 229, 255, 0.1);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+  transform: translateY(-1px);
+}
+
 /* Removed welcomeBanner etc as we replaced with Nexus engine */
 .nexusFull {
   position: fixed;

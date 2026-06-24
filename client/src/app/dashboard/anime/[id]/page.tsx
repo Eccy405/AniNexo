@@ -88,7 +88,7 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
   return (
     <div className="anime-page">
       {/* HERO SECTION */}
-      <div className="banner-section">
+      <div className="banner-section" data-tour="anime-header">
         <div className="banner-wrapper">
           {anime.bannerImage ? <Image src={anime.bannerImage} alt={title} fill priority className="banner-img" /> : <div className="banner-placeholder" />}
           <div className="banner-overlay" />
@@ -98,7 +98,7 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
             <Image src={anime.coverImage.extraLarge} alt={title} fill className="poster-img" />
           </div>
 <div className="header-text-main">
-             <h1 className="anime-title-h1">{title}</h1>
+             <h1 className="anime-title-h1" data-tour="anime-title">{title}</h1>
              <div className="quick-tags">
                <span className="q-tag">{anime.season} {anime.seasonYear}</span>
                <span className="q-tag">{anime.type}</span>
@@ -107,7 +107,7 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
            </div>
            
            {/* Action Buttons */}
-           <div className="anime-actions">
+           <div className="anime-actions" data-tour="anime-actions">
              <button 
                className="btn-create-group"
                onClick={() => setShowGroupModal(true)}
@@ -151,13 +151,14 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
        </div>
 
       {/* TAB BAR */}
-      <nav className="tab-navigation">
+      <nav className="tab-navigation" data-tour="anime-tabs">
         <div className="tabs-container">
           {tabs.map(tab => (
             <button 
               key={tab.id} 
               className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
+              data-tour={`tab-btn-${tab.id}`}
             >
               {tab.label}
               {activeTab === tab.id && <div className="tab-underline" />}
@@ -168,7 +169,7 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
 
       <div className="page-grid-layout">
         {/* SIDEBAR METADATA */}
-        <aside className="anime-sidebar">
+        <aside className="anime-sidebar" data-tour="anime-sidebar">
           <div className="meta-glass-card">
             <div className="meta-group"><span className="m-label">Formato</span><span className="m-value">{anime.type}</span></div>
             <div className="meta-group"><span className="m-label">Episodios</span><span className="m-value">{anime.episodes || '??'}</span></div>
@@ -242,7 +243,7 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
        <main className="anime-main-content">
          <div>
            {activeTab === 'overview' && (
-             <div key="overview" className="tab-pane animate-fadeInUp animate-delay-100">
+             <div key="overview" className="tab-pane animate-fadeInUp animate-delay-100" data-tour="anime-overview">
                <section className="info-block">
                  <h3>Sinopsis</h3>
                  <div className="description-text" dangerouslySetInnerHTML={{ __html: anime.description }} />
@@ -291,7 +292,7 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
            )}
 
            {activeTab === 'characters' && (
-             <div key="characters" className="tab-pane animate-fadeInUp animate-delay-200">
+             <div key="characters" className="tab-pane animate-fadeInUp animate-delay-200" data-tour="anime-characters">
                 <div className="characters-dual-grid">
                   {anime.characters?.nodes?.slice(0, visibleChars).map((char: any) => (
                     <div key={char.id} className="char-dual-card">
@@ -329,7 +330,7 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
            )}
 
            {activeTab === 'staff' && (
-             <div key="staff" className="tab-pane animate-fadeInUp animate-delay-300">
+             <div key="staff" className="tab-pane animate-fadeInUp animate-delay-300" data-tour="anime-staff">
                <div className="staff-full-grid">
                  {anime.staff?.map((s: any) => (
                    <div key={s.id} className="staff-entry">
@@ -345,13 +346,13 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
            )}
 
            {activeTab === 'social' && (
-             <div key="social" className="tab-pane animate-fadeInUp animate-delay-400">
+             <div key="social" className="tab-pane animate-fadeInUp animate-delay-400" data-tour="anime-social">
                <AnimeSocialFeed animeId={Number(anime.id)} animeTitle={title} />
              </div>
            )}
 
            {activeTab === 'stats' && (
-             <div key="stats" className="tab-pane animate-fadeInUp animate-delay-500">
+             <div key="stats" className="tab-pane animate-fadeInUp animate-delay-500" data-tour="anime-stats">
                <div className="stats-container">
                  <section className="stat-card">
                    <h4>Distribución de Puntuación</h4>

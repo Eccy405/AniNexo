@@ -115,21 +115,25 @@ export const TopNavbar: React.FC = () => {
       <div className={styles.navLeft}>
         <Link href="/dashboard" className={styles.logo}>ANINEXO</Link>
         <div className={styles.navLinks} role="menubar">
-          {navLinks.map((link) => (
-            <Link 
-              key={link.href} 
-              href={link.href} 
-              className={`${styles.navLink} ${pathname === link.href ? styles.navLinkActive : ''}`}
-              role="menuitem"
-            >
-              {link.name}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const tourId = `nav-${link.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-')}`;
+            return (
+              <Link 
+                key={link.href} 
+                href={link.href} 
+                className={`${styles.navLink} ${pathname === link.href ? styles.navLinkActive : ''}`}
+                role="menuitem"
+                data-tour={tourId}
+              >
+                {link.name}
+              </Link>
+            );
+          })}
         </div>
       </div>
 
       <div className={styles.navRight}>
-        <div className={styles.searchBox} ref={searchRef}>
+        <div className={styles.searchBox} ref={searchRef} data-tour="search-box">
            <input 
              type="text" 
              placeholder="Buscar anime o personas..." 
@@ -198,11 +202,11 @@ export const TopNavbar: React.FC = () => {
             <button className={styles.navIconBtn} aria-label="Notificaciones">🔔</button>
 
             {showFriendsModal && user && (
-              <FriendsModal
-                userId={user.id}
-                onClose={() => setShowFriendsModal(false)}
-                currentUser={user}
-              />
+               <FriendsModal
+                 userId={user.id}
+                 onClose={() => setShowFriendsModal(false)}
+                 currentUser={user}
+               />
             )}
 
             <div className={styles.userMenu} ref={menuRef}>
@@ -214,6 +218,7 @@ export const TopNavbar: React.FC = () => {
                aria-expanded={showDropdown}
                aria-haspopup="menu"
                onKeyDown={(e) => e.key === 'Enter' && setShowDropdown(!showDropdown)}
+               data-tour="user-avatar"
              >
                {user?.avatarUrl ? <img src={user.avatarUrl} alt="Usuario" /> : <span>{user?.username?.charAt(0) || 'U'}</span>}
              </div>
