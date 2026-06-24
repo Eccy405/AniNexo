@@ -77,6 +77,36 @@ export const NexoTour: React.FC = () => {
     }
   }, [run, playAudio]);
 
+  // Asegura que el globo de Nexo (tooltip) siempre esté completamente visible en pantalla
+  useEffect(() => {
+    if (!run) return;
+    const timer = setTimeout(() => {
+      // Buscar el contenedor de nuestro tooltip personalizado
+      const tooltip = document.querySelector('[class*="tooltipContainer"]') as HTMLElement;
+      if (tooltip) {
+        const rect = tooltip.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+
+        // Si el final del globo de diálogo queda abajo de la pantalla
+        if (rect.bottom > viewportHeight) {
+          window.scrollBy({
+            top: rect.bottom - viewportHeight + 30, // 30px de margen de seguridad
+            behavior: 'smooth'
+          });
+        }
+        // Si el principio del globo queda arriba (oculto por la barra superior)
+        else if (rect.top < 80) { // 80px para evitar el navbar superior
+          window.scrollBy({
+            top: rect.top - 100,
+            behavior: 'smooth'
+          });
+        }
+      }
+    }, 450); // Tiempo óptimo tras el scroll base de Joyride y el delay de pestañas
+
+    return () => clearTimeout(timer);
+  }, [stepIndex, run]);
+
   /**
    * Se ejecuta en cada cambio de pathname (incluido el mount inicial).
    * - Si hay un paso guardado en localStorage, reanuda desde ahí.
