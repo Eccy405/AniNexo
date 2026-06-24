@@ -10,6 +10,7 @@ export type TourStep = Step & {
   emotion?: 'happy' | 'explaining' | 'excited' | 'smug' | 'wink' | 'neutral' | 'surprised';
   navigateTo?: string; // URL o 'PROFILE'
   disableBeacon?: boolean;
+  disableScroll?: boolean;
 };
 
 export const tourSteps: TourStep[] = [
@@ -35,6 +36,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
   {
     target: '[data-tour="search-box"]',
@@ -46,6 +48,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
   {
     target: '[data-tour="nav-ia-nexo"]',
@@ -57,6 +60,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
 
   // ─────────────────────────────────────────────────
@@ -82,6 +86,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
   {
     target: '[data-tour="anime-sidebar"]',
@@ -93,6 +98,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
   {
     target: '[data-tour="anime-actions"]',
@@ -104,6 +110,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
   {
     target: '[data-tour="anime-overview"]',
@@ -115,6 +122,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
   {
     target: '[data-tour="anime-characters"]',
@@ -126,6 +134,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
   {
     target: '[data-tour="anime-staff"]',
@@ -137,6 +146,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
   {
     target: '[data-tour="anime-stats"]',
@@ -148,6 +158,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
   {
     target: '[data-tour="anime-social"]',
@@ -159,6 +170,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
 
   // ─────────────────────────────────────────────────
@@ -184,6 +196,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
   {
     target: '[data-tour="community-left-sidebar"]',
@@ -195,6 +208,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
   {
     target: '[data-tour="community-right-sidebar"]',
@@ -206,6 +220,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
 
   // ─────────────────────────────────────────────────
@@ -231,6 +246,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
   {
     target: '[data-tour="profile-edit-btn"]',
@@ -242,6 +258,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
   {
     target: '[data-tour="profile-stats"]',
@@ -253,6 +270,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     scrollOffset: 160,
+    disableScroll: true,
   },
 
   // ─────────────────────────────────────────────────

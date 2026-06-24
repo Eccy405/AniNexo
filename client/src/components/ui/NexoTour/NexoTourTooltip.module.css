@@ -8,8 +8,16 @@
   align-items: flex-end; /* Avatar se alinea desde abajo */
   gap: 16px;
   max-width: 560px;
-  z-index: 9999;
   background: transparent;
+
+  /* Forzar al contenedor del diálogo de Nexo a ser un overlay de posición fija en el centro de la pantalla */
+  position: fixed !important;
+  bottom: 28px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  top: auto !important;
+  right: auto !important;
+  z-index: 999999 !important;
 }
 
 /* ---- Avatar de Nexo ---- */
