@@ -221,3 +221,17 @@
     display: none;
   }
 }
+
+/* Anular contenedor flotante de Joyride para que sea fijo en el viewport sin verse atrapado por transforms */
+:global(div.react-joyride__tooltip) {
+  position: fixed !important;
+  bottom: 28px !important;
+  left: 50% !important;
+  transform: translate(-50%, 0) !important;
+  top: auto !important;
+  right: auto !important;
+  z-index: 999999 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
