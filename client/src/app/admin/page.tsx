@@ -202,14 +202,6 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchData();
-    const style = document.createElement('style');
-    style.textContent = '@keyframes spin { to { transform: rotate(360deg); } } .spinner { animation: spin 0.8s linear infinite; }';
-    document.head.appendChild(style);
-    return () => {
-      if (style.parentNode && style.parentNode.contains(style)) {
-        style.parentNode.removeChild(style);
-      }
-    };
   }, [fetchData]);
 
   const toggleMaintenance = async () => {
@@ -1651,6 +1643,7 @@ function SectionLoader({ label }: { label: string }) {
       alignItems: 'center', justifyContent: 'center', gap: '12px',
       color: '#888'
     }}>
+      <style>{'@keyframes spin { to { transform: rotate(360deg); } } .spinner { animation: spin 0.8s linear infinite; }'}</style>
       <div className="spinner" style={{
         width: '32px', height: '32px', border: '3px solid #222',
         borderTop: '3px solid #00E5FF', borderRadius: '50%'

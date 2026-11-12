@@ -4,7 +4,6 @@ import styles from "./page.module.css";
 import React, { useEffect } from "react";
 import { GuestButton } from "../components/auth/GuestButton";
 import Link from "next/link";
-// import { HiveCanvas } from "../components/nexus-engine/rendering/HiveCanvas";
 import { useSiteStats } from "@/lib/hooks/useSiteStats";
 import { SiteStats } from "@/components/ui/SiteStats/SiteStats";
 import HeroSection from "@/components/layout/HeroSection";
@@ -41,11 +40,6 @@ export default function Home() {
           <GuestButton className={styles.btnPremiumNav}>Explorar sin iniciar sesión</GuestButton>
         </div>
       </nav>
-
-      {/* Nexus Engine Full Background (Oculto Temporalmente) */}
-      {/* <div className={styles.nexusFull}>
-        <HiveCanvas />
-      </div> */}
 
       {/* Hero sobre fondo animado CSS */}
       <HeroSection />
