@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
 import { ProfileView } from '@/components/profile/ProfileView';
 
+export const runtime = 'edge';
+
 interface PageProps {
   params: { username: string };
 }
