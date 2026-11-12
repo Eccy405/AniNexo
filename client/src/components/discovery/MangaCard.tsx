@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { proxyImageUrl } from '@/lib/imageProxy';
 
 interface MangaCardProps {
   id: string;
@@ -25,7 +26,19 @@ export const MangaCard: React.FC<MangaCardProps> = ({
       <div className="manga-card-container">
         <div className="manga-card">
           <div className="poster-wrapper">
-            <img src={coverUrl} alt={title} className="poster-image" loading="lazy" />
+            <img
+              src={proxyImageUrl(coverUrl)}
+              alt={title}
+              className="poster-image"
+              loading="lazy"
+              onError={(e) => {
+                const img = e.currentTarget;
+                if (!img.dataset.fallback) {
+                  img.dataset.fallback = '1';
+                  img.src = 'https://placehold.co/400x600/090909/00E5FF?text=No+Cover';
+                }
+              }}
+            />
             
             {status && (
               <div className="status-badge">

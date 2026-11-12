@@ -56,30 +56,54 @@ export function ChatWindow({ chat }: { chat: any }) {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || !socket) return;
 
+    const outgoingText = inputText.trim();
+    setInputText('');
+    socket.emit('stop_typing', { conversationId: chat.conversationId });
+
     if (chat.isNexo) {
-        // Lógica especial para Nexo Premium
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/nexo/chat-persistent`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({ conversationId: chat.conversationId, message: inputText })
-        });
+        try {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/nexo/chat-persistent`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify({ conversationId: chat.conversationId, message: outgoingText })
+          });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            setMessages(prev => [
+              ...prev,
+              {
+                id: `err-${Date.now()}`,
+                senderId: 'SYSTEM_ERROR',
+                content: errData.message || 'No se pudo obtener respuesta de Gemini.',
+                createdAt: new Date().toISOString(),
+              }
+            ]);
+          }
+        } catch {
+          setMessages(prev => [
+            ...prev,
+            {
+              id: `err-${Date.now()}`,
+              senderId: 'SYSTEM_ERROR',
+              content: 'Error de conexión con el servidor de Nexo AI.',
+              createdAt: new Date().toISOString(),
+            }
+          ]);
+        }
     } else {
         socket.emit('send_message', {
             conversationId: chat.conversationId,
             senderId: 'ME', // El server lo sobreescribe con el JWT
-            content: inputText
+            content: outgoingText
         });
     }
-
-    setInputText('');
-    socket.emit('stop_typing', { conversationId: chat.conversationId });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

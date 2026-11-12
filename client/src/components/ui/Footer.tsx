@@ -17,11 +17,11 @@ export const Footer = () => {
           <Link href="/about">
             <Text size="sm" color="muted">Nosotros</Text>
           </Link>
-          <Link href="/premium">
+          <Link href="/dashboard/premium">
             <Text size="sm" color="muted">Premium</Text>
           </Link>
-          <Link href="/api-docs">
-            <Text size="sm" color="muted">API</Text>
+          <Link href="/dashboard/manual">
+            <Text size="sm" color="muted">Manual</Text>
           </Link>
         </div>
         <Text size="xs" color="muted" style={{ marginTop: '1.5rem' }}>

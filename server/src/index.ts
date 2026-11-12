@@ -143,13 +143,16 @@ app.use('/api/manga', mangaRoutes);
 import axios from 'axios';
 app.get('/api/proxy/image', async (req, res) => {
   const url = req.query.url as string;
-  if (!url || !/^https:\/\/(s\d+\.anilist\.co|cdn\.myanimelist\.net|img\.anili\.st)\//.test(url)) {
+  if (
+    !url ||
+    !/^https:\/\/(s\d+\.anilist\.co|cdn\.myanimelist\.net|img\.anili\.st|uploads\.mangadex\.org|[a-z0-9-]+\.mangadex\.network)\//i.test(url)
+  ) {
     return res.status(400).send('Invalid or disallowed image URL');
   }
   try {
     const upstream = await axios.get(url, {
       responseType: 'stream',
-      timeout: 8000,
+      timeout: 12000,
       headers: { 'User-Agent': 'AniNexo/1.0' }
     });
     res.removeHeader('Access-Control-Allow-Credentials');

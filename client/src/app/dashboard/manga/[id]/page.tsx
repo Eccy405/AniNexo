@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { proxyImageUrl } from '@/lib/imageProxy';
 
 export default function MangaDetailsPage() {
   const { id } = useParams();
@@ -74,10 +75,10 @@ export default function MangaDetailsPage() {
 
   return (
     <div className="manga-detail-page">
-      <div className="manga-hero" style={{ backgroundImage: `linear-gradient(to bottom, rgba(5,5,5,0.3), #050505), url(${manga.coverUrl})` }}>
+      <div className="manga-hero" style={{ backgroundImage: `linear-gradient(to bottom, rgba(5,5,5,0.3), #050505), url(${proxyImageUrl(manga.coverUrl)})` }}>
         <div className="hero-content">
           <div className="cover-wrapper">
-            <img src={manga.coverUrl} alt={manga.title} />
+            <img src={proxyImageUrl(manga.coverUrl)} alt={manga.title} />
           </div>
           <div className="manga-info">
             <h1 className="title">{manga.title}</h1>

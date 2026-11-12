@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AuthController } from './auth.controller';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
+import { authenticateToken } from '../../middleware/auth.middleware';
 
 const router = Router();
 const authController = new AuthController();
@@ -13,6 +14,7 @@ if (!JWT_SECRET) {
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.post('/verify', authController.verify);
+router.get('/me', authenticateToken, authController.me);
 
 // Google OAuth Routes
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));

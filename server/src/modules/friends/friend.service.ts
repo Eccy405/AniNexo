@@ -109,8 +109,8 @@ export class FriendService {
     await prisma.friendship.deleteMany({
       where: {
         OR: [
-          { userId, friendId, status: 'ACCEPTED' },
-          { userId: friendId, friendId: userId, status: 'ACCEPTED' }
+          { userId, friendId },
+          { userId: friendId, friendId: userId }
         ]
       }
     });

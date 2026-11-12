@@ -243,7 +243,7 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
         <span className="step-indicator">Paso {currentStep + 1} de {STEPS.length}</span>
       </div>
 
-      <div>
+      <div className="step-viewport">
         <div 
           key={currentStep}
           
@@ -304,7 +304,10 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
                       className="selected-banner"
                     >
                       <div className="banner-bg">
-                        <img src={selections.favAnime.image} alt="Selected" />
+                        <img src={selections.favAnime.image} alt="" aria-hidden="true" />
+                      </div>
+                      <div className="banner-poster">
+                        <img src={selections.favAnime.image} alt={selections.favAnime.title} />
                       </div>
                       <div className="banner-overlay">
                         <span className="banner-label" style={{ color: selections.themeColor }}>ANIME DE CULTO</span>
@@ -365,7 +368,10 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
                       className="selected-banner"
                     >
                       <div className="banner-bg">
-                        <img src={selections.favCharacter.image} alt="Selected" />
+                        <img src={selections.favCharacter.image} alt="" aria-hidden="true" />
+                      </div>
+                      <div className="banner-poster">
+                        <img src={selections.favCharacter.image} alt={selections.favCharacter.name} />
                       </div>
                       <div className="banner-overlay">
                         <span className="banner-label" style={{ color: selections.themeColor }}>ESPÍRITU AFÍN</span>
@@ -624,7 +630,8 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
           border: 1px solid rgba(255,255,255,0.1);
           width: 95%;
           max-width: 550px;
-          min-height: 520px;
+          min-height: min(520px, calc(100dvh - 40px));
+          max-height: calc(100dvh - 40px);
           display: flex;
           flex-direction: column;
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
@@ -648,7 +655,9 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
         .step-header { margin-bottom: 25px; }
         .step-title { font-size: 1.8rem; font-weight: 900; color: white; margin: 0 0 5px 0; }
         .step-subtitle { color: #666; font-size: 0.95rem; }
-        .step-body { flex: 1; margin-bottom: 30px; overflow-y: auto; padding-right: 5px; }
+        .step-viewport { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+        .step-content { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+        .step-body { flex: 1; min-height: 0; margin-bottom: 20px; overflow-y: auto; padding-right: 5px; }
         .step-body::-webkit-scrollbar { width: 4px; }
         .step-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
         
@@ -689,6 +698,95 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
         .fav-field input { background: #111; border: 1px solid #222; padding: 15px; border-radius: 12px; color: white; outline: none; font-size: 1.1rem; }
         .fav-field input:focus { border-color: #00E5FF; }
         
+        /* ===== Paso "Tus Leyendas Personales" ===== */
+        .favorites-step { display: flex; flex-direction: column; gap: 18px; }
+
+        .selected-banner {
+          position: relative;
+          width: 100%;
+          height: 150px;
+          border-radius: 16px;
+          overflow: hidden;
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: 0 10px 25px rgba(0,0,0,0.45);
+          display: flex;
+          align-items: stretch;
+          background: #0d0d0d;
+        }
+        .banner-bg { position: absolute; inset: 0; z-index: 0; }
+        .banner-bg img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center 25%;
+          filter: blur(2px) brightness(0.55);
+          transform: scale(1.08);
+        }
+        .banner-overlay {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+          align-items: flex-start;
+          gap: 6px;
+          width: 100%;
+          padding: 16px 18px 16px 120px;
+          background: linear-gradient(90deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.75) 60%, rgba(0,0,0,0.9) 100%);
+        }
+        .banner-poster {
+          position: absolute;
+          left: 14px;
+          top: 14px;
+          bottom: 14px;
+          width: 90px;
+          border-radius: 10px;
+          overflow: hidden;
+          z-index: 2;
+          box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+          border: 1px solid rgba(255,255,255,0.12);
+        }
+        .banner-poster img { width: 100%; height: 100%; object-fit: cover; }
+        .banner-label {
+          font-size: 0.7rem;
+          font-weight: 900;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+        .banner-title {
+          margin: 0;
+          color: #fff;
+          font-size: 1.15rem;
+          font-weight: 900;
+          line-height: 1.2;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+        }
+        .btn-change-banner {
+          margin-top: 4px;
+          background: rgba(255,255,255,0.08);
+          color: #ddd;
+          border: 1px solid rgba(255,255,255,0.18);
+          padding: 6px 14px;
+          border-radius: 999px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .btn-change-banner:hover { background: rgba(255,255,255,0.16); color: #fff; border-color: ${selections.themeColor}; }
+
+        @media (max-width: 480px) {
+          .selected-banner { height: 130px; }
+          .banner-poster { width: 70px; }
+          .banner-overlay { padding-left: 96px; }
+          .banner-title { font-size: 1rem; }
+          .results-gallery { grid-template-columns: repeat(2, 1fr); }
+        }
+
         .search-wrapper { position: relative; margin-bottom: 15px; }
         .nexo-input { width: 100%; background: #111; border: 1px solid #222; padding: 15px; border-radius: 12px; color: white; outline: none; font-size: 1rem; transition: all 0.3s; }
         .nexo-input:focus { border-color: ${selections.themeColor}; box-shadow: 0 0 15px ${selections.themeColor}22; }

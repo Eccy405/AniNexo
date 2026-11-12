@@ -99,8 +99,8 @@ export default function Home() {
           </div>
           <div className={styles.footerLinks}>
             <Link href="/about">Nosotros</Link>
-            <Link href="/premium">Premium</Link>
-            <Link href="/api-docs">API</Link>
+            <Link href="/dashboard/premium">Premium</Link>
+            <Link href="/dashboard/manual">Manual</Link>
           </div>
         </div>
         <div className={styles.footerBottom}>

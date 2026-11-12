@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { proxyImageUrl } from '@/lib/imageProxy';
 
 export default function MangaReaderPage() {
   const { chapterId } = useParams();
@@ -77,7 +78,7 @@ export default function MangaReaderPage() {
       <main className="pages-container">
         {pages.map((url, index) => (
           <div key={index} className="page-wrapper">
-            <img src={url} alt={`Página ${index + 1}`} loading="lazy" />
+            <img src={proxyImageUrl(url)} alt={`Página ${index + 1}`} loading="lazy" />
             <div className="page-number">{index + 1} / {pages.length}</div>
           </div>
         ))}

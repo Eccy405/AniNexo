@@ -163,8 +163,8 @@ export default function RegisterPage() {
   return (
     <main className="register-container">
        {/* LADO IZQUIERDO */}
-       <section className="side-form">
-         <div>
+        <section className="side-form">
+          <div className="form-stage">
            {step === 'account' && (
              <div key="account" className="register-box animate-fadeInUp animate-delay-100">
                <h1 className="title">Registro</h1>
@@ -334,9 +334,11 @@ export default function RegisterPage() {
       </section>
 
        <style jsx>{`
-         .register-container { display: flex; height: 100vh; width: 100vw; background: #000; overflow: hidden; }
-         .side-form { flex: 1; height: 100%; display: flex; align-items: center; justify-content: center; background: #050505; z-index: 2; padding: 20px; overflow-y: auto; }
-         .side-image { flex: 1; position: relative; }
+         .register-container { display: flex; min-height: 100dvh; width: 100%; background: #000; overflow-x: hidden; }
+         .side-form { flex: 1; height: 100dvh; display: flex; justify-content: center; align-items: flex-start; background: #050505; z-index: 2; padding: 20px; overflow-y: auto; }
+         .form-stage { width: 100%; display: flex; justify-content: center; margin: auto 0; }
+         .wizard-container { width: 100%; display: flex; justify-content: center; }
+         .side-image { flex: 1; position: relative; height: 100dvh; }
          .image-wrapper { width: 100%; height: 100%; }
          .hero-img { width: 100%; height: 100%; object-fit: cover; }
          .hero-overlay { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 60%); display: flex; flex-direction: column; justify-content: flex-end; padding: 60px; color: white; }

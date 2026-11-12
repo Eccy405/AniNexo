@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from './auth.service';
 import { validateRegister, validateLogin } from './auth.validator';
+import { AuthRequest } from '../../middleware/auth.middleware';
 
 export class AuthController {
   private authService: AuthService;
@@ -84,5 +85,27 @@ export class AuthController {
     } catch (error) {
       next(error);
     }
+  };
+
+  me = async (req: AuthRequest, res: Response) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    res.status(200).json({
+      success: true,
+      data: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+        isPremium: user.isPremium,
+        themeColor: user.themeColor,
+        archetype: user.archetype,
+        firstName: user.firstName,
+        lastName: user.lastName
+      }
+    });
   };
 }

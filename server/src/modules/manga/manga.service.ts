@@ -155,7 +155,7 @@ export class MangaService {
 
     const coverFileName = coverRel ? coverRel.attributes?.fileName : null;
     const coverUrl = coverFileName 
-      ? `${MANGADEX_DOWNLOADS_URL}/covers/${id}/${coverFileName}`
+      ? `${MANGADEX_DOWNLOADS_URL}/covers/${id}/${coverFileName}.512.jpg`
       : 'https://placehold.co/400x600/090909/00E5FF?text=No+Cover';
 
     const titleMap = attributes.title || {};

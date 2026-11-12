@@ -120,6 +120,21 @@ export const TopNavbar: React.FC = () => {
       }
     }
 
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(res => {
+          if (res?.success && res.data) {
+            setUser(res.data);
+            localStorage.setItem('user', JSON.stringify(res.data));
+          }
+        })
+        .catch(() => {});
+    }
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
@@ -423,7 +438,7 @@ export const TopNavbar: React.FC = () => {
                     <Link href="/dashboard/daily" className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
                       <span className={styles.dIcon} aria-hidden="true">🎁</span> Nexos Diarios
                     </Link>
-                    {user?.role === 'ADMIN' && (
+                    {(user?.role === 'ADMIN' || user?.role === 'SUPERADMIN') && (
                       <Link href="/admin" className={`${styles.dropdownItem} ${styles.adminHighlight}`} onClick={() => setShowDropdown(false)} role="menuitem">
                         <span className={styles.dIcon} aria-hidden="true">🛡️</span> Panel Admin
                       </Link>
