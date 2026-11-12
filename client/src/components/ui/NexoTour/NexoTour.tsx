@@ -9,18 +9,18 @@ import { NexoTourTooltip } from './NexoTourTooltip';
 const COMPLETED_KEY = 'nexo-tour-completed';
 const STEP_KEY     = 'nexo-tour-step';
 
-/** Obtiene la URL de perfil dinámica desde localStorage, con fallback a 'mikasa' si es invitado */
+/** Obtiene la URL de perfil dinámica desde localStorage, con fallback al perfil existente 'Eccy' para invitados */
 function getProfileUrl(): string {
   try {
     const raw = localStorage.getItem('user');
-    if (!raw) return '/home/profile/mikasa';
-    const user = JSON.parse(raw) as { username?: string };
-    if (!user || !user.username) {
-      return '/home/profile/mikasa';
+    if (!raw) return '/home/profile/Eccy';
+    const user = JSON.parse(raw) as { username?: string; isGuest?: boolean };
+    if (!user || !user.username || user.isGuest || user.username.toLowerCase() === 'invitado') {
+      return '/home/profile/Eccy';
     }
     return `/home/profile/${user.username}`;
   } catch {
-    return '/home/profile/mikasa';
+    return '/home/profile/Eccy';
   }
 }
 

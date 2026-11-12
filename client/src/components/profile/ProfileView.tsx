@@ -448,24 +448,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
                     }[userStatuses[profile.id] || 'offline']}
                   </span>
 
-                  {isOwnProfile && (
-                    <div style={{ position: 'relative', display: 'inline-block' }} data-tour="profile-status">
-                      <button 
-                        onClick={() => setShowStatusSelector(!showStatusSelector)}
-                        className={styles.statusSelectBtn}
-                        title="Cambiar mi estado"
-                      >
-                        ⚙️
-                      </button>
-                      {showStatusSelector && (
-                        <div className={styles.statusDropdown}>
-                          <button onClick={() => { socket?.emit('set_status', { status: 'online' }); setUserStatus(currentUser.id, 'online'); setShowStatusSelector(false); }}>🟢 En línea</button>
-                          <button onClick={() => { socket?.emit('set_status', { status: 'away' }); setUserStatus(currentUser.id, 'away'); setShowStatusSelector(false); }}>🟡 Ausente</button>
-                          <button onClick={() => { socket?.emit('set_status', { status: 'busy' }); setUserStatus(currentUser.id, 'busy'); setShowStatusSelector(false); }}>🔴 Ocupado</button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div style={{ position: 'relative', display: 'inline-block' }} data-tour="profile-status">
+                    {isOwnProfile && (
+                      <>
+                        <button 
+                          onClick={() => setShowStatusSelector(!showStatusSelector)}
+                          className={styles.statusSelectBtn}
+                          title="Cambiar mi estado"
+                        >
+                          ⚙️
+                        </button>
+                        {showStatusSelector && (
+                          <div className={styles.statusDropdown}>
+                            <button onClick={() => { socket?.emit('set_status', { status: 'online' }); setUserStatus(currentUser.id, 'online'); setShowStatusSelector(false); }}>🟢 En línea</button>
+                            <button onClick={() => { socket?.emit('set_status', { status: 'away' }); setUserStatus(currentUser.id, 'away'); setShowStatusSelector(false); }}>🟡 Ausente</button>
+                            <button onClick={() => { socket?.emit('set_status', { status: 'busy' }); setUserStatus(currentUser.id, 'busy'); setShowStatusSelector(false); }}>🔴 Ocupado</button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
 
                   {profile.archetype && (
                     <span className={styles.archetypeBadge} style={{ color: themeColor, borderColor: themeColor }}>
@@ -493,7 +495,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
                   <button className={styles.btnSecondary} onClick={() => setShowProfiling(true)}>
                     ⚙️ Personalizar ADN
                   </button>
-                  <button className={styles.btnPrimary} onClick={() => setShowEditModal(true)}>
+                  <button className={styles.btnPrimary} onClick={() => setShowEditModal(true)} data-tour="profile-edit-btn">
                     ✏️ Editar Perfil
                   </button>
                 </>
@@ -504,6 +506,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
                     onClick={handleAddFriend}
                     disabled={friendRequested || !currentUser?.isVerified}
                     title={!currentUser?.isVerified ? 'Verifica tu cuenta' : 'Agregar amigo'}
+                    data-tour="profile-edit-btn"
                   >
                     👤 {friendRequested ? 'Amigo/Agregado' : 'Agregar amigo'}
                   </button>
@@ -550,7 +553,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
             </div>
           </div>
 
-          <div className={styles.sectionCard}>
+          <div className={styles.sectionCard} data-tour="profile-stats">
             <h2 className={styles.sectionTitle}>🧬 ADN de Anime</h2>
             <div className={styles.dnaTags}>
               {profile.affinities?.length > 0 ? (
