@@ -58,6 +58,8 @@ export class NotificationService {
                 userId,
                 type,
                 referenceId: data.referenceId,
+                title: data.title,
+                message: data.message,
                 isRead: false
               }
             });
@@ -68,6 +70,8 @@ export class NotificationService {
               userId,
               type,
               referenceId: data.referenceId ?? null,
+              title: data.title,
+              message: data.message,
               isRead: false
             }
           });
@@ -150,7 +154,11 @@ export class NotificationService {
             title = '¡Nuevo seguidor!';
             message = 'Alguien comenzó a seguirte.';
           }
-        } else if (n.type === 'SYSTEM' && n.referenceId) {
+        } else if (n.type === 'SYSTEM' && (n as any).title && (n as any).message) {
+          title = (n as any).title;
+          message = (n as any).message;
+          actionRequired = false;
+        } else if (n.type === 'SYSTEM' && n.referenceId && !n.referenceId.startsWith('PREMIUM_')) {
           const [senderUser, pendingIncoming, acceptedFriendship] = await Promise.all([
             prisma.user.findUnique({
               where: { id: n.referenceId },

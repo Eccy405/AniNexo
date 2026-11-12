@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { PremiumService } from './premium.service';
-import Stripe from 'stripe';
+import { AuthRequest } from '../../middleware/auth.middleware';
 
 export class PremiumController {
   private premiumService: PremiumService;
@@ -9,33 +9,56 @@ export class PremiumController {
     this.premiumService = new PremiumService();
   }
 
-  createCheckout = async (req: Request, res: Response, next: NextFunction) => {
+  getStatus = async (req: AuthRequest, res: Response) => {
     try {
-      const { userId } = req.body;
+      const userId = req.user?.id;
       if (!userId) {
-        return res.status(400).json({ success: false, message: 'Falta userId' });
+        return res.status(401).json({ success: false, message: 'No autorizado' });
       }
-
-      const session = await this.premiumService.createCheckoutSession(userId);
-      res.status(200).json({ success: true, data: session });
+      const status = await this.premiumService.getStatus(userId);
+      res.status(200).json({ success: true, data: status });
     } catch (error: any) {
       res.status(400).json({ success: false, message: error.message });
     }
   };
 
-  webhook = async (req: Request, res: Response, next: NextFunction) => {
+  requestPremium = async (req: AuthRequest, res: Response) => {
     try {
-      const sig = req.headers['stripe-signature'];
-      
-      // En producción, validar la firma con req.rawBody y stripe.webhooks.constructEvent
-      // Por simplicidad en esta demo, lo pasamos directamente
-      const event = req.body as any;
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Debes iniciar sesión para solicitar Premium.' });
+      }
 
+      const { note } = req.body || {};
+      const result = await this.premiumService.requestPremiumActivation(userId, note);
+      res.status(200).json({ success: true, message: result.message, data: result });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  };
+
+  createCheckout = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'No autorizado' });
+      }
+
+      const session = await this.premiumService.createCheckoutSession(userId);
+      res.status(200).json({ success: true, data: session });
+    } catch (error: any) {
+      res.status(403).json({ success: false, message: error.message });
+    }
+  };
+
+  webhook = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const event = req.body as any;
       await this.premiumService.handleWebhook(event);
       res.json({ received: true });
     } catch (error) {
       console.error(error);
-      res.status(400).send(`Webhook Error`);
+      res.status(403).send(`Webhook Error`);
     }
   };
 }

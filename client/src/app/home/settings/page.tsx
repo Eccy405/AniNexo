@@ -769,9 +769,11 @@ export default function DashboardSettingsPage() {
       <style jsx>{`
         .settings-page {
           width: 100%;
-          max-width: 980px;
+          max-width: 1020px;
           margin: 0 auto;
-          padding: 2rem 1rem 5rem;
+          padding: 2rem 1.5rem 6rem;
+          overflow: visible;
+          height: auto;
         }
 
         .settings-header {
@@ -849,13 +851,23 @@ export default function DashboardSettingsPage() {
 
         .settings-content {
           flex-grow: 1;
+          min-width: 0;
+          width: 100%;
           display: flex;
           flex-direction: column;
           gap: 1.5rem;
+          overflow: visible;
+          height: auto;
         }
 
+        .settings-content :global(.settings-card),
         .settings-card {
-          padding: 1.6rem;
+          padding: 28px 32px !important;
+          overflow: visible !important;
+          height: auto !important;
+          max-height: none !important;
+          width: 100%;
+          box-sizing: border-box;
           animation: aninexo-enter var(--motion-duration-cinematic) var(--motion-ease-emphasized) 120ms both;
         }
 
@@ -863,7 +875,9 @@ export default function DashboardSettingsPage() {
           display: flex;
           justify-content: space-between;
           gap: 1rem;
-          margin-bottom: 1.4rem;
+          margin-top: 0;
+          margin-bottom: 1.5rem;
+          padding: 2px 0;
         }
 
         .settings-card-header h2 {

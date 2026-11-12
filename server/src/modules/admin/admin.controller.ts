@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../../lib/prisma';
 import { AnimeService } from '../anime/anime.service';
+import { notificationService } from '../notification/notification.service';
 
 export class AdminController {
   getAnalytics = async (req: Request, res: Response, next: NextFunction) => {
@@ -215,13 +216,156 @@ export class AdminController {
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (!user) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
 
+      const nextIsPremium = !user.isPremium;
       const updated = await prisma.user.update({
         where: { id: userId },
-        data: { isPremium: !user.isPremium },
-        select: { id: true, username: true, email: true, role: true, isPremium: true, isVerified: true, createdAt: true }
+        data: {
+          isPremium: nextIsPremium,
+          premiumStatus: nextIsPremium ? 'APPROVED' : 'NONE',
+          premiumUntil: nextIsPremium ? new Date(new Date().setFullYear(new Date().getFullYear() + 1)) : null,
+          role: nextIsPremium
+            ? (user.role === 'USER' ? 'PREMIUM' : user.role)
+            : (user.role === 'PREMIUM' ? 'USER' : user.role)
+        },
+        select: { id: true, username: true, email: true, role: true, isPremium: true, premiumStatus: true, isVerified: true, createdAt: true }
       });
 
       res.status(200).json({ success: true, data: updated });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getPremiumRequests = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const [pending, history] = await Promise.all([
+        prisma.user.findMany({
+          where: { premiumStatus: 'PENDING' },
+          orderBy: { premiumRequestedAt: 'desc' },
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            avatarUrl: true,
+            isPremium: true,
+            premiumStatus: true,
+            premiumRequestNote: true,
+            premiumRequestedAt: true,
+            createdAt: true
+          }
+        }),
+        prisma.user.findMany({
+          where: { premiumStatus: { in: ['APPROVED', 'REJECTED'] }, premiumRequestedAt: { not: null } },
+          orderBy: { updatedAt: 'desc' },
+          take: 25,
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            avatarUrl: true,
+            isPremium: true,
+            premiumStatus: true,
+            premiumRequestNote: true,
+            premiumRequestedAt: true,
+            updatedAt: true
+          }
+        })
+      ]);
+
+      res.status(200).json({ success: true, data: { pending, history } });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  approvePremiumRequest = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = String(req.params.userId);
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+
+      const oneYearLater = new Date(new Date().setFullYear(new Date().getFullYear() + 1));
+
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          isPremium: true,
+          premiumStatus: 'APPROVED',
+          premiumUntil: oneYearLater,
+          role: user.role === 'USER' ? 'PREMIUM' : user.role
+        },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          isPremium: true,
+          premiumStatus: true,
+          premiumUntil: true,
+          premiumRequestNote: true,
+          premiumRequestedAt: true
+        }
+      });
+
+      await prisma.notification.updateMany({
+        where: { type: 'SYSTEM', referenceId: `PREMIUM_REQ:${userId}`, isRead: false },
+        data: { isRead: true }
+      }).catch(() => {});
+
+      await notificationService.createNotification(userId, 'SYSTEM', {
+        title: '✨ ¡AniNexo Premium Activado!',
+        message: 'Un administrador aprobó tu solicitud Premium. Disfruta de Nexo IA Avanzado, listas ilimitadas y tu insignia exclusiva.',
+        referenceId: `PREMIUM_APPROVED:${userId}`
+      }).catch(() => {});
+
+      res.status(200).json({ success: true, message: `Premium aprobado para @${user.username}`, data: updated });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  rejectPremiumRequest = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = String(req.params.userId);
+      const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          isPremium: false,
+          premiumStatus: 'REJECTED',
+          premiumUntil: null,
+          role: user.role === 'PREMIUM' ? 'USER' : user.role
+        },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          isPremium: true,
+          premiumStatus: true,
+          premiumUntil: true,
+          premiumRequestNote: true,
+          premiumRequestedAt: true
+        }
+      });
+
+      await prisma.notification.updateMany({
+        where: { type: 'SYSTEM', referenceId: `PREMIUM_REQ:${userId}`, isRead: false },
+        data: { isRead: true }
+      }).catch(() => {});
+
+      await notificationService.createNotification(userId, 'SYSTEM', {
+        title: 'Solicitud Premium Rechazada',
+        message: reason
+          ? `Tu solicitud de activación Premium fue rechazada: ${reason}`
+          : 'Tu solicitud de activación Premium no fue aprobada en esta ocasión. Revisa los detalles y vuelve a intentarlo si lo deseas.',
+        referenceId: `PREMIUM_REJECTED:${userId}`
+      }).catch(() => {});
+
+      res.status(200).json({ success: true, message: `Solicitud rechazada para @${user.username}`, data: updated });
     } catch (error) {
       next(error);
     }

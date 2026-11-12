@@ -26,16 +26,21 @@ import {
   UserCheck,
   ArrowLeft,
   Settings2,
-  Database
+  Database,
+  Sparkles,
+  Check,
+  X
 } from 'lucide-react';
 
-type Tab = 'dashboard' | 'users' | 'anime' | 'moderation' | 'finances' | 'system' | 'nexo' | 'telemetry' | 'logs' | 'emails' | 'manual';
+type Tab = 'dashboard' | 'users' | 'premium' | 'anime' | 'moderation' | 'finances' | 'system' | 'nexo' | 'telemetry' | 'logs' | 'emails' | 'manual';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [metrics, setMetrics] = useState<any>(null);
   const [reports, setReports] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [premiumRequests, setPremiumRequests] = useState<{ pending: any[]; history: any[] }>({ pending: [], history: [] });
+  const [processingPremiumId, setProcessingPremiumId] = useState<string | null>(null);
   const [finances, setFinances] = useState<any>(null);
   const [animeCache, setAnimeCache] = useState<any[]>([]);
   const [nexoLogs, setNexoLogs] = useState<any[]>([]);
@@ -50,6 +55,7 @@ export default function AdminDashboard() {
     stats: true,
     reports: true,
     users: true,
+    premium: true,
     finances: true,
     anime: true,
     nexo: true,
@@ -155,6 +161,7 @@ export default function AdminDashboard() {
       safeFetch('/admin/stats', (data) => setHistoricalData(data.historical), 'stats'),
       safeFetch('/admin/reports', setReports, 'reports'),
       safeFetch('/admin/users', setUsers, 'users'),
+      safeFetch('/admin/premium-requests', setPremiumRequests, 'premium'),
       safeFetch('/admin/finances', setFinances, 'finances'),
       safeFetch('/admin/anime', setAnimeCache, 'anime'),
       safeFetch('/admin/nexo-logs', setNexoLogs, 'nexo'),
@@ -181,6 +188,7 @@ export default function AdminDashboard() {
       stats: { endpoint: '/admin/stats', setter: (d) => setHistoricalData(d.historical) },
       reports: { endpoint: '/admin/reports', setter: setReports },
       users: { endpoint: '/admin/users', setter: setUsers },
+      premium: { endpoint: '/admin/premium-requests', setter: setPremiumRequests },
       finances: { endpoint: '/admin/finances', setter: setFinances },
       anime: { endpoint: '/admin/anime', setter: setAnimeCache },
       nexo: { endpoint: '/admin/nexo-logs', setter: setNexoLogs },
@@ -352,6 +360,48 @@ export default function AdminDashboard() {
     } catch (e) {
       console.error(e);
       alert('Error de conexión');
+    }
+  };
+
+  const handlePremiumDecision = async (userId: string, decision: 'approve' | 'reject') => {
+    let reason: string | undefined;
+    if (decision === 'reject') {
+      const input = window.prompt('Motivo del rechazo (opcional):');
+      if (input === null) return; // cancelado
+      reason = input.trim() || undefined;
+    }
+
+    setProcessingPremiumId(userId);
+    try {
+      const token = localStorage.getItem('token');
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_URL ||
+        (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+          ? 'https://aninexo.onrender.com/api'
+          : 'http://localhost:3001/api');
+      const res = await fetch(`${apiBase}/admin/premium-requests/${userId}/${decision}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(reason ? { reason } : {}),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        await Promise.all([
+          safeFetch('/admin/premium-requests', setPremiumRequests, 'premium'),
+          safeFetch('/admin/users', setUsers, 'users'),
+          safeFetch('/admin/analytics', setMetrics, 'analytics'),
+        ]);
+      } else {
+        alert(data.message || 'No se pudo procesar la solicitud Premium.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión al procesar la solicitud.');
+    } finally {
+      setProcessingPremiumId(null);
     }
   };
 
@@ -1375,6 +1425,138 @@ export default function AdminDashboard() {
           </div>
         );
 
+      case 'premium':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+            {sectionLoading.premium ? (
+              <SectionLoader label="solicitudes Premium" />
+            ) : fetchErrors.premium ? (
+              <SectionError
+                errorKey="premium"
+                message={fetchErrors.premium}
+                onRetry={() => retrySectionFetch('premium')}
+              />
+            ) : (
+              <>
+                <Card style={{ padding: '25px', border: '1px solid rgba(0, 229, 255, 0.2)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <div>
+                      <h2 style={{ margin: 0, color: '#00E5FF', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Sparkles size={20} /> Solicitudes de Activación Premium
+                      </h2>
+                      <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#888' }}>
+                        Aprueba o rechaza manualmente las solicitudes enviadas desde /home/premium.
+                      </p>
+                    </div>
+                    <span style={{
+                      padding: '4px 12px',
+                      borderRadius: '999px',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      background: premiumRequests.pending.length > 0 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.05)',
+                      color: premiumRequests.pending.length > 0 ? '#fbbf24' : '#888'
+                    }}>
+                      {premiumRequests.pending.length} pendientes
+                    </span>
+                  </div>
+
+                  {premiumRequests.pending.length === 0 ? (
+                    <div style={{ padding: '32px', textAlign: 'center', color: '#777', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                      No hay solicitudes Premium pendientes en este momento.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {premiumRequests.pending.map((reqUser: any) => (
+                        <div
+                          key={reqUser.id}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: '16px',
+                            flexWrap: 'wrap',
+                            padding: '16px',
+                            borderRadius: '14px',
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            border: '1px solid rgba(255, 255, 255, 0.08)'
+                          }}
+                        >
+                          <div style={{ flex: 1, minWidth: '220px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                              <strong style={{ color: '#fff', fontSize: '1rem' }}>@{reqUser.username}</strong>
+                              <span style={{ fontSize: '0.78rem', color: '#888' }}>{reqUser.email}</span>
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: '#fbbf24', marginBottom: reqUser.premiumRequestNote ? '6px' : 0 }}>
+                              Solicitado: {reqUser.premiumRequestedAt ? new Date(reqUser.premiumRequestedAt).toLocaleString('es-ES') : 'Reciente'}
+                            </div>
+                            {reqUser.premiumRequestNote && (
+                              <div style={{ fontSize: '0.85rem', color: '#cbd5e1', background: 'rgba(0,0,0,0.35)', padding: '8px 12px', borderRadius: '8px', borderLeft: '3px solid #00E5FF' }}>
+                                Nota / Comprobante: “{reqUser.premiumRequestNote}”
+                              </div>
+                            )}
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              disabled={processingPremiumId === reqUser.id}
+                              onClick={() => handlePremiumDecision(reqUser.id, 'approve')}
+                              style={{ background: '#22C55E', color: '#000', fontWeight: 800, border: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                            >
+                              <Check size={15} /> {processingPremiumId === reqUser.id ? 'Procesando...' : 'Aprobar'}
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              disabled={processingPremiumId === reqUser.id}
+                              onClick={() => handlePremiumDecision(reqUser.id, 'reject')}
+                              style={{ borderColor: '#FF5252', color: '#FF5252', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                            >
+                              <X size={15} /> Rechazar
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+
+                {premiumRequests.history?.length > 0 && (
+                  <Card style={{ padding: '25px' }}>
+                    <h3 style={{ marginTop: 0, color: '#fff', marginBottom: '16px' }}>Historial reciente</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {premiumRequests.history.map((h: any) => (
+                        <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid #1a1a1c' }}>
+                          <div>
+                            <strong style={{ color: '#fff' }}>@{h.username}</strong>
+                            <span style={{ color: '#666', fontSize: '0.8rem', marginLeft: '10px' }}>{h.email}</span>
+                            {h.premiumRequestNote && (
+                              <span style={{ display: 'block', color: '#9ca3af', fontSize: '0.78rem', marginTop: '3px' }}>
+                                Nota: “{h.premiumRequestNote}”
+                              </span>
+                            )}
+                          </div>
+                          <span style={{
+                            padding: '3px 10px',
+                            borderRadius: '999px',
+                            fontSize: '0.75rem',
+                            fontWeight: 800,
+                            background: h.premiumStatus === 'APPROVED' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255, 82, 82, 0.15)',
+                            color: h.premiumStatus === 'APPROVED' ? '#22C55E' : '#FF5252'
+                          }}>
+                            {h.premiumStatus === 'APPROVED' ? 'APROBADA' : 'RECHAZADA'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+              </>
+            )}
+          </div>
+        );
+
       case 'system':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -1501,6 +1683,7 @@ export default function AdminDashboard() {
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
           <TabButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<LayoutDashboard size={18} />} label="Dashboard" />
           <TabButton active={activeTab === 'users'} onClick={() => setActiveTab('users')} icon={<Users size={18} />} label="Usuarios" />
+          <TabButton active={activeTab === 'premium'} onClick={() => setActiveTab('premium')} icon={<Sparkles size={18} />} label="Solicitudes Premium" badge={premiumRequests.pending.length} />
           <TabButton active={activeTab === 'anime'} onClick={() => setActiveTab('anime')} icon={<Database size={18} />} label="Anime CRUD" />
           <TabButton active={activeTab === 'moderation'} onClick={() => setActiveTab('moderation')} icon={<ShieldAlert size={18} />} label="Moderación" badge={reports.filter(r => r.status === 'PENDING').length} />
           <TabButton active={activeTab === 'finances'} onClick={() => setActiveTab('finances')} icon={<Coins size={18} />} label="Finanzas" />
@@ -1523,7 +1706,9 @@ export default function AdminDashboard() {
       <main style={{ flex: 1, padding: '3rem', overflowY: 'auto' }}>
         <header style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2 style={{ margin: 0, textTransform: 'capitalize', color: '#fff', fontSize: '1.8rem', fontWeight: 800 }}>{activeTab === 'dashboard' ? 'Resumen Ejecutivo' : activeTab}</h2>
+            <h2 style={{ margin: 0, textTransform: 'capitalize', color: '#fff', fontSize: '1.8rem', fontWeight: 800 }}>
+              {activeTab === 'dashboard' ? 'Resumen Ejecutivo' : activeTab === 'premium' ? 'Solicitudes Premium' : activeTab}
+            </h2>
             <p style={{ color: '#555', margin: '0.5rem 0 0 0', fontSize: '0.9rem' }}>Bienvenido de nuevo, Administrador.</p>
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>

@@ -6,8 +6,10 @@
 .profileContainer {
   width: 100%;
   min-height: 100vh;
+  padding-bottom: 64px;
   display: flex;
   flex-direction: column;
+  overflow: visible;
 }
 
 .coverBanner {
@@ -188,22 +190,36 @@
   max-width: 1200px;
   width: 100%;
   margin: 100px auto 40px; /* Top margin to account for overlapping avatar */
-  padding: 0 20px;
+  padding: 0 20px 48px;
   display: grid;
   grid-template-columns: 300px 1fr 300px;
   gap: 24px;
   align-items: start;
+  overflow: visible;
+  height: auto;
+}
+
+.leftColumn,
+.centerColumn,
+.rightColumn {
+  min-width: 0;
+  height: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .sectionCard {
   background: var(--color-surface);
   border: var(--glass-border);
   border-radius: var(--border-radius-xl);
-  padding: 24px;
+  padding: 24px 26px;
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   box-shadow: var(--shadow-soft);
   margin-bottom: 24px;
+  height: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .sectionTitle {
@@ -235,10 +251,13 @@
 
 .infoItem {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   color: var(--color-text-muted);
   font-size: 0.9rem;
+  line-height: 1.45;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .infoIcon {

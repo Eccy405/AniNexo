@@ -21,7 +21,9 @@ import {
   Gift,
   X,
   Camera,
-  Palette
+  Palette,
+  Home,
+  ArrowLeft
 } from 'lucide-react';
 
 const groupThemes = [
@@ -50,9 +52,7 @@ export default function CommunityPage() {
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [userFriends, setUserFriends] = useState<any[]>([]);
 
-  const [showFriendsModal, setShowFriendsModal] = useState(false);
-  const [showSavedModal, setShowSavedModal] = useState(false);
-  const [showMemoriesModal, setShowMemoriesModal] = useState(false);
+  const [activeCenterView, setActiveCenterView] = useState<'feed' | 'friends' | 'saved' | 'memories'>('feed');
 
   const [showNexoModal, setShowNexoModal] = useState(false);
   const [showLogrosModal, setShowLogrosModal] = useState(false);
@@ -411,11 +411,18 @@ export default function CommunityPage() {
     }
   };
 
-  const leftNavItems = [
+  const leftNavItems: Array<{
+    label: string;
+    viewId?: 'feed' | 'friends' | 'saved' | 'memories';
+    icon: React.ReactNode;
+    color: string;
+    action: () => void;
+  }> = [
+    { label: 'Feed', viewId: 'feed', icon: <Home size={20} />, color: '#00E5FF', action: () => setActiveCenterView('feed') },
     { label: 'Nexo AI', icon: <Sparkles size={20} className="icon-glow" />, color: '#00E5FF', action: () => setShowNexoModal(true) },
-    { label: 'Amigos', icon: <Users size={20} />, color: '#00E5FF', action: () => setShowFriendsModal(true) },
-    { label: 'Recuerdos', icon: <History size={20} />, color: '#ffa500', action: () => setShowMemoriesModal(true) },
-    { label: 'Guardado', icon: <Bookmark size={20} />, color: '#4CAF50', action: () => setShowSavedModal(true) },
+    { label: 'Amigos', viewId: 'friends', icon: <Users size={20} />, color: '#00E5FF', action: () => setActiveCenterView('friends') },
+    { label: 'Recuerdos', viewId: 'memories', icon: <History size={20} />, color: '#ffa500', action: () => setActiveCenterView('memories') },
+    { label: 'Guardado', viewId: 'saved', icon: <Bookmark size={20} />, color: '#4CAF50', action: () => setActiveCenterView('saved') },
     { label: 'Logros y Medallas', icon: <Award size={20} />, color: '#FFD700', action: () => setShowLogrosModal(true) },
     { label: 'Grupos temáticos', icon: <Compass size={20} />, color: '#9C27B0', action: () => setShowGroupsModal(true) }
   ];
@@ -440,27 +447,36 @@ export default function CommunityPage() {
               prefetch={false}
               className="sidebar-link profile-item"
             >
-              <img 
-                src={user?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.username || 'User')}&background=0052FF&color=fff`} 
-                alt={user?.username || 'Perfil'} 
-                className="user-avatar"
-              />
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user?.username || 'Perfil'}
+                  className="user-avatar"
+                />
+              ) : (
+                <span className="user-avatar user-avatar-initials">
+                  {(user?.username || 'AN').trim().slice(0, 2).toUpperCase()}
+                </span>
+              )}
               <span className="link-label">{user?.username || 'Mi Perfil'}</span>
             </Link>
 
-            {(showAllLeftItems ? leftNavItems : leftNavItems.slice(0, 4)).map((item, idx) => (
-              <button
-                key={idx}
-                type="button"
-                className="sidebar-link"
-                onClick={item.action}
-              >
-                <span className="icon-wrapper" style={{ color: item.color || 'var(--color-primary)' }}>
-                  {item.icon}
-                </span>
-                <span className="link-label">{item.label}</span>
-              </button>
-            ))}
+            {(showAllLeftItems ? leftNavItems : leftNavItems.slice(0, 5)).map((item, idx) => {
+              const isActive = item.viewId ? activeCenterView === item.viewId : false;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`sidebar-link ${isActive ? 'active' : ''}`}
+                  onClick={item.action}
+                >
+                  <span className="icon-wrapper" style={{ color: item.color || 'var(--color-primary)' }}>
+                    {item.icon}
+                  </span>
+                  <span className="link-label">{item.label}</span>
+                </button>
+              );
+            })}
 
             <button
               type="button"
@@ -494,9 +510,64 @@ export default function CommunityPage() {
           </div>
         </aside>
 
-        {/* Columna Central (Feed Principal) */}
+        {/* Columna Central (Feed Principal / Vistas Integradas) */}
         <main className="center-feed" data-tour="community-feed">
-          <FeedList />
+          {activeCenterView === 'feed' ? (
+            <FeedList />
+          ) : (
+            <div className="center-subview">
+              <div className="center-subview-header">
+                <button
+                  type="button"
+                  className="btn-back-feed"
+                  onClick={() => setActiveCenterView('feed')}
+                >
+                  <ArrowLeft size={16} />
+                  <span>Volver al Feed</span>
+                </button>
+                <h2 className="center-subview-title">
+                  {activeCenterView === 'friends' && 'Amigos y Conexiones'}
+                  {activeCenterView === 'saved' && 'Publicaciones Guardadas'}
+                  {activeCenterView === 'memories' && 'Tus Recuerdos'}
+                </h2>
+              </div>
+
+              {!user?.id ? (
+                <div className="center-auth-empty">
+                  <p>
+                    {activeCenterView === 'friends' && 'Inicia sesión para gestionar tus amigos y chats directos.'}
+                    {activeCenterView === 'saved' && 'Inicia sesión para ver tus publicaciones guardadas.'}
+                    {activeCenterView === 'memories' && 'Inicia sesión para revisar tu historial de recuerdos.'}
+                  </p>
+                  <Link href="/login" className="btn-modal-create" style={{ display: 'inline-block', textDecoration: 'none', padding: '10px 24px' }}>
+                    Iniciar sesión
+                  </Link>
+                </div>
+              ) : activeCenterView === 'friends' ? (
+                <FriendsModal
+                  userId={user.id}
+                  onClose={() => setActiveCenterView('feed')}
+                  currentUser={user}
+                  embedded
+                  onStartChat={(_friend, convId) => {
+                    router.push(`/home/chat/${convId}`);
+                  }}
+                />
+              ) : activeCenterView === 'saved' ? (
+                <SavedPostsModal
+                  userId={user.id}
+                  onClose={() => setActiveCenterView('feed')}
+                  embedded
+                />
+              ) : (
+                <MemoriesModal
+                  userId={user.id}
+                  onClose={() => setActiveCenterView('feed')}
+                  embedded
+                />
+              )}
+            </div>
+          )}
         </main>
 
         {/* Columna Derecha (Contactos & Actividades) */}
@@ -508,7 +579,7 @@ export default function CommunityPage() {
               <div className="right-section friend-requests">
                 <div className="section-header">
                   <h3>Solicitudes de amistad</h3>
-                  <button className="header-action-btn" onClick={() => setShowFriendsModal(true)}>Ver todo</button>
+                  <button className="header-action-btn" onClick={() => setActiveCenterView('friends')}>Ver todo</button>
                 </div>
 
                 <div className="requests-list">
@@ -579,7 +650,7 @@ export default function CommunityPage() {
                   <button
                     className="icon-btn"
                     title="Ver todos mis amigos"
-                    onClick={() => setShowFriendsModal(true)}
+                    onClick={() => setActiveCenterView('friends')}
                   >
                     <MoreHorizontal size={18} />
                   </button>
@@ -739,63 +810,7 @@ export default function CommunityPage() {
         </div>
       )}
 
-      {/* Modales de Amigos, Guardado y Recuerdos */}
-      {showFriendsModal && (
-        user?.id ? (
-          <FriendsModal
-            userId={user.id}
-            onClose={() => setShowFriendsModal(false)}
-            currentUser={user}
-            onStartChat={(_friend, convId) => {
-              setShowFriendsModal(false);
-              router.push(`/home/chat/${convId}`);
-            }}
-          />
-        ) : (
-          <div className="modal-overlay" onClick={() => setShowFriendsModal(false)}>
-            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center' }}>
-              <button className="modal-close" onClick={() => setShowFriendsModal(false)}><X size={20} /></button>
-              <h3>Amigos</h3>
-              <p style={{ color: '#9ca3af', marginBottom: '20px' }}>Inicia sesión para gestionar tus amigos y chats directos.</p>
-              <Link href="/login" className="btn-modal-create" style={{ display: 'inline-block', textDecoration: 'none', padding: '10px 24px' }}>Iniciar sesión</Link>
-            </div>
-          </div>
-        )
-      )}
-      {showSavedModal && (
-        user?.id ? (
-          <SavedPostsModal
-            userId={user.id}
-            onClose={() => setShowSavedModal(false)}
-          />
-        ) : (
-          <div className="modal-overlay" onClick={() => setShowSavedModal(false)}>
-            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center' }}>
-              <button className="modal-close" onClick={() => setShowSavedModal(false)}><X size={20} /></button>
-              <h3>Guardado</h3>
-              <p style={{ color: '#9ca3af', marginBottom: '20px' }}>Inicia sesión para ver tus publicaciones guardadas.</p>
-              <Link href="/login" className="btn-modal-create" style={{ display: 'inline-block', textDecoration: 'none', padding: '10px 24px' }}>Iniciar sesión</Link>
-            </div>
-          </div>
-        )
-      )}
-      {showMemoriesModal && (
-        user?.id ? (
-          <MemoriesModal
-            userId={user.id}
-            onClose={() => setShowMemoriesModal(false)}
-          />
-        ) : (
-          <div className="modal-overlay" onClick={() => setShowMemoriesModal(false)}>
-            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center' }}>
-              <button className="modal-close" onClick={() => setShowMemoriesModal(false)}><X size={20} /></button>
-              <h3>Recuerdos</h3>
-              <p style={{ color: '#9ca3af', marginBottom: '20px' }}>Inicia sesión para revisar tu historial de recuerdos.</p>
-              <Link href="/login" className="btn-modal-create" style={{ display: 'inline-block', textDecoration: 'none', padding: '10px 24px' }}>Iniciar sesión</Link>
-            </div>
-          </div>
-        )
-      )}
+      {/* Vistas de Amigos, Guardado y Recuerdos integradas en la columna central */}
 
       {/* Modal de Nexo AI */}
       {showNexoModal && (
@@ -1137,6 +1152,18 @@ export default function CommunityPage() {
           transform: translateX(4px);
         }
 
+        .left-sidebar :global(.sidebar-link.active) {
+          color: #ffffff;
+          background: linear-gradient(135deg, rgba(0, 229, 255, 0.14), rgba(0, 82, 255, 0.1));
+          border-color: rgba(0, 229, 255, 0.35);
+          box-shadow: 0 4px 18px rgba(0, 229, 255, 0.12);
+        }
+
+        .left-sidebar :global(.sidebar-link.active .icon-wrapper) {
+          background: rgba(0, 229, 255, 0.18);
+          box-shadow: 0 0 14px rgba(0, 229, 255, 0.25);
+        }
+
         .left-sidebar :global(.profile-item) {
           background: linear-gradient(135deg, rgba(0,82,255,0.12), rgba(0,229,255,0.06));
           border: 1px solid rgba(0, 229, 255, 0.2) !important;
@@ -1161,6 +1188,17 @@ export default function CommunityPage() {
           border: 2px solid rgba(0, 229, 255, 0.5);
           box-shadow: 0 0 14px rgba(0, 229, 255, 0.25);
           flex-shrink: 0;
+        }
+
+        .left-sidebar :global(.user-avatar-initials) {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #0052ff, #00e5ff);
+          color: #ffffff;
+          font-weight: 800;
+          font-size: 0.9rem;
+          letter-spacing: 0.04em;
         }
 
         .left-sidebar :global(.icon-wrapper) {
@@ -1264,6 +1302,63 @@ export default function CommunityPage() {
           background: transparent;
         }
         .center-feed::-webkit-scrollbar { display: none; }
+
+        .center-subview {
+          max-width: 680px;
+          margin: 0 auto;
+          padding: 16px 12px 48px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .center-subview-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+          padding: 14px 18px;
+          background: rgba(12, 16, 26, 0.85);
+          border: 1px solid rgba(0, 229, 255, 0.16);
+          border-radius: 16px;
+          backdrop-filter: blur(12px);
+        }
+        .center-subview-title {
+          margin: 0;
+          font-size: 1.15rem;
+          font-weight: 800;
+          color: #ffffff;
+        }
+        .btn-back-feed {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 14px;
+          border-radius: 10px;
+          background: rgba(0, 229, 255, 0.1);
+          border: 1px solid rgba(0, 229, 255, 0.3);
+          color: #00e5ff;
+          font-size: 0.85rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .btn-back-feed:hover {
+          background: rgba(0, 229, 255, 0.2);
+          transform: translateX(-2px);
+        }
+        .center-auth-empty {
+          padding: 40px 24px;
+          text-align: center;
+          background: rgba(12, 16, 26, 0.85);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 18px;
+          color: #9ca3af;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+        }
 
         /* ── Right Sidebar Sections ── */
         .right-section {

@@ -13,9 +13,12 @@ model User {
   email        String    @unique
   username     String    @unique
   passwordHash String
-  role         UserRole  @default(USER)
-  isPremium    Boolean   @default(false)
-  premiumUntil DateTime?
+  role                UserRole             @default(USER)
+  isPremium           Boolean              @default(false)
+  premiumUntil        DateTime?
+  premiumStatus       PremiumRequestStatus @default(NONE)
+  premiumRequestNote  String?              @db.Text
+  premiumRequestedAt  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   avatarUrl    String?   @db.Text
@@ -376,6 +379,8 @@ model Notification {
   userId      String
   type        NotificationType
   referenceId String?
+  title       String?
+  message     String?          @db.Text
   isRead      Boolean          @default(false)
   createdAt   DateTime         @default(now())
 
@@ -865,6 +870,13 @@ enum FriendshipStatus {
   PENDING
   ACCEPTED
   BLOCKED
+}
+
+enum PremiumRequestStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model SavedPost {

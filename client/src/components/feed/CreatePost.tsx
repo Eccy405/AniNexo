@@ -12,6 +12,16 @@ interface AnimeOption {
   coverImage?: string;
 }
 
+function getInitials(name?: string | null): string {
+  const clean = (name || '').trim();
+  if (!clean) return 'AN';
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return clean.slice(0, 2).toUpperCase();
+}
+
 export function CreatePost({ onPostCreated, defaultAnimeId, defaultAnime }: { onPostCreated: () => void, defaultAnimeId?: number, defaultAnime?: AnimeOption }) {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,12 +35,31 @@ export function CreatePost({ onPostCreated, defaultAnimeId, defaultAnime }: { on
   const isAnimeLocked = !!defaultAnime; // When coming from anime page, tag is fixed
   
   const [user, setUser] = useState<any>(null);
+  const [avatarFailed, setAvatarFailed] = useState(false);
 
   useEffect(() => {
     try {
       const userStr = localStorage.getItem('user');
       if (userStr) setUser(JSON.parse(userStr));
-    } catch (e) {}
+    } catch {}
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_URL ||
+        (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+          ? 'https://aninexo.onrender.com/api'
+          : 'http://localhost:3001/api');
+      fetch(`${apiBase}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((json) => {
+          if (json?.success && json.data) {
+            setUser((prev: any) => ({ ...prev, ...json.data }));
+            setAvatarFailed(false);
+          }
+        })
+        .catch(() => {});
+    }
   }, []);
 
   useEffect(() => {
@@ -102,11 +131,18 @@ const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !==
   return (
     <Card className="fb-composer-card">
       <div className="composer-top">
-        <img 
-          src={user?.avatarUrl || 'https://ui-avatars.com/api/?name=User'} 
-          className="composer-avatar" 
-          alt="" 
-        />
+        {user?.avatarUrl && !avatarFailed ? (
+          <img
+            src={user.avatarUrl}
+            className="composer-avatar"
+            alt={user?.username || 'Avatar'}
+            onError={() => setAvatarFailed(true)}
+          />
+        ) : (
+          <div className="composer-avatar composer-avatar-initials" aria-label={user?.username || 'Usuario'}>
+            {getInitials(user?.username)}
+          </div>
+        )}
         <div className="composer-input-wrapper" onClick={() => (document.getElementById('post-textarea') as any)?.focus()}>
           <textarea
             id="post-textarea"
@@ -227,6 +263,18 @@ const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !==
           border-radius: 50%; 
           object-fit: cover; 
           border: 1px solid rgba(255, 255, 255, 0.1);
+          flex-shrink: 0;
+        }
+
+        .composer-avatar-initials {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #0052ff, #00e5ff);
+          color: #ffffff;
+          font-weight: 800;
+          font-size: 0.9rem;
+          letter-spacing: 0.04em;
         }
 
         .composer-input-wrapper { 

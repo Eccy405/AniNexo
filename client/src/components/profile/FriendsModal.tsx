@@ -11,6 +11,7 @@ interface FriendsModalProps {
   onClose: () => void;
   currentUser: any;
   isDropdown?: boolean;
+  embedded?: boolean;
   /** Called when the user clicks "message" on a friend — chat is handled by the parent */
   onStartChat?: (friend: any, conversationId: string, messages: any[]) => void;
 }
@@ -20,6 +21,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
   onClose,
   currentUser,
   isDropdown = false,
+  embedded = false,
   onStartChat,
 }) => {
   const userStatuses = useChatStore(s => s.userStatuses);
@@ -148,11 +150,17 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
   };
 
   return (
-    <div className={isDropdown ? 'dropdown-overlay' : 'modal-overlay'} onClick={isDropdown ? undefined : onClose}>
-      <div className={isDropdown ? 'dropdown-content' : 'modal-content'} onClick={e => e.stopPropagation()}>
+    <div
+      className={isDropdown ? 'dropdown-overlay' : embedded ? 'embedded-overlay' : 'modal-overlay'}
+      onClick={isDropdown || embedded ? undefined : onClose}
+    >
+      <div
+        className={isDropdown ? 'dropdown-content' : embedded ? 'embedded-content' : 'modal-content'}
+        onClick={e => e.stopPropagation()}
+      >
 
         {/* Header — only shown in full modal mode */}
-        {!isDropdown && (
+        {!isDropdown && !embedded && (
           <div className="modal-header">
             <h2>Amigos</h2>
             <button className="btn-close" onClick={onClose}>✕</button>
@@ -298,13 +306,33 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
             flex-direction: column;
           }
 
+          /* ---- Embedded mode (center column in Community) ---- */
+          .embedded-overlay {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+          }
+          .embedded-content {
+            width: 100%;
+            background: rgba(12, 16, 26, 0.85);
+            border: 1px solid rgba(0, 229, 255, 0.14);
+            border-radius: 18px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+          }
+          .embedded-content .friends-list {
+            max-height: none;
+            overflow: visible;
+          }
+
           /* ---- Full modal mode ---- */
           .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(10px);
-            z-index: 99999;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
             display: flex;
             align-items: center;
             justify-content: center;

@@ -80,9 +80,20 @@ const MOCK_GROUPS: StoryGroup[] = [
   }
 ];
 
+function getUserInitials(name?: string | null): string {
+  const clean = (name || '').trim();
+  if (!clean) return 'AN';
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return clean.slice(0, 2).toUpperCase();
+}
+
 export function VerticalStoryRow() {
   const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [userAvatarFailed, setUserAvatarFailed] = useState(false);
 
   // Viewer modal state
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -104,6 +115,19 @@ export function VerticalStoryRow() {
       } catch {
         // ignore invalid json
       }
+    }
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch(`${API_BASE}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((json) => {
+          if (json?.success && json.data) {
+            setUser((prev: any) => ({ ...prev, ...json.data }));
+            setUserAvatarFailed(false);
+          }
+        })
+        .catch(() => {});
     }
   }, []);
 
@@ -295,7 +319,17 @@ export function VerticalStoryRow() {
           aria-label="Crear historia"
         >
           <div className="story-media">
-            <img src={user?.avatarUrl || 'https://ui-avatars.com/api/?name=User&background=00E5FF&color=000'} alt="" />
+            {user?.avatarUrl && !userAvatarFailed ? (
+              <img
+                src={user.avatarUrl}
+                alt={user?.username || 'Tu perfil'}
+                onError={() => setUserAvatarFailed(true)}
+              />
+            ) : (
+              <div className="create-story-initials" aria-label={user?.username || 'Usuario'}>
+                <span>{getUserInitials(user?.username)}</span>
+              </div>
+            )}
           </div>
           <div className="create-footer">
             <div className="plus-btn">+</div>
@@ -316,7 +350,10 @@ export function VerticalStoryRow() {
           >
             <img src={group.stories[0]?.mediaUrl || ''} className="story-bg" alt={group.username} />
             <div className="user-avatar-overlay">
-              <img src={group.avatarUrl || 'https://ui-avatars.com/api/?name=User'} alt={group.username} />
+              <img
+                src={group.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(group.username || 'AN')}&length=2&background=0052FF&color=fff`}
+                alt={group.username}
+              />
             </div>
             <div className="story-username">
               {group.username}
@@ -547,6 +584,23 @@ export function VerticalStoryRow() {
         .story-card.create .story-media {
           height: 70%;
           overflow: hidden;
+        }
+
+        .create-story-initials {
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(145deg, rgba(0, 82, 255, 0.55), rgba(0, 229, 255, 0.35));
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .create-story-initials span {
+          font-size: 2.1rem;
+          font-weight: 900;
+          letter-spacing: 0.06em;
+          color: #ffffff;
+          text-shadow: 0 2px 14px rgba(0, 229, 255, 0.45);
         }
 
         .story-card.create .story-media img {

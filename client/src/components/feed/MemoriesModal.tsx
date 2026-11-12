@@ -8,9 +8,10 @@ import { PostItem } from './PostItem';
 interface MemoriesModalProps {
   userId: string;
   onClose: () => void;
+  embedded?: boolean;
 }
 
-export const MemoriesModal: React.FC<MemoriesModalProps> = ({ userId, onClose }) => {
+export const MemoriesModal: React.FC<MemoriesModalProps> = ({ userId, onClose, embedded = false }) => {
   const [memories, setMemories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,17 +45,19 @@ export const MemoriesModal: React.FC<MemoriesModalProps> = ({ userId, onClose })
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>
-            <History size={20} style={{ color: '#ffa500' }} />
-            Recuerdos
-          </h2>
-          <button className="btn-close" onClick={onClose}>
-            <X size={20} />
-          </button>
-        </div>
+    <div className={embedded ? 'embedded-overlay' : 'modal-overlay'} onClick={embedded ? undefined : onClose}>
+      <div className={embedded ? 'embedded-content' : 'modal-content'} onClick={(e) => e.stopPropagation()}>
+        {!embedded && (
+          <div className="modal-header">
+            <h2>
+              <History size={20} style={{ color: '#ffa500' }} />
+              Recuerdos
+            </h2>
+            <button className="btn-close" onClick={onClose}>
+              <X size={20} />
+            </button>
+          </div>
+        )}
 
         <div className="memories-container">
           {loading ? (
@@ -84,12 +87,30 @@ export const MemoriesModal: React.FC<MemoriesModalProps> = ({ userId, onClose })
         </div>
 
         <style jsx>{`
+          .embedded-overlay {
+            width: 100%;
+          }
+
+          .embedded-content {
+            width: 100%;
+            background: rgba(12, 16, 26, 0.85);
+            border: 1px solid rgba(255, 165, 0, 0.18);
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+          }
+
+          .embedded-content .memories-container {
+            overflow: visible;
+            max-height: none;
+          }
+
           .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            z-index: 99999;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
             display: flex;
             align-items: center;
             justify-content: center;

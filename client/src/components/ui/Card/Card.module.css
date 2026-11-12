@@ -6,7 +6,7 @@
   -webkit-backdrop-filter: var(--glass-blur);
   box-shadow: var(--shadow-soft);
   transition: transform var(--transition-bounce), box-shadow var(--transition-normal), border-color var(--transition-fast);
-  overflow: hidden;
+  overflow: visible;
   position: relative;
 }
 

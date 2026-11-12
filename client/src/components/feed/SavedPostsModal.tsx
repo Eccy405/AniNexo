@@ -8,9 +8,10 @@ import { PostItem } from './PostItem';
 interface SavedPostsModalProps {
   userId: string;
   onClose: () => void;
+  embedded?: boolean;
 }
 
-export const SavedPostsModal: React.FC<SavedPostsModalProps> = ({ userId, onClose }) => {
+export const SavedPostsModal: React.FC<SavedPostsModalProps> = ({ userId, onClose, embedded = false }) => {
   const [savedPosts, setSavedPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,17 +57,19 @@ export const SavedPostsModal: React.FC<SavedPostsModalProps> = ({ userId, onClos
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>
-            <Bookmark size={20} style={{ color: 'var(--color-primary)' }} />
-            Publicaciones Guardadas
-          </h2>
-          <button className="btn-close" onClick={onClose}>
-            <X size={20} />
-          </button>
-        </div>
+    <div className={embedded ? 'embedded-overlay' : 'modal-overlay'} onClick={embedded ? undefined : onClose}>
+      <div className={embedded ? 'embedded-content' : 'modal-content'} onClick={(e) => e.stopPropagation()}>
+        {!embedded && (
+          <div className="modal-header">
+            <h2>
+              <Bookmark size={20} style={{ color: 'var(--color-primary)' }} />
+              Publicaciones Guardadas
+            </h2>
+            <button className="btn-close" onClick={onClose}>
+              <X size={20} />
+            </button>
+          </div>
+        )}
 
         <div className="posts-container">
           {loading ? (
@@ -87,12 +90,30 @@ export const SavedPostsModal: React.FC<SavedPostsModalProps> = ({ userId, onClos
         </div>
 
         <style jsx>{`
+          .embedded-overlay {
+            width: 100%;
+          }
+
+          .embedded-content {
+            width: 100%;
+            background: rgba(12, 16, 26, 0.85);
+            border: 1px solid rgba(0, 229, 255, 0.14);
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+          }
+
+          .embedded-content .posts-container {
+            overflow: visible;
+            max-height: none;
+          }
+
           .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            z-index: 99999;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
             display: flex;
             align-items: center;
             justify-content: center;

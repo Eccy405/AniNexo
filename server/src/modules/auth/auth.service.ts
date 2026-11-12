@@ -120,6 +120,10 @@ export class AuthService {
         username: user.username,
         role: user.role,
         isPremium: user.isPremium,
+        premiumStatus: user.premiumStatus,
+        premiumUntil: user.premiumUntil,
+        premiumRequestNote: user.premiumRequestNote,
+        premiumRequestedAt: user.premiumRequestedAt,
         isVerified: user.isVerified
       },
       token
