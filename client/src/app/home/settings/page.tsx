@@ -88,7 +88,11 @@ export default function DashboardSettingsPage() {
         setCurrentUser(parsed);
 
         if (parsed?.username) {
-          const res = await fetch(`${getApiBase()}/profile/${encodeURIComponent(parsed.username)}`);
+          const token = localStorage.getItem('token');
+          const res = await fetch(
+            `${getApiBase()}/profile/${encodeURIComponent(parsed.username)}`,
+            token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+          );
           if (res.ok) {
             const json = await res.json();
             if (json.success && json.data) {

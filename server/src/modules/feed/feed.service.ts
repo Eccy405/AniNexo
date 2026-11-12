@@ -145,6 +145,9 @@ export class FeedService {
       }
 
       return comment;
+    }).then((comment) => {
+      badgeService.syncUserBadges(userId).catch(() => {});
+      return comment;
     });
   }
 

@@ -68,23 +68,23 @@ export class BadgeService {
   async ensureCatalogSeeded(): Promise<Map<string, string>> {
     if (!BadgeService.catalogPromise) {
       BadgeService.catalogPromise = (async () => {
-        const badgeMap = new Map<string, string>();
-        for (const def of BADGE_CATALOG) {
-          const badge = await prisma.badge.upsert({
-            where: { name: def.name },
-            update: {
-              description: def.description,
-              iconUrl: def.iconUrl
-            },
-            create: {
-              name: def.name,
-              description: def.description,
-              iconUrl: def.iconUrl
-            }
-          });
-          badgeMap.set(badge.name, badge.id);
-        }
-        return badgeMap;
+        const badges = await Promise.all(
+          BADGE_CATALOG.map((def) =>
+            prisma.badge.upsert({
+              where: { name: def.name },
+              update: {
+                description: def.description,
+                iconUrl: def.iconUrl
+              },
+              create: {
+                name: def.name,
+                description: def.description,
+                iconUrl: def.iconUrl
+              }
+            })
+          )
+        );
+        return new Map<string, string>(badges.map((b) => [b.name, b.id]));
       })().catch((err) => {
         BadgeService.catalogPromise = null;
         throw err;

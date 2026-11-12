@@ -50,9 +50,12 @@ export class GroupController {
   addToCollection = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.body.userId as string;
-      const { animeId, status } = req.body;
+      const { animeId, status, anime, title, titleRomaji, titleEnglish, coverImage, bannerImage, type, episodes, averageScore } = req.body;
+      const animeData = anime || (title || titleRomaji || titleEnglish || coverImage
+        ? { title, titleRomaji, titleEnglish, coverImage, bannerImage, type, episodes, averageScore }
+        : undefined);
 
-      const result = await collectionService.addToCollection(userId, animeId, status);
+      const result = await collectionService.addToCollection(userId, animeId, status, animeData);
       res.json({ success: true, data: result });
     } catch (error) {
       next(error);

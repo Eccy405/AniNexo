@@ -424,7 +424,8 @@ export default function CommunityPage() {
     { name: 'Grupos Temáticos', href: '/home/groups', image: 'https://ui-avatars.com/api/?name=GRP&background=9C27B0&color=fff' },
     { name: 'Explorar Catálogo', href: '/home/search', image: 'https://ui-avatars.com/api/?name=EXP&background=00838f&color=fff' },
     { name: 'Rankings Globales', href: '/rankings', image: 'https://ui-avatars.com/api/?name=TOP&background=e65100&color=fff' },
-    { name: 'Mensajes y Chat', href: '/home/chat', image: 'https://ui-avatars.com/api/?name=CHT&background=009688&color=fff' }
+    { name: 'Mensajes y Chat', href: '/home/chat', image: 'https://ui-avatars.com/api/?name=CHT&background=009688&color=fff' },
+    { name: 'Configuración', href: '/home/settings', image: 'https://ui-avatars.com/api/?name=CFG&background=334155&color=fff' }
   ];
 
   return (

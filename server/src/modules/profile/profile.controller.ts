@@ -20,7 +20,8 @@ export class ProfileController {
         return res.status(400).json({ success: false, message: 'El nombre de usuario es requerido' });
       }
 
-      const profile = await this.profileService.getProfileByUsername(username);
+      const viewerId = (req as any).user?.id as string | undefined;
+      const profile = await this.profileService.getProfileByUsername(username, viewerId);
       
       if (!profile) {
         console.warn(`[ProfileController] Perfil no encontrado: "${username}"`);

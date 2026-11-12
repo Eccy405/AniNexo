@@ -1,5 +1,6 @@
 import axios from 'axios';
 import prisma from '../../lib/prisma';
+import { upsertAnimeMetadata } from '../../lib/animeCache';
 import { BadgeService } from '../social/badge.service';
 
 const badgeService = new BadgeService();
@@ -13,10 +14,13 @@ function truncateText(text: string | null | undefined, max = 70): string {
 
 export class ProfileService {
   private async resolveMissingAnimes(animeIds: number[]) {
-    if (animeIds.length === 0) return new Map<number, any>();
+    const uniqueIds = Array.from(
+      new Set(animeIds.map(Number).filter((id) => Number.isFinite(id) && id > 0))
+    );
+    if (uniqueIds.length === 0) return new Map<number, any>();
 
     const existing = await prisma.anime.findMany({
-      where: { id: { in: animeIds } },
+      where: { id: { in: uniqueIds } },
       select: {
         id: true,
         titleRomaji: true,
@@ -30,13 +34,16 @@ export class ProfileService {
     });
 
     const animeMap = new Map<number, any>(existing.map((a) => [a.id, a]));
-    const missingIds = animeIds.filter((id) => !animeMap.has(id));
+    const missingIds = uniqueIds.filter((id) => {
+      const found = animeMap.get(id);
+      return !found || !found.coverImage;
+    });
 
     if (missingIds.length > 0) {
       try {
         const query = `
           query ($ids: [Int]) {
-            Page(perPage: 25) {
+            Page(perPage: 50) {
               media(id_in: $ids, type: ANIME) {
                 id
                 title { romaji english native }
@@ -51,56 +58,65 @@ export class ProfileService {
         `;
         const res = await axios.post(
           ANILIST_URL,
-          { query, variables: { ids: missingIds.slice(0, 25) } },
-          { timeout: 4500 }
+          { query, variables: { ids: missingIds.slice(0, 50) } },
+          { timeout: 3000 }
         );
         const mediaList = res.data?.data?.Page?.media || [];
-        for (const m of mediaList) {
-          const titleStr = m.title?.english || m.title?.romaji || `Anime-${m.id}`;
-          const slug = `${m.id}-${titleStr.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`;
-          const coverImage = m.coverImage?.extraLarge || m.coverImage?.large || null;
+        const cachedRows = await Promise.all(
+          mediaList.map(async (m: any) => {
+            const titleStr = m.title?.english || m.title?.romaji || `Anime-${m.id}`;
+            const slug = `${m.id}-${titleStr.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`;
+            const coverImage = m.coverImage?.extraLarge || m.coverImage?.large || null;
 
-          const cached = await prisma.anime.upsert({
-            where: { id: m.id },
-            update: {
-              ...(coverImage ? { coverImage } : {}),
-              ...(m.bannerImage ? { bannerImage: m.bannerImage } : {})
-            },
-            create: {
-              id: m.id,
-              slug,
-              titleRomaji: m.title?.romaji || titleStr,
-              titleEnglish: m.title?.english || null,
-              titleNative: m.title?.native || null,
-              coverImage,
-              bannerImage: m.bannerImage || null,
-              type: m.format || null,
-              averageScore: m.averageScore || null,
-              episodes: m.episodes || null,
-              isComplete: false
-            },
-            select: {
-              id: true,
-              titleRomaji: true,
-              titleEnglish: true,
-              coverImage: true,
-              bannerImage: true,
-              type: true,
-              averageScore: true,
-              episodes: true
-            }
-          });
+            return prisma.anime.upsert({
+              where: { id: m.id },
+              update: {
+                ...(m.title?.romaji ? { titleRomaji: m.title.romaji } : {}),
+                ...(m.title?.english ? { titleEnglish: m.title.english } : {}),
+                ...(coverImage ? { coverImage } : {}),
+                ...(m.bannerImage ? { bannerImage: m.bannerImage } : {}),
+                ...(m.format ? { type: m.format } : {}),
+                ...(m.averageScore !== undefined && m.averageScore !== null ? { averageScore: m.averageScore } : {}),
+                ...(m.episodes !== undefined && m.episodes !== null ? { episodes: m.episodes } : {})
+              },
+              create: {
+                id: m.id,
+                slug,
+                titleRomaji: m.title?.romaji || titleStr,
+                titleEnglish: m.title?.english || null,
+                titleNative: m.title?.native || null,
+                coverImage,
+                bannerImage: m.bannerImage || null,
+                type: m.format || null,
+                averageScore: m.averageScore || null,
+                episodes: m.episodes || null,
+                isComplete: false
+              },
+              select: {
+                id: true,
+                titleRomaji: true,
+                titleEnglish: true,
+                coverImage: true,
+                bannerImage: true,
+                type: true,
+                averageScore: true,
+                episodes: true
+              }
+            });
+          })
+        );
+        for (const cached of cachedRows) {
           animeMap.set(cached.id, cached);
         }
-      } catch (err) {
-        console.warn('[ProfileService] No se pudieron resolver animes faltantes desde AniList');
+      } catch {
+        console.warn('[ProfileService] No se pudieron resolver animes faltantes desde AniList (timeout/error)');
       }
     }
 
     return animeMap;
   }
 
-  async getProfileByUsername(username: string) {
+  async getProfileByUsername(username: string, viewerId?: string) {
     console.log(`[ProfileService] Buscando perfil para: "${username}"`);
 
     const user = await prisma.user.findFirst({
@@ -152,8 +168,10 @@ export class ProfileService {
       return null;
     }
 
-    // Sincronizar logros reales antes de responder
-    await badgeService.syncUserBadges(user.id);
+    // Solo sincronizar logros en escritura cuando el dueño autenticado consulta su propio perfil
+    if (viewerId && viewerId === user.id) {
+      await badgeService.syncUserBadges(user.id);
+    }
 
     const [badges, animeLists, rawCollections, recentPosts, recentComments] = await Promise.all([
       prisma.userBadge.findMany({
@@ -211,36 +229,39 @@ export class ProfileService {
       })
     ]);
 
-    const collectionIds = rawCollections.map((c) => c.animeId);
-    const animeMap = await this.resolveMissingAnimes(collectionIds);
+    // Resolver Anime Favorito y Personaje Favorito unificados (incluyendo favAnimeId en el batch único)
+    const socialProfile = (user.intelligence?.socialProfile as any) || {};
+    const legacyFavAnime = socialProfile?.favAnime;
+    const legacyFavChar = socialProfile?.favCharacter;
+
+    const rawFavAnimeId = user.favAnimeId ?? (legacyFavAnime?.id ? Number(legacyFavAnime.id) : null);
+    const resolvedFavAnimeId = rawFavAnimeId && Number.isFinite(rawFavAnimeId) && rawFavAnimeId > 0 ? rawFavAnimeId : null;
+
+    const idsToResolve = rawCollections.map((c) => c.animeId);
+    if (resolvedFavAnimeId) idsToResolve.push(resolvedFavAnimeId);
+
+    const animeMap = await this.resolveMissingAnimes(idsToResolve);
 
     const enrichedCollections = rawCollections.map((c) => ({
       ...c,
       anime: animeMap.get(c.animeId) || null
     }));
 
-    // Resolver Anime Favorito y Personaje Favorito unificados
-    const socialProfile = (user.intelligence?.socialProfile as any) || {};
-    const legacyFavAnime = socialProfile?.favAnime;
-    const legacyFavChar = socialProfile?.favCharacter;
+    const cachedFavAnime = resolvedFavAnimeId ? animeMap.get(resolvedFavAnimeId) || null : null;
+    const favAnimeBanner: string | null =
+      legacyFavAnime?.bannerImage || cachedFavAnime?.bannerImage || cachedFavAnime?.coverImage || null;
+    const resolvedFavCover =
+      user.favAnimeImage || legacyFavAnime?.coverImage || legacyFavAnime?.image || cachedFavAnime?.coverImage || null;
+    const resolvedFavTitle =
+      user.favAnimeTitle || legacyFavAnime?.title || cachedFavAnime?.titleEnglish || cachedFavAnime?.titleRomaji || null;
 
-    const resolvedFavAnimeId = user.favAnimeId ?? (legacyFavAnime?.id ? Number(legacyFavAnime.id) : null);
-    let favAnimeBanner: string | null = legacyFavAnime?.bannerImage || null;
-    if (resolvedFavAnimeId && !favAnimeBanner) {
-      const cachedAnime = animeMap.get(resolvedFavAnimeId) || await prisma.anime.findUnique({
-        where: { id: resolvedFavAnimeId },
-        select: { bannerImage: true, coverImage: true }
-      });
-      favAnimeBanner = cachedAnime?.bannerImage || cachedAnime?.coverImage || null;
-    }
-
-    const favAnime = (user.favAnimeTitle || user.favAnimeImage || legacyFavAnime?.title || legacyFavAnime?.image)
+    const favAnime = (resolvedFavTitle || resolvedFavCover || resolvedFavAnimeId)
       ? {
           id: resolvedFavAnimeId,
-          title: user.favAnimeTitle || legacyFavAnime?.title || null,
-          image: user.favAnimeImage || legacyFavAnime?.coverImage || legacyFavAnime?.image || null,
-          coverImage: user.favAnimeImage || legacyFavAnime?.coverImage || legacyFavAnime?.image || null,
-          bannerImage: favAnimeBanner || user.favAnimeImage || legacyFavAnime?.coverImage || legacyFavAnime?.image || null
+          title: resolvedFavTitle,
+          image: resolvedFavCover,
+          coverImage: resolvedFavCover,
+          bannerImage: favAnimeBanner || resolvedFavCover
         }
       : null;
 
@@ -489,6 +510,14 @@ export class ProfileService {
           }
         }
       });
+    }
+
+    if (updatedUser.favAnimeId && (updatedUser.favAnimeTitle || updatedUser.favAnimeImage)) {
+      upsertAnimeMetadata(updatedUser.favAnimeId, {
+        title: updatedUser.favAnimeTitle,
+        coverImage: updatedUser.favAnimeImage,
+        bannerImage: data.favAnime?.bannerImage || null
+      }).catch(() => {});
     }
 
     await badgeService.syncUserBadges(userId);

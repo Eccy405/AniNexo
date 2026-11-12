@@ -177,7 +177,21 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                       },
-                      body: JSON.stringify({ userId: user.id, animeId: anime.id })
+                      body: JSON.stringify({
+                        userId: user.id,
+                        animeId: anime.id,
+                        anime: {
+                          title: anime.title?.english || anime.title?.romaji,
+                          titleRomaji: anime.title?.romaji,
+                          titleEnglish: anime.title?.english,
+                          titleNative: anime.title?.native,
+                          coverImage: anime.coverImage?.extraLarge || anime.coverImage?.large,
+                          bannerImage: anime.bannerImage,
+                          type: anime.type,
+                          episodes: anime.episodes,
+                          averageScore: anime.averageScore
+                        }
+                      })
                     });
                     if (!colRes.ok) {
                       alert('Error al agregar a la colección');

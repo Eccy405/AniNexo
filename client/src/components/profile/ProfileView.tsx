@@ -181,15 +181,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
       if (u) {
         try {
           const parsed = JSON.parse(u);
-          // Refresh user data from backend to get updated isVerified status
+          // Refresh user data from backend to get updated isVerified status & own synced badges
           if (parsed?.id) {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/profile/${parsed.username}`);
+            const token = localStorage.getItem('token');
+            const res = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/profile/${encodeURIComponent(parsed.username)}`,
+              token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+            );
             if (res.ok) {
               const data = await res.json();
-              if (data.success) {
+              if (data.success && data.data) {
                 const freshUser = { ...parsed, ...data.data };
                 localStorage.setItem('user', JSON.stringify(freshUser));
                 setCurrentUser(freshUser);
+                if (parsed.username?.toLowerCase() === profile.username?.toLowerCase()) {
+                  setProfile((prev: any) => ({ ...prev, ...data.data }));
+                }
                 return;
               }
             }
@@ -267,7 +274,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
         (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
           ? 'https://aninexo.onrender.com/api'
           : 'http://localhost:3001/api');
-      const res = await fetch(`${apiBase}/profile/${encodeURIComponent(profile.username)}`);
+      const token = localStorage.getItem('token');
+      const res = await fetch(
+        `${apiBase}/profile/${encodeURIComponent(profile.username)}`,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
@@ -621,6 +632,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
                   <button className={styles.btnPrimary} onClick={() => setShowEditModal(true)} data-tour="profile-edit-btn">
                     ✏️ Editar Perfil
                   </button>
+                  <Link href="/home/settings" className={styles.btnSecondary} style={{ textDecoration: 'none' }}>
+                    🛠️ Configuración
+                  </Link>
                 </>
               ) : (
                 <>
@@ -697,8 +711,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
                   )}
                 </div>
                 {favAnime && (favAnime.title || favAnime.coverImage || favAnime.image) ? (
-                  favAnime.id ? (
-                    <Link href={`/home/anime/${favAnime.id}`} className={`${styles.favShowcaseCard} ${styles.favShowcaseCardClickable}`}>
+                  Number.isFinite(Number(favAnime.id)) && Number(favAnime.id) > 0 ? (
+                    <Link href={`/home/anime/${Number(favAnime.id)}`} className={`${styles.favShowcaseCard} ${styles.favShowcaseCardClickable}`}>
                       {(favAnime.coverImage || favAnime.image) ? (
                         <img
                           src={favAnime.coverImage || favAnime.image}

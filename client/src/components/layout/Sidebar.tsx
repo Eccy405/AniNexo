@@ -11,6 +11,7 @@ import {
   Sparkles,
   Users,
   Bookmark,
+  Settings,
   ChevronDown,
   Plus,
 } from 'lucide-react';
@@ -32,6 +33,7 @@ const leftItems = [
   { icon: Sparkles, label: 'IA', href: '/home/nexo' },
   { icon: Users, label: 'Amigos', href: '/home/friends' },
   { icon: Bookmark, label: 'Guardados', href: '/home/saved' },
+  { icon: Settings, label: 'Configuración', href: '/home/settings' },
 ];
 
 export function Sidebar() {

@@ -1,4 +1,5 @@
 import prisma from '../../lib/prisma';
+import { upsertAnimeMetadata } from '../../lib/animeCache';
 import { BadgeService } from '../social/badge.service';
 
 const badgeService = new BadgeService();
@@ -89,6 +90,14 @@ export class UserIntelligenceService {
 
     const affinityPromises = genres.map((g: string) => this.saveAffinity(userId, 'GENRE', g, 1.0));
     await Promise.all(affinityPromises);
+
+    if (parsedFavAnimeId && Number.isFinite(parsedFavAnimeId) && parsedFavAnimeId > 0) {
+      upsertAnimeMetadata(parsedFavAnimeId, {
+        title: parsedFavAnimeTitle,
+        coverImage: parsedFavAnimeImage,
+        bannerImage: favAnime?.bannerImage || null
+      }).catch(() => {});
+    }
 
     await badgeService.syncUserBadges(userId);
 

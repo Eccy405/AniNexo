@@ -1,16 +1,29 @@
 import prisma from '../../lib/prisma';
 import { WatchStatus } from '@prisma/client';
+import { AnimeMetadataInput, upsertAnimeMetadata } from '../../lib/animeCache';
 import { BadgeService } from '../social/badge.service';
 
 const badgeService = new BadgeService();
 
 export class ListService {
-  async addOrUpdateEntry(userId: string, animeId: number, status: WatchStatus, score?: number, progress?: number) {
+  async addOrUpdateEntry(
+    userId: string,
+    animeId: number,
+    status: WatchStatus,
+    score?: number,
+    progress?: number,
+    animeData?: AnimeMetadataInput
+  ) {
+    const numericId = Number(animeId);
+    if (animeData) {
+      await upsertAnimeMetadata(numericId, animeData);
+    }
+
     const entry = await prisma.animeList.upsert({
       where: {
         userId_animeId: {
           userId,
-          animeId
+          animeId: numericId
         }
       },
       update: {
@@ -20,7 +33,7 @@ export class ListService {
       },
       create: {
         userId,
-        animeId,
+        animeId: numericId,
         status,
         score: score ?? null,
         progress: progress || 0
@@ -28,7 +41,7 @@ export class ListService {
     });
     
     // Evaluar logros reales del usuario
-    await badgeService.syncUserBadges(userId);
+    badgeService.syncUserBadges(userId).catch(() => {});
 
     return entry;
   }

@@ -1,4 +1,5 @@
 import prisma from '../../lib/prisma';
+import { AnimeMetadataInput, upsertAnimeMetadata } from '../../lib/animeCache';
 import { BadgeService } from '../social/badge.service';
 
 const badgeService = new BadgeService();
@@ -55,20 +56,30 @@ export class GroupService {
 }
 
 export class CollectionService {
-  async addToCollection(userId: string, animeId: number, status: string = 'PLAN_TO_WATCH') {
+  async addToCollection(
+    userId: string,
+    animeId: number,
+    status: string = 'PLAN_TO_WATCH',
+    animeData?: AnimeMetadataInput
+  ) {
     try {
+      const numericId = Number(animeId);
+      if (animeData) {
+        await upsertAnimeMetadata(numericId, animeData);
+      }
+
       const existing = await prisma.userCollection.findUnique({
-        where: { userId_animeId: { userId, animeId: Number(animeId) } }
+        where: { userId_animeId: { userId, animeId: numericId } }
       });
       let entry;
       if (existing) {
         entry = await prisma.userCollection.update({
-          where: { userId_animeId: { userId, animeId: Number(animeId) } },
+          where: { userId_animeId: { userId, animeId: numericId } },
           data: { status: status as any }
         });
       } else {
         entry = await prisma.userCollection.create({
-          data: { userId, animeId: Number(animeId), status: status as any }
+          data: { userId, animeId: numericId, status: status as any }
         });
       }
       badgeService.syncUserBadges(userId).catch(() => {});
