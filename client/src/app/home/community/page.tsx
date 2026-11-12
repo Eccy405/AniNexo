@@ -436,7 +436,8 @@ export default function CommunityPage() {
         <aside className="left-sidebar" data-tour="community-left-sidebar">
           <div className="sidebar-scrollable">
             <Link
-              href={user?.username ? `/home/profile/${user.username}` : '/login'}
+              href={user?.username && user.username.toLowerCase() !== 'invitado' ? `/home/profile/${user.username}` : '/login'}
+              prefetch={false}
               className="sidebar-link profile-item"
             >
               <img 
@@ -480,7 +481,7 @@ export default function CommunityPage() {
               </div>
 
               {shortcuts.map((shortcut, idx) => (
-                <Link key={idx} href={shortcut.href} className="sidebar-link shortcut-item">
+                <Link key={idx} href={shortcut.href} prefetch={false} className="sidebar-link shortcut-item">
                   <img src={shortcut.image} alt={shortcut.name} className="shortcut-img" />
                   <span className="link-label">{shortcut.name}</span>
                 </Link>

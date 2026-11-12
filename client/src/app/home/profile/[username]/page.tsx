@@ -9,9 +9,9 @@ interface PageProps {
 
 const getApiBase = () =>
   process.env.NEXT_PUBLIC_API_URL ||
-  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? 'https://aninexo.onrender.com/api'
-    : 'http://localhost:3001/api');
+  (process.env.NODE_ENV === 'development'
+    ? 'http://localhost:3001/api'
+    : 'https://aninexo.onrender.com/api');
 
 async function getProfileData(username: string) {
   try {

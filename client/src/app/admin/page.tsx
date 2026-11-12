@@ -206,7 +206,9 @@ export default function AdminDashboard() {
     style.textContent = '@keyframes spin { to { transform: rotate(360deg); } } .spinner { animation: spin 0.8s linear infinite; }';
     document.head.appendChild(style);
     return () => {
-      document.head.removeChild(style);
+      if (style.parentNode && style.parentNode.contains(style)) {
+        style.parentNode.removeChild(style);
+      }
     };
   }, [fetchData]);
 

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ViewTransition } from 'react';
 import { Menu, X as CloseIcon } from 'lucide-react';
 import styles from './TopNavbar.module.css';
 import { translateFormat } from '../../lib/translations';
@@ -334,8 +333,7 @@ export const TopNavbar: React.FC = () => {
            )}
 
            {showSearchResults && (searchQuery.length >= 2) && (
-             <ViewTransition>
-               <div className={styles.searchResults} role="listbox" aria-label="Resultados de búsqueda">
+             <div className={styles.searchResults} role="listbox" aria-label="Resultados de búsqueda">
                  {searchResults.animes.length > 0 && (
                    <div className={styles.searchSection}>
                      <p className={styles.sectionTitle}>Animes</p>
@@ -377,7 +375,6 @@ export const TopNavbar: React.FC = () => {
                    <p className={styles.noResults}>No se encontraron resultados para &quot;{searchQuery}&quot;</p>
                  )}
                </div>
-             </ViewTransition>
            )}
         </div>
         
@@ -396,8 +393,7 @@ export const TopNavbar: React.FC = () => {
               </button>
 
               {showNotifications && (
-                <ViewTransition>
-                  <div className={styles.notificationsDropdown} role="menu" aria-label="Notificaciones de usuario">
+                <div className={styles.notificationsDropdown} role="menu" aria-label="Notificaciones de usuario">
                     <div className={styles.dropdownHeader}>
                       <span className={styles.dropdownTitle}>Notificaciones</span>
                       {unreadCount > 0 && (
@@ -490,7 +486,6 @@ export const TopNavbar: React.FC = () => {
                       )}
                     </div>
                   </div>
-                </ViewTransition>
               )}
             </div>
 
@@ -511,20 +506,25 @@ export const TopNavbar: React.FC = () => {
              </div>
 
              {showDropdown && (
-               <ViewTransition>
-                 <div 
-                   className={styles.userDropdown}
-                   role="menu"
-                   aria-label="Menú de usuario"
-                 >
-                    <div className={styles.dropdownHeader}>
-                      <p className={styles.dUsername}>@{user?.username}</p>
-                      <p className={styles.dEmail}>{user?.email}</p>
-                    </div>
-                    <div className={styles.dropdownDivider} />
-                    <Link href={`/home/profile/${user?.username}`} className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
-                      <span className={styles.dIcon} aria-hidden="true">👤</span> Mi Perfil
-                    </Link>
+               <div 
+                 className={styles.userDropdown}
+                 role="menu"
+                 aria-label="Menú de usuario"
+               >
+                  <div className={styles.dropdownHeader}>
+                    <p className={styles.dUsername}>@{user?.username}</p>
+                    <p className={styles.dEmail}>{user?.email}</p>
+                  </div>
+                  <div className={styles.dropdownDivider} />
+                  <Link
+                    href={user?.username && user.username.toLowerCase() !== 'invitado' ? `/home/profile/${user.username}` : '/login'}
+                    prefetch={false}
+                    className={styles.dropdownItem}
+                    onClick={() => setShowDropdown(false)}
+                    role="menuitem"
+                  >
+                    <span className={styles.dIcon} aria-hidden="true">👤</span> Mi Perfil
+                  </Link>
                     <Link href="/home/saved" className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
                       <span className={styles.dIcon} aria-hidden="true">🔖</span> Guardados
                     </Link>
@@ -547,7 +547,6 @@ export const TopNavbar: React.FC = () => {
                       <span className={styles.dIcon} aria-hidden="true">🚪</span> Cerrar Sesión
                     </button>
                   </div>
-                </ViewTransition>
               )}
             </div>
 
