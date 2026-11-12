@@ -160,6 +160,7 @@ export function Sidebar() {
             <Link
               key={shortcut.id}
               href={getShortcutHref(shortcut)}
+              prefetch={false}
               className={clsx(styles.link, styles.shortcutItem)}
               role="menuitem"
               tabIndex={0}

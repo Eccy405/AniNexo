@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 
@@ -8,6 +8,24 @@ export const LayeredParticles: React.FC = () => {
   const pointsRef1 = useRef<THREE.Points>(null);
   const pointsRef2 = useRef<THREE.Points>(null);
   const pointsRef3 = useRef<THREE.Points>(null);
+  const timer = useMemo(() => new THREE.Timer(), []);
+
+  useEffect(() => {
+    timer.connect(document);
+    return () => {
+      timer.disconnect();
+      timer.dispose();
+      [pointsRef1.current, pointsRef2.current, pointsRef3.current].forEach((pts) => {
+        if (!pts) return;
+        pts.geometry.dispose();
+        if (Array.isArray(pts.material)) {
+          pts.material.forEach((m) => m.dispose());
+        } else {
+          pts.material.dispose();
+        }
+      });
+    };
+  }, [timer]);
 
   // Generate particle coordinate buffers
   const [p1, p2, p3] = useMemo(() => {
@@ -34,8 +52,9 @@ export const LayeredParticles: React.FC = () => {
     ];
   }, []);
 
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
+  useFrame(() => {
+    timer.update();
+    const t = timer.getElapsed();
 
     // Rotate layers independently for parallax motion
     if (pointsRef1.current) {

@@ -2,6 +2,7 @@
 
 import React, { Suspense, useMemo, useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 import { HoneycombMesh }   from './HoneycombMesh';
 import { HexPosterFaces }  from './HexPosterFaces';
 import { HiveEngine }      from '../core/HiveEngine';
@@ -102,7 +103,25 @@ export const HiveCanvas: React.FC<HiveCanvasProps> = ({ engine, sectionRef }) =>
   const [catalog, setCatalog]   = useState<AnimeNode[]>([]);
   const [hoveredNode, setHoveredNode] = useState<HoveredNodeInfo | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const canvasCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    const handleVisibility = () => setIsVisible(!document.hidden);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      canvasCleanupRef.current?.();
+      canvasCleanupRef.current = null;
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        rendererRef.current.forceContextLoss();
+        rendererRef.current = null;
+      }
+    };
+  }, []);
 
   // Instantiated once inside canvas container
   const config = activeEngine.getConfig();
@@ -214,9 +233,21 @@ export const HiveCanvas: React.FC<HiveCanvasProps> = ({ engine, sectionRef }) =>
 
       <Canvas
         camera={{ position: [0, 0, 9], fov: 55, near: 0.1, far: 50 }}
-        gl={{ antialias: true, alpha: false }}
+        frameloop={isVisible ? 'always' : 'never'}
+        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
         dpr={[1, 1.5]}
         style={{ background: '#020202' }}
+        onCreated={({ gl }) => {
+          rendererRef.current = gl;
+          const domEl = gl.domElement;
+          const onLost = (e: Event) => {
+            e.preventDefault();
+          };
+          domEl.addEventListener('webglcontextlost', onLost);
+          canvasCleanupRef.current = () => {
+            domEl.removeEventListener('webglcontextlost', onLost);
+          };
+        }}
       >
         <HiveScene
           engine={activeEngine}

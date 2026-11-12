@@ -81,24 +81,53 @@ export const HoneycombMesh: React.FC<HoneycombMeshProps> = ({
     opacity:   { value: 0.20 },
   }), []);
 
+  const timer = useMemo(() => new THREE.Timer(), []);
+
+  useEffect(() => {
+    timer.connect(document);
+    return () => {
+      timer.disconnect();
+      timer.dispose();
+      if (meshRef.current) {
+        meshRef.current.geometry.dispose();
+        if (Array.isArray(meshRef.current.material)) {
+          meshRef.current.material.forEach((m) => m.dispose());
+        } else {
+          meshRef.current.material.dispose();
+        }
+      }
+    };
+  }, [timer]);
+
   // ── AI Pulse reaction ──────────────────────────────────────────────
   useEffect(() => {
-    return eventBus.on('AI_PULSE_START', () => {
+    let rafId: number | null = null;
+    const unsubscribe = eventBus.on('AI_PULSE_START', () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
       const start = performance.now();
       const tick = () => {
         const t = Math.min(1, (performance.now() - start) / 1400);
         uniforms.glowPower.value = 2.5 - Math.sin(t * Math.PI) * 1.5;
-        if (t < 1) requestAnimationFrame(tick);
+        if (t < 1) {
+          rafId = requestAnimationFrame(tick);
+        } else {
+          rafId = null;
+        }
       };
-      requestAnimationFrame(tick);
+      rafId = requestAnimationFrame(tick);
     });
+    return () => {
+      unsubscribe();
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, [uniforms]);
 
   // ── Frame loop ─────────────────────────────────────────────────────
-  useFrame(({ clock, camera }, delta) => {
+  useFrame(({ camera }, delta) => {
     if (!meshRef.current) return;
+    timer.update();
     visibilityManager.tickRecycle(camera.position.y, 1.5);
-    applyToMesh(meshRef.current, clock.getElapsedTime(), delta);
+    applyToMesh(meshRef.current, timer.getElapsed(), delta);
   });
 
   return (

@@ -73,7 +73,7 @@ export const HeroCarousel: React.FC<{ slides: Slide[] }> = ({ slides }) => {
           <p className="hero-description">{cleanDescription(current.description)}</p>
 
           <div className="action-row">
-            <Link href={`/home/anime/${current.id}`}>
+            <Link href={`/home/anime/${current.id}`} prefetch={false}>
               <button className="btn-primary">Ver Detalles</button>
             </Link>
             <button className="btn-outline">+ Mi Lista</button>

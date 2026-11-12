@@ -712,7 +712,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
                 </div>
                 {favAnime && (favAnime.title || favAnime.coverImage || favAnime.image) ? (
                   Number.isFinite(Number(favAnime.id)) && Number(favAnime.id) > 0 ? (
-                    <Link href={`/home/anime/${Number(favAnime.id)}`} className={`${styles.favShowcaseCard} ${styles.favShowcaseCardClickable}`}>
+                    <Link href={`/home/anime/${Number(favAnime.id)}`} prefetch={false} className={`${styles.favShowcaseCard} ${styles.favShowcaseCardClickable}`}>
                       {(favAnime.coverImage || favAnime.image) ? (
                         <img
                           src={favAnime.coverImage || favAnime.image}
@@ -875,6 +875,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
                     <Link
                       key={item.animeId}
                       href={`/home/anime/${item.animeId}`}
+                      prefetch={false}
                       className={styles.favoriteItem}
                       title={item.title}
                     >
@@ -920,7 +921,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
                         <div className={styles.activityContent}>
                           <p>
                             {act.type === 'ANIME_LIST' ? 'Actualizó ' : 'Añadió '}
-                            <Link href={`/home/anime/${act.animeId || act.targetId}`} className={styles.activityLink}>
+                            <Link href={`/home/anime/${act.animeId || act.targetId}`} prefetch={false} className={styles.activityLink}>
                               {act.title}
                             </Link>
                             {act.status ? ` (${translateListStatus(act.status)})` : ''}
@@ -963,7 +964,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
                           <p>
                             Comentó en{' '}
                             {act.animeId ? (
-                              <Link href={`/home/anime/${act.animeId}`} className={styles.activityLink}>
+                              <Link href={`/home/anime/${act.animeId}`} prefetch={false} className={styles.activityLink}>
                                 {act.title}
                               </Link>
                             ) : (
@@ -1036,7 +1037,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
            <div className="anime-grid">
              {mergedCollection.map((entry: any) => (
                <div key={entry.animeId} className="anime-item-card">
-                 <Link href={`/home/anime/${entry.animeId}`} style={{ textDecoration: 'none' }}>
+                 <Link href={`/home/anime/${entry.animeId}`} prefetch={false} style={{ textDecoration: 'none' }}>
                    <div className="poster-wrap">
                      {entry.coverImage ? (
                        <img src={entry.coverImage} alt={entry.title} />

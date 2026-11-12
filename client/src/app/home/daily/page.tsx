@@ -59,7 +59,7 @@ export default function DailyNexosPage() {
                   <div className="spotlight-info">
                     <h3>{dailyAnime.titleEnglish || dailyAnime.titleRomaji}</h3>
                     <p>{dailyAnime.averageScore ? `Puntuación: ${dailyAnime.averageScore}%` : 'Tendencia en AniNexo'}</p>
-                    <Link href={`/home/anime/${dailyAnime.id}`} className="primary-btn">
+                    <Link href={`/home/anime/${dailyAnime.id}`} prefetch={false} className="primary-btn">
                       Ver Ficha del Anime
                     </Link>
                   </div>

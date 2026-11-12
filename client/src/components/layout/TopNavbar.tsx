@@ -342,7 +342,7 @@ export const TopNavbar: React.FC = () => {
                        {searchResults.animes.map(anime => {
                          const slug = anime.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
                          return (
-                           <Link key={anime.id} href={`/home/anime/${anime.id}-${slug}`} className={styles.searchResultItem} onClick={() => setShowSearchResults(false)} role="option">
+                           <Link key={anime.id} href={`/home/anime/${anime.id}-${slug}`} prefetch={false} className={styles.searchResultItem} onClick={() => setShowSearchResults(false)} role="option">
                          <img src={anime.coverImage} alt={anime.title} className={styles.resImg} />
                          <div className={styles.resInfo}>
                            <p className={styles.resTitle}>{anime.title}</p>
@@ -358,7 +358,7 @@ export const TopNavbar: React.FC = () => {
                    <div className={styles.searchSection}>
                      <p className={styles.sectionTitle}>Personas</p>
                      {searchResults.users.map(u => (
-                       <Link key={u.id} href={`/home/profile/${u.username}`} className={styles.searchResultItem} onClick={() => setShowSearchResults(false)} role="option">
+                       <Link key={u.id} href={`/home/profile/${u.username}`} prefetch={false} className={styles.searchResultItem} onClick={() => setShowSearchResults(false)} role="option">
                          <img 
                            src={u.avatarUrl || `https://ui-avatars.com/api/?name=${u.username}&background=random&color=fff`} 
                            alt={u.username} 

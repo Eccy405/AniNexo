@@ -18,7 +18,7 @@ export const AnimeRow: React.FC<AnimeRowProps> = ({ title, items, viewAllHref })
       <div className="row-header">
         <h2 className="row-title">{title}</h2>
         {viewAllHref && (
-          <Link href={viewAllHref} className="view-all">Ver Todo</Link>
+          <Link href={viewAllHref} prefetch={false} className="view-all">Ver Todo</Link>
         )}
       </div>
 

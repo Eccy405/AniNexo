@@ -56,6 +56,7 @@ export default async function RankingsPage() {
         {animes?.map((anime: any, index: number) => (
           <Link 
             href={`/home/anime/${anime.id}`} 
+            prefetch={false}
             key={anime.id} 
             style={{ textDecoration: 'none', color: 'inherit' }}
           >

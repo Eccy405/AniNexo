@@ -76,12 +76,13 @@ interface PosterNodeProps {
   position: [number, number, number];
   instanceIndex: number;
   nodeStatesRef: React.MutableRefObject<ReturnType<AnimationController['tick']>>;
+  elapsedRef: React.MutableRefObject<number>;
   geometry: THREE.BufferGeometry;
   visibilityManager: VisibilityManager;
 }
 
 const PosterNode: React.FC<PosterNodeProps> = ({
-  position, instanceIndex, nodeStatesRef, geometry, visibilityManager,
+  position, instanceIndex, nodeStatesRef, elapsedRef, geometry, visibilityManager,
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
@@ -162,7 +163,7 @@ const PosterNode: React.FC<PosterNodeProps> = ({
 
   // Per-frame animation & dynamic texture check
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  useFrame(({ clock }) => {
+  useFrame(() => {
     // 1. Dynamic recycle / load detection
     const currentAnime = visibilityManager.getAnimeForSlot(instanceIndex);
     const currentId = currentAnime?.id ?? null;
@@ -179,7 +180,7 @@ const PosterNode: React.FC<PosterNodeProps> = ({
     const node  = nodes?.[instanceIndex];
     if (!node) return;
 
-    const elapsed = clock.getElapsedTime();
+    const elapsed = elapsedRef.current;
     const breathe = 1 + Math.sin(elapsed * 0.8 + node.phase) * 0.022;
     const floatY  = Math.sin(elapsed * 0.5 + node.phase * 1.3) * 0.05;
     const rotX    = Math.sin(elapsed * 0.25 + node.phase * 0.7) * 0.008;
@@ -227,7 +228,20 @@ export const HexPosterFaces: React.FC<HexPosterFacesProps> = ({
   // Therefore we must call animCtrl.tick() here so blendAlpha actually grows.
   const activatedRef = useRef(false);
   const nodeStatesRef = useRef<ReturnType<AnimationController['tick']>>([]);
+  const elapsedRef = useRef(0);
+  const timer = useMemo(() => new THREE.Timer(), []);
+
+  useEffect(() => {
+    timer.connect(document);
+    return () => {
+      timer.disconnect();
+      timer.dispose();
+    };
+  }, [timer]);
+
   useFrame((_, delta) => {
+    timer.update();
+    elapsedRef.current = timer.getElapsed();
     // Activate all nodes as VISIBLE once on first tick (after catalog loads)
     if (!activatedRef.current && catalog.length > 0) {
       for (let i = 0; i < config.nodeCount; i++) {
@@ -279,6 +293,7 @@ export const HexPosterFaces: React.FC<HexPosterFacesProps> = ({
           position={pos}
           instanceIndex={i}
           nodeStatesRef={nodeStatesRef}
+          elapsedRef={elapsedRef}
           geometry={geometry}
           visibilityManager={visibilityManager}
         />

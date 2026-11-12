@@ -590,7 +590,7 @@ export default function CommunityPage() {
                   searchResults.length > 0 ? (
                     searchResults.map(u => (
                       <div key={u.id} className="contact-item">
-                        <Link href={`/home/profile/${u.username}`} className="contact-link">
+                        <Link href={`/home/profile/${u.username}`} prefetch={false} className="contact-link">
                           <div className="avatar-wrapper">
                             <img src={u.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=0052FF&color=fff`} alt={u.username} className="contact-avatar" />
                             <span className="online-badge" />
@@ -620,7 +620,7 @@ export default function CommunityPage() {
                 ) : userFriends.length > 0 ? (
                   userFriends.map((f: any) => (
                     <div key={f.id} className="contact-item">
-                      <Link href={`/home/profile/${f.username}`} className="contact-link">
+                      <Link href={`/home/profile/${f.username}`} prefetch={false} className="contact-link">
                         <div className="avatar-wrapper">
                           <img src={f.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.username)}&background=0052FF&color=fff`} alt={f.username} className="contact-avatar" />
                           <span className="online-badge" />

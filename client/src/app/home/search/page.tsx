@@ -383,7 +383,7 @@ export default function SearchPage() {
             <h3 className="section-title-alt">Nexo Comunidad</h3>
             <div className="users-grid-horizontal">
               {users.map(u => (
-                <Link href={`/home/profile/${u.username}`} key={u.id} className="user-search-card">
+                <Link href={`/home/profile/${u.username}`} prefetch={false} key={u.id} className="user-search-card">
                   <div className="user-avatar-wrap">
                     <img src={u.avatarUrl || `https://ui-avatars.com/api/?name=${u.username}`} alt={u.username} />
                   </div>

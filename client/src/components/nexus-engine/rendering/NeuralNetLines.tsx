@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { HiveEngine } from '../core/HiveEngine';
 
@@ -9,7 +9,21 @@ interface NeuralNetLinesProps {
 }
 
 export const NeuralNetLines: React.FC<NeuralNetLinesProps> = ({ engine }) => {
+  const linesRef = useRef<THREE.LineSegments>(null);
   const config = engine.getConfig();
+
+  useEffect(() => {
+    return () => {
+      if (linesRef.current) {
+        linesRef.current.geometry.dispose();
+        if (Array.isArray(linesRef.current.material)) {
+          linesRef.current.material.forEach((m) => m.dispose());
+        } else {
+          linesRef.current.material.dispose();
+        }
+      }
+    };
+  }, []);
 
   const lineVertices = useMemo(() => {
     const vertices: number[] = [];
@@ -54,7 +68,7 @@ export const NeuralNetLines: React.FC<NeuralNetLinesProps> = ({ engine }) => {
   }, [engine, config]);
 
   return (
-    <lineSegments frustumCulled={false}>
+    <lineSegments ref={linesRef} frustumCulled={false}>
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"

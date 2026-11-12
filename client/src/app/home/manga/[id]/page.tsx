@@ -119,7 +119,7 @@ export default function MangaDetailsPage() {
           ) : (
             <div className="chapters-list">
               {chapters.map((ch) => (
-                <Link key={ch.id} href={`/home/manga/read/${ch.id}`} className="chapter-item">
+                <Link key={ch.id} href={`/home/manga/read/${ch.id}`} prefetch={false} className="chapter-item">
                   <div className="chapter-info">
                     <span className="chapter-num">Capítulo {ch.chapter}</span>
                     {ch.title && <span className="chapter-title">- {ch.title}</span>}
