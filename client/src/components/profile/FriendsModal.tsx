@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { MessageCircle, Edit2, UserMinus } from 'lucide-react';
 import { useChatStore } from '../../store/useChatStore';
+import { useNotificationStore } from '../../store/useNotificationStore';
 import { getApiUrl } from '../../lib/apiConfig';
 
 interface FriendsModalProps {
@@ -24,6 +25,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
   const userStatuses = useChatStore(s => s.userStatuses);
   const unreadBySender = useChatStore(s => s.unreadBySender);
   const clearUnreadForConversation = useChatStore(s => s.clearUnreadForConversation);
+  const markConversationNotificationsRead = useNotificationStore(s => s.markConversationNotificationsRead);
 
   const [friends, setFriends] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,8 +119,9 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
       );
       const data = await res.json();
       if (data.success) {
-        // Limpiar contador sin leer de forma inmediata al abrir la conversación
+        // Limpiar contador sin leer y campana de notificaciones de forma inmediata al abrir la conversación
         clearUnreadForConversation(data.data.id, friend.id);
+        markConversationNotificationsRead(data.data.id);
 
         // Fetch messages for this conversation
         let messages: any[] = [];
@@ -132,9 +135,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
           fetch(`${getApiUrl()}/messaging/${data.data.id}/read`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` }
-          })
-            .then(() => window.dispatchEvent(new CustomEvent('aninexo:notifications-updated')))
-            .catch(() => {});
+          }).catch(() => {});
         }
 
         onStartChat?.(friend, data.data.id, messages);

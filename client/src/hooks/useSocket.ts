@@ -24,8 +24,10 @@ export function useSocket(conversationId?: string) {
       }
 
       const newSocket = io(socketUrl, {
-        reconnectionAttempts: 5,
+        reconnection: true,
+        reconnectionAttempts: Infinity,
         reconnectionDelay: 1000,
+        reconnectionDelayMax: 10000,
         transports: ['websocket', 'polling'],
         auth: {
           token

@@ -462,7 +462,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
 
     const handleNewMessage = (msg: any) => {
       if (msg.conversationId === conversationId) {
-        setChatMessages(prev => [...prev, msg]);
+        setChatMessages(prev => (msg?.id && prev.some(m => String(m.id) === String(msg.id)) ? prev : [...prev, msg]));
         setTimeout(() => {
           const el = document.querySelector('.chat-messages');
           el?.scrollTo(0, el.scrollHeight);

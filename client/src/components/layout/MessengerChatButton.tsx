@@ -6,6 +6,7 @@ import { FriendsModal } from '../profile/FriendsModal';
 import { ChatWindow } from '../profile/ChatWindow';
 import { useGlobalSocket } from '../auth/SocketProvider';
 import { useChatStore } from '../../store/useChatStore';
+import { useNotificationStore } from '../../store/useNotificationStore';
 import { getApiUrl } from '../../lib/apiConfig';
 
 export const MessengerChatButton: React.FC = () => {
@@ -19,6 +20,7 @@ export const MessengerChatButton: React.FC = () => {
   const totalUnreadMessages = useChatStore(s => s.totalUnreadMessages);
   const setActiveFloatingChat = useChatStore(s => s.setActiveFloatingChat);
   const clearUnreadForConversation = useChatStore(s => s.clearUnreadForConversation);
+  const markConversationNotificationsRead = useNotificationStore(s => s.markConversationNotificationsRead);
 
   // Chat state — lifted from FriendsModal
   const [activeChatFriend, setActiveChatFriend] = useState<any>(null);
@@ -56,21 +58,18 @@ export const MessengerChatButton: React.FC = () => {
 
   const markConversationRead = useCallback(async (convId: string, friendId?: string) => {
     clearUnreadForConversation(convId, friendId);
+    markConversationNotificationsRead(convId);
     const token = localStorage.getItem('token');
     if (token) {
       fetch(`${getApiUrl()}/messaging/${convId}/read`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(() => {
-          window.dispatchEvent(new CustomEvent('aninexo:notifications-updated'));
-        })
-        .catch(() => {});
+      }).catch(() => {});
     }
     if (socket && isConnected) {
       socket.emit('message_read', { conversationId: convId });
     }
-  }, [clearUnreadForConversation, socket, isConnected]);
+  }, [clearUnreadForConversation, markConversationNotificationsRead, socket, isConnected]);
 
   // Listen to new messages in real-time
   useEffect(() => {
@@ -78,13 +77,9 @@ export const MessengerChatButton: React.FC = () => {
       const handleNewMessage = (msg: any) => {
         if (msg.conversationId === conversationId) {
           setChatMessages(prev => {
-            // Prevent duplicate renderings
-            if (prev.some(m => m.id === msg.id)) return prev;
+            if (msg?.id && prev.some(m => String(m.id) === String(msg.id))) return prev;
             return [...prev, msg];
           });
-          if (!isChatMinimized && msg.senderId !== user?.id) {
-            markConversationRead(msg.conversationId, msg.senderId);
-          }
         }
       };
 
@@ -93,7 +88,7 @@ export const MessengerChatButton: React.FC = () => {
         socket.off('new_message', handleNewMessage);
       };
     }
-  }, [socket, isConnected, conversationId, isChatMinimized, user?.id, markConversationRead]);
+  }, [socket, isConnected, conversationId]);
 
   const handleStartChat = useCallback((friend: any, convId: string, messages: any[]) => {
     setActiveChatFriend(friend);
@@ -179,17 +174,22 @@ export const MessengerChatButton: React.FC = () => {
         );
         const data = await res.json();
         if (res.ok && data.success) {
-          setChatMessages(prev => [
-            ...prev,
-            {
-              id: data.data?.id ?? Date.now(),
-              content,
-              type,
-              senderId: user.id,
-              createdAt: data.data?.createdAt ?? new Date().toISOString(),
-              sender: { username: user.username, avatarUrl: user.avatarUrl },
-            },
-          ]);
+          const sentId = data.data?.id ?? Date.now();
+          setChatMessages(prev =>
+            prev.some(m => String(m.id) === String(sentId))
+              ? prev
+              : [
+                  ...prev,
+                  {
+                    id: sentId,
+                    content,
+                    type,
+                    senderId: user.id,
+                    createdAt: data.data?.createdAt ?? new Date().toISOString(),
+                    sender: { username: user.username, avatarUrl: user.avatarUrl },
+                  },
+                ]
+          );
           setChatInput('');
         }
       } catch (err) {

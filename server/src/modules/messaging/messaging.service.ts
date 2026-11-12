@@ -112,16 +112,19 @@ export class MessagingService {
 
     const byConversation: Record<string, number> = {};
     const bySender: Record<string, number> = {};
+    const conversationToSender: Record<string, string> = {};
 
     for (const m of unreadMessages) {
       byConversation[m.conversationId] = (byConversation[m.conversationId] || 0) + 1;
       bySender[m.senderId] = (bySender[m.senderId] || 0) + 1;
+      conversationToSender[m.conversationId] = m.senderId;
     }
 
     return {
       totalUnread: unreadMessages.length,
       byConversation,
-      bySender
+      bySender,
+      conversationToSender
     };
   }
 

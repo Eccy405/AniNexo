@@ -25,20 +25,60 @@ export class NotificationService {
 
       // 2. Notificación In-App (Persistente en DB)
       if (inAppEnabled) {
-        notification = await prisma.notification.create({
-          data: {
-            userId,
-            type,
-            referenceId: data.referenceId ?? null,
-            isRead: false
+        if (type === 'MESSAGE' && data.referenceId) {
+          const existingUnread = await prisma.notification.findFirst({
+            where: {
+              userId,
+              type: 'MESSAGE',
+              referenceId: data.referenceId,
+              isRead: false
+            },
+            orderBy: { createdAt: 'desc' }
+          });
+
+          if (existingUnread) {
+            notification = await prisma.notification.update({
+              where: { id: existingUnread.id },
+              data: { createdAt: new Date() }
+            });
+
+            // Limpiar posibles duplicados antiguos sin leer de esa misma conversación
+            await prisma.notification.deleteMany({
+              where: {
+                userId,
+                type: 'MESSAGE',
+                referenceId: data.referenceId,
+                isRead: false,
+                id: { not: existingUnread.id }
+              }
+            }).catch(() => {});
+          } else {
+            notification = await prisma.notification.create({
+              data: {
+                userId,
+                type,
+                referenceId: data.referenceId,
+                isRead: false
+              }
+            });
           }
-        });
+        } else {
+          notification = await prisma.notification.create({
+            data: {
+              userId,
+              type,
+              referenceId: data.referenceId ?? null,
+              isRead: false
+            }
+          });
+        }
 
         // Emitir vía WebSocket (Tiempo Real)
         socketService.emitToUser(userId, 'notification', {
           ...notification,
           title: data.title,
-          message: data.message
+          message: data.message,
+          ...(type === 'MESSAGE' && data.referenceId ? { conversationId: data.referenceId } : {})
         });
       }
 

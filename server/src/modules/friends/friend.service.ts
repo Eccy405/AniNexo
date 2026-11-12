@@ -7,37 +7,81 @@ export class FriendService {
       throw new Error('No puedes agregarte como amigo de ti mismo');
     }
 
-    const existing = await prisma.friendship.findUnique({
-      where: { userId_friendId: { userId, friendId } }
-    });
-
-    if (existing) {
-      if (existing.status === 'PENDING') {
-        throw new Error('Ya enviaste solicitud de amistad');
-      }
-      if (existing.status === 'ACCEPTED') {
-        throw new Error('Ya son amigos');
-      }
-    }
-
-    const reverse = await prisma.friendship.findUnique({
-      where: { userId_friendId: { userId: friendId, friendId: userId } }
-    });
-
-    if (reverse?.status === 'ACCEPTED') {
-      throw new Error('Ya son amigos');
-    }
-
     const sender = await prisma.user.findUnique({
       where: { id: userId },
       select: { username: true }
     });
 
-    if (reverse?.status === 'PENDING') {
-      await prisma.friendship.update({
-        where: { userId_friendId: { userId: friendId, friendId: userId } },
-        data: { status: 'ACCEPTED' }
+    const txResult = await prisma.$transaction(async (tx) => {
+      const relations = await tx.friendship.findMany({
+        where: {
+          OR: [
+            { userId, friendId },
+            { userId: friendId, friendId: userId }
+          ]
+        },
+        orderBy: { createdAt: 'asc' }
       });
+
+      if (relations.some((r) => r.status === 'BLOCKED')) {
+        throw new Error('No es posible enviar solicitud a este usuario');
+      }
+
+      const accepted = relations.find((r) => r.status === 'ACCEPTED');
+      if (accepted) {
+        if (relations.length > 1) {
+          await tx.friendship.deleteMany({
+            where: {
+              id: { not: accepted.id },
+              OR: [
+                { userId, friendId },
+                { userId: friendId, friendId: userId }
+              ]
+            }
+          });
+        }
+        throw new Error('Ya son amigos');
+      }
+
+      const outgoing = relations.find((r) => r.userId === userId && r.friendId === friendId);
+      const incoming = relations.find((r) => r.userId === friendId && r.friendId === userId);
+
+      if (incoming?.status === 'PENDING') {
+        await tx.friendship.update({
+          where: { id: incoming.id },
+          data: { status: 'ACCEPTED' }
+        });
+        await tx.friendship.deleteMany({
+          where: {
+            id: { not: incoming.id },
+            OR: [
+              { userId, friendId },
+              { userId: friendId, friendId: userId }
+            ]
+          }
+        });
+        return { status: 'ACCEPTED' as const, autoAccepted: true };
+      }
+
+      if (outgoing?.status === 'PENDING') {
+        throw new Error('Ya enviaste solicitud de amistad');
+      }
+
+      if (outgoing) {
+        await tx.friendship.update({
+          where: { id: outgoing.id },
+          data: { status: 'PENDING' }
+        });
+      } else {
+        await tx.friendship.create({
+          data: { userId, friendId, status: 'PENDING' }
+        });
+      }
+
+      return { status: 'PENDING' as const, autoAccepted: false };
+    });
+
+    if (txResult.autoAccepted) {
       await notificationService.clearFriendRequestNotifications(userId, friendId).catch(() => {});
       await notificationService.clearFriendRequestNotifications(friendId, userId).catch(() => {});
       await notificationService.createNotification(friendId, 'SYSTEM', {
@@ -46,17 +90,6 @@ export class FriendService {
         referenceId: userId
       }).catch(() => {});
       return { status: 'ACCEPTED' };
-    }
-
-    if (existing) {
-      await prisma.friendship.update({
-        where: { userId_friendId: { userId, friendId } },
-        data: { status: 'PENDING' }
-      });
-    } else {
-      await prisma.friendship.create({
-        data: { userId, friendId, status: 'PENDING' }
-      });
     }
 
     await notificationService.clearFriendRequestNotifications(friendId, userId).catch(() => {});
@@ -70,33 +103,70 @@ export class FriendService {
   }
 
   async acceptFriendRequest(userId: string, friendId: string) {
-    const [incoming, outgoing] = await Promise.all([
-      prisma.friendship.findUnique({
-        where: { userId_friendId: { userId: friendId, friendId: userId } }
-      }),
-      prisma.friendship.findUnique({
-        where: { userId_friendId: { userId, friendId } }
-      })
-    ]);
+    const txResult = await prisma.$transaction(async (tx) => {
+      const relations = await tx.friendship.findMany({
+        where: {
+          OR: [
+            { userId, friendId },
+            { userId: friendId, friendId: userId }
+          ]
+        },
+        orderBy: { createdAt: 'asc' }
+      });
 
-    // Limpiar la notificación de solicitud pendiente en cualquier caso resuelto
-    if (incoming?.status === 'ACCEPTED' || outgoing?.status === 'ACCEPTED') {
-      await notificationService.clearFriendRequestNotifications(userId, friendId).catch(() => {});
-      return { status: 'ACCEPTED', alreadyFriends: true };
-    }
+      const alreadyAccepted = relations.find((r) => r.status === 'ACCEPTED');
+      if (alreadyAccepted) {
+        if (relations.length > 1) {
+          await tx.friendship.deleteMany({
+            where: {
+              id: { not: alreadyAccepted.id },
+              OR: [
+                { userId, friendId },
+                { userId: friendId, friendId: userId }
+              ]
+            }
+          });
+        }
+        return { status: 'ACCEPTED' as const, alreadyFriends: true, found: true };
+      }
 
-    if (!incoming || incoming.status !== 'PENDING') {
-      await notificationService.clearFriendRequestNotifications(userId, friendId).catch(() => {});
-      throw new Error('Solicitud de amistad no encontrada');
-    }
+      const incoming = relations.find(
+        (r) => r.userId === friendId && r.friendId === userId && r.status === 'PENDING'
+      );
 
-    await prisma.friendship.update({
-      where: { userId_friendId: { userId: friendId, friendId: userId } },
-      data: { status: 'ACCEPTED' }
+      if (!incoming) {
+        return { found: false as const, alreadyFriends: false };
+      }
+
+      await tx.friendship.update({
+        where: { id: incoming.id },
+        data: { status: 'ACCEPTED' }
+      });
+
+      // Eliminar cualquier registro espejo o duplicado entre ambos usuarios
+      await tx.friendship.deleteMany({
+        where: {
+          id: { not: incoming.id },
+          OR: [
+            { userId, friendId },
+            { userId: friendId, friendId: userId }
+          ]
+        }
+      });
+
+      return { status: 'ACCEPTED' as const, alreadyFriends: false, found: true };
     });
 
     await notificationService.clearFriendRequestNotifications(userId, friendId).catch(() => {});
     await notificationService.clearFriendRequestNotifications(friendId, userId).catch(() => {});
+
+    if (!txResult.found) {
+      throw new Error('Solicitud de amistad no encontrada');
+    }
+
+    if (txResult.alreadyFriends) {
+      return { status: 'ACCEPTED', alreadyFriends: true };
+    }
 
     const acceptor = await prisma.user.findUnique({
       where: { id: userId },
@@ -113,15 +183,20 @@ export class FriendService {
   }
 
   async rejectFriendRequest(userId: string, friendId: string) {
-    await prisma.friendship.deleteMany({
-      where: {
-        userId: friendId,
-        friendId: userId,
-        status: 'PENDING'
-      }
+    await prisma.$transaction(async (tx) => {
+      await tx.friendship.deleteMany({
+        where: {
+          status: 'PENDING',
+          OR: [
+            { userId: friendId, friendId: userId },
+            { userId, friendId }
+          ]
+        }
+      });
     });
 
     await notificationService.clearFriendRequestNotifications(userId, friendId).catch(() => {});
+    await notificationService.clearFriendRequestNotifications(friendId, userId).catch(() => {});
     return { rejected: true };
   }
 
@@ -158,31 +233,42 @@ export class FriendService {
       }
     });
 
-    return requests.map((r: { user: any }) => ({
-      id: r.user.id,
-      username: r.user.username,
-      avatarUrl: r.user.avatarUrl
-    }));
+    const unique = new Map<string, { id: string; username: string; avatarUrl: string | null }>();
+    for (const r of requests as Array<{ user: any }>) {
+      if (r.user?.id && !unique.has(r.user.id)) {
+        unique.set(r.user.id, {
+          id: r.user.id,
+          username: r.user.username,
+          avatarUrl: r.user.avatarUrl
+        });
+      }
+    }
+    return Array.from(unique.values());
   }
 
   async removeFriend(userId: string, friendId: string) {
-    await prisma.friendship.deleteMany({
-      where: {
-        OR: [
-          { userId, friendId },
-          { userId: friendId, friendId: userId }
-        ]
-      }
+    await prisma.$transaction(async (tx) => {
+      await tx.friendship.deleteMany({
+        where: {
+          OR: [
+            { userId, friendId },
+            { userId: friendId, friendId: userId }
+          ]
+        }
+      });
+
+      await tx.friendNickname.deleteMany({
+        where: {
+          OR: [
+            { userId, friendId },
+            { userId: friendId, friendId: userId }
+          ]
+        }
+      });
     });
 
-    await prisma.friendNickname.deleteMany({
-      where: {
-        OR: [
-          { userId, friendId },
-          { userId: friendId, friendId: userId }
-        ]
-      }
-    });
+    await notificationService.clearFriendRequestNotifications(userId, friendId).catch(() => {});
+    await notificationService.clearFriendRequestNotifications(friendId, userId).catch(() => {});
 
     return { removed: true };
   }

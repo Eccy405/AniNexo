@@ -7,6 +7,7 @@ import { ViewTransition } from 'react';
 import { Menu, X as CloseIcon } from 'lucide-react';
 import styles from './TopNavbar.module.css';
 import { translateFormat } from '../../lib/translations';
+import { useNotificationStore } from '../../store/useNotificationStore';
 
 export const TopNavbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -18,9 +19,14 @@ export const TopNavbar: React.FC = () => {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [processingFriendNotifId, setProcessingFriendNotifId] = useState<string | null>(null);
+
+  const notifications = useNotificationStore((s) => s.notifications);
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const setNotifications = useNotificationStore((s) => s.setNotifications);
+  const markAsReadLocal = useNotificationStore((s) => s.markAsReadLocal);
+  const markAllAsReadLocal = useNotificationStore((s) => s.markAllAsReadLocal);
+  const removeNotificationLocal = useNotificationStore((s) => s.removeNotificationLocal);
   const pathname = usePathname();
   const searchRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -44,24 +50,16 @@ export const TopNavbar: React.FC = () => {
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setNotifications(data.data);
-        setUnreadCount(data.data.filter((n: any) => !n.isRead).length);
       }
     } catch (err) {
       console.error("Error fetching notifications in navbar", err);
     }
-  }, [apiBase]);
+  }, [apiBase, setNotifications]);
 
   const handleMarkAsRead = async (id: string) => {
     const token = localStorage.getItem('token');
     if (!token) return;
-    // Optimistic UI update so badge drops immediately
-    setNotifications(prev => {
-      const target = prev.find(n => n.id === id);
-      if (target && !target.isRead) {
-        setUnreadCount(c => Math.max(0, c - 1));
-      }
-      return prev.map(n => n.id === id ? { ...n, isRead: true } : n);
-    });
+    markAsReadLocal(id);
     try {
       await fetch(`${apiBase}/notifications/${id}/read`, {
         method: 'POST',
@@ -77,8 +75,7 @@ export const TopNavbar: React.FC = () => {
   const handleMarkAllRead = async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-    setUnreadCount(0);
+    markAllAsReadLocal();
     try {
       await fetch(`${apiBase}/notifications/read-all`, {
         method: 'POST',
@@ -91,7 +88,7 @@ export const TopNavbar: React.FC = () => {
     }
   };
 
-  const handleAcceptFriend = async (friendId: string, notificationId: string) => {
+  const handleAcceptFriend = async (friendId: string | undefined, notificationId: string) => {
     const token = localStorage.getItem('token');
     if (!token || !user || !friendId || processingFriendNotifId === notificationId) return;
     setProcessingFriendNotifId(notificationId);
@@ -107,13 +104,7 @@ export const TopNavbar: React.FC = () => {
       const data = await res.json();
 
       // Eliminar la notificación de solicitud de la UI para que no se pueda aceptar varias veces
-      setNotifications(prev => {
-        const target = prev.find(n => n.id === notificationId);
-        if (target && !target.isRead) {
-          setUnreadCount(c => Math.max(0, c - 1));
-        }
-        return prev.filter(n => n.id !== notificationId);
-      });
+      removeNotificationLocal(notificationId);
 
       await fetch(`${apiBase}/notifications/${notificationId}`, {
         method: 'DELETE',
@@ -136,13 +127,7 @@ export const TopNavbar: React.FC = () => {
     if (!token || !user || processingFriendNotifId === notificationId) return;
     setProcessingFriendNotifId(notificationId);
     try {
-      setNotifications(prev => {
-        const target = prev.find(n => n.id === notificationId);
-        if (target && !target.isRead) {
-          setUnreadCount(c => Math.max(0, c - 1));
-        }
-        return prev.filter(n => n.id !== notificationId);
-      });
+      removeNotificationLocal(notificationId);
 
       if (friendId) {
         await fetch(`${apiBase}/friends/reject`, {

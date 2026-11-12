@@ -53,7 +53,7 @@ export class MessagingController {
       const io = socketService.getIO();
       if (io) {
         const recipientIds = await this.messagingService.getOtherParticipantIds(conversationId, senderId);
-        let emitter = io.to(`conv_${conversationId}`);
+        let emitter = io.to(`conv_${conversationId}`).to(`user:${senderId}`);
         for (const recipientId of recipientIds) {
           emitter = emitter.to(`user:${recipientId}`);
         }

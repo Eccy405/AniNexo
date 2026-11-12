@@ -10,9 +10,9 @@ interface ChatWindow {
 
 interface ChatState {
   activeChats: ChatWindow[];
-  onlineUsers: Set<string>; // kept for backward compatibility if needed
+  onlineUsers: Set<string>;
   userStatuses: Record<string, 'online' | 'away' | 'busy' | 'offline'>;
-  typingUsers: Map<string, boolean>; // convId_userId -> typing
+  typingUsers: Map<string, boolean>;
 
   // Unread counters for floating Messenger & friend list
   totalUnreadMessages: number;
@@ -20,9 +20,10 @@ interface ChatState {
   unreadBySender: Record<string, number>;
   conversationToSender: Record<string, string>;
   seenUnreadMsgIds: Record<string, true>;
+  processedSocketMsgIds: string[];
   activeFloatingConversationId: string | null;
   isFloatingChatMinimized: boolean;
-  
+
   openChat: (convo: ChatWindow) => void;
   closeChat: (convoId: string) => void;
   toggleMinimize: (convoId: string) => void;
@@ -30,12 +31,18 @@ interface ChatState {
   setUserStatus: (userId: string, status: 'online' | 'away' | 'busy' | 'offline') => void;
   setTyping: (convoId: string, userId: string, isTyping: boolean) => void;
   setActiveFloatingChat: (conversationId: string | null, isMinimized?: boolean) => void;
-  setUnreadSummary: (summary: { totalUnread: number; byConversation: Record<string, number>; bySender: Record<string, number> }) => void;
+  setUnreadSummary: (summary: {
+    totalUnread: number;
+    byConversation: Record<string, number>;
+    bySender: Record<string, number>;
+    conversationToSender?: Record<string, string>;
+  }) => void;
+  recordMessageIfNew: (msgId?: string | number) => boolean;
   incrementUnreadForMessage: (msg: { id?: string | number; conversationId?: string; senderId?: string }) => void;
   clearUnreadForConversation: (conversationId: string, senderId?: string) => void;
 }
 
-export const useChatStore = create<ChatState>((set) => ({
+export const useChatStore = create<ChatState>((set, get) => ({
   activeChats: [],
   onlineUsers: new Set(),
   userStatuses: {},
@@ -45,15 +52,16 @@ export const useChatStore = create<ChatState>((set) => ({
   unreadBySender: {},
   conversationToSender: {},
   seenUnreadMsgIds: {},
+  processedSocketMsgIds: [],
   activeFloatingConversationId: null,
   isFloatingChatMinimized: false,
 
   openChat: (convo) => set((state) => {
     if (state.activeChats.find(c => c.conversationId === convo.conversationId)) {
-      return { 
-        activeChats: state.activeChats.map(c => 
+      return {
+        activeChats: state.activeChats.map(c =>
           c.conversationId === convo.conversationId ? { ...c, isMinimized: false } : c
-        ) 
+        )
       };
     }
     const newChats = [...state.activeChats, convo].slice(-3);
@@ -65,7 +73,7 @@ export const useChatStore = create<ChatState>((set) => ({
   })),
 
   toggleMinimize: (convoId) => set((state) => ({
-    activeChats: state.activeChats.map(c => 
+    activeChats: state.activeChats.map(c =>
       c.conversationId === convoId ? { ...c, isMinimized: !c.isMinimized } : c
     )
   })),
@@ -74,11 +82,11 @@ export const useChatStore = create<ChatState>((set) => ({
     const newSet = new Set(state.onlineUsers);
     if (isOnline) newSet.add(userId);
     else newSet.delete(userId);
-    return { 
+    return {
       onlineUsers: newSet,
-      userStatuses: { 
-        ...state.userStatuses, 
-        [userId]: isOnline ? 'online' : 'offline' 
+      userStatuses: {
+        ...state.userStatuses,
+        [userId]: isOnline ? 'online' : 'offline'
       }
     };
   }),
@@ -107,11 +115,27 @@ export const useChatStore = create<ChatState>((set) => ({
     isFloatingChatMinimized: isMinimized
   }),
 
-  setUnreadSummary: (summary) => set({
+  setUnreadSummary: (summary) => set((state) => ({
     totalUnreadMessages: summary.totalUnread || 0,
     unreadByConversation: summary.byConversation || {},
-    unreadBySender: summary.bySender || {}
-  }),
+    unreadBySender: summary.bySender || {},
+    conversationToSender: {
+      ...state.conversationToSender,
+      ...(summary.conversationToSender || {})
+    }
+  })),
+
+  recordMessageIfNew: (msgId) => {
+    if (msgId === undefined || msgId === null || msgId === '') return true;
+    const idStr = String(msgId);
+    const { processedSocketMsgIds } = get();
+    if (processedSocketMsgIds.includes(idStr)) {
+      return false;
+    }
+    const nextIds = [...processedSocketMsgIds, idStr].slice(-500);
+    set({ processedSocketMsgIds: nextIds });
+    return true;
+  },
 
   incrementUnreadForMessage: (msg) => set((state) => {
     if (!msg.conversationId || !msg.senderId) return state;
@@ -128,6 +152,10 @@ export const useChatStore = create<ChatState>((set) => ({
     };
     const nextTotal = Object.values(nextByConv).reduce((acc, n) => acc + n, 0);
 
+    const nextSeen = msgId
+      ? { ...state.seenUnreadMsgIds, [msgId]: true as const }
+      : state.seenUnreadMsgIds;
+
     return {
       unreadByConversation: nextByConv,
       unreadBySender: nextBySender,
@@ -135,9 +163,7 @@ export const useChatStore = create<ChatState>((set) => ({
         ...state.conversationToSender,
         [msg.conversationId]: msg.senderId
       },
-      seenUnreadMsgIds: msgId
-        ? { ...state.seenUnreadMsgIds, [msgId]: true }
-        : state.seenUnreadMsgIds,
+      seenUnreadMsgIds: nextSeen,
       totalUnreadMessages: nextTotal
     };
   }),

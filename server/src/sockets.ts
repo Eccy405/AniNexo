@@ -75,6 +75,10 @@ export function setupSockets(io: Server) {
     // Unirse a sala personal para notificaciones directas
     socket.join(`user:${userId}`);
 
+    socket.on('join_user', () => {
+      socket.join(`user:${userId}`);
+    });
+
     // Notificar a otros que este usuario está online
     userPresences.set(userId, 'online');
     socket.broadcast.emit('user_status', { userId, status: 'online' });
@@ -101,12 +105,13 @@ export function setupSockets(io: Server) {
     });
 
     // Enviar y recibir mensajes en tiempo real
-    socket.on('send_message', async (data: { conversationId: string, senderId: string, content: string }) => {
+    socket.on('send_message', async (data: { conversationId: string, senderId?: string, content: string }) => {
       try {
-        const message = await messagingService.sendMessage(data.conversationId, data.senderId, data.content);
-        const recipientIds = await messagingService.getOtherParticipantIds(data.conversationId, data.senderId);
+        const verifiedSenderId = userId;
+        const message = await messagingService.sendMessage(data.conversationId, verifiedSenderId, data.content);
+        const recipientIds = await messagingService.getOtherParticipantIds(data.conversationId, verifiedSenderId);
 
-        let emitter = io.to(`conv_${data.conversationId}`);
+        let emitter = io.to(`conv_${data.conversationId}`).to(`user:${verifiedSenderId}`);
         for (const recipientId of recipientIds) {
           emitter = emitter.to(`user:${recipientId}`);
         }

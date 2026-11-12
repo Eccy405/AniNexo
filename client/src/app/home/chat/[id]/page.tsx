@@ -9,6 +9,7 @@ import { Card } from '../../../../components/ui/Card/Card';
 import { Button } from '../../../../components/ui/Button/Button';
 import { Users } from 'lucide-react';
 import { useChatStore } from '../../../../store/useChatStore';
+import { useNotificationStore } from '../../../../store/useNotificationStore';
 import { getApiUrl } from '../../../../lib/apiConfig';
 
 interface Participant {
@@ -53,6 +54,7 @@ export default function ChatWithIdPage() {
   
   const { socket, isConnected } = useSocket(conversationId);
   const clearUnreadForConversation = useChatStore(s => s.clearUnreadForConversation);
+  const markConversationNotificationsRead = useNotificationStore(s => s.markConversationNotificationsRead);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,14 +90,13 @@ export default function ChatWithIdPage() {
           setMessages(data.data?.messages || []);
           setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
           clearUnreadForConversation(conversationId);
+          markConversationNotificationsRead(conversationId);
           const token = localStorage.getItem('token');
           if (token) {
             fetch(`${getApiUrl()}/messaging/${conversationId}/read`, {
               method: 'POST',
               headers: { Authorization: `Bearer ${token}` }
-            })
-              .then(() => window.dispatchEvent(new CustomEvent('aninexo:notifications-updated')))
-              .catch(() => {});
+            }).catch(() => {});
           }
           socket?.emit('message_read', { conversationId });
         }
@@ -104,18 +105,18 @@ export default function ChatWithIdPage() {
       }
     };
     fetchHistory();
-  }, [conversationId]);
+  }, [conversationId, clearUnreadForConversation, markConversationNotificationsRead, socket]);
 
   useEffect(() => {
     if (!socket) return;
     
     const handleNewMessage = (msg: any) => {
       if (msg.conversationId === conversationId) {
-        setMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
+        setMessages(prev => (prev.some(m => String(m.id) === String(msg.id)) ? prev : [...prev, msg]));
         setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-        if (msg.senderId !== currentUser?.id) {
+        if (msg.senderId !== currentUser?.id && typeof document !== 'undefined' && document.visibilityState === 'visible') {
           clearUnreadForConversation(conversationId);
-          socket.emit('message_read', { conversationId });
+          markConversationNotificationsRead(conversationId);
         }
       }
     };

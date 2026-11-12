@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useGlobalSocket } from '../auth/SocketProvider';
 import { useChatStore } from '../../store/useChatStore';
+import { useNotificationStore } from '../../store/useNotificationStore';
 import { getApiUrl } from '../../lib/apiConfig';
 
 /* ─── Sticker set (anime-themed emojis) ─────────────────────────────────── */
@@ -52,6 +53,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const userStatuses = useChatStore(s => s.userStatuses);
   const typingUsers = useChatStore(s => s.typingUsers);
   const clearUnreadForConversation = useChatStore(s => s.clearUnreadForConversation);
+  const markConversationNotificationsRead = useNotificationStore(s => s.markConversationNotificationsRead);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef      = useRef<HTMLInputElement>(null);
@@ -113,8 +115,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     const latestMsg = chatMessages[chatMessages.length - 1];
     const readKey = `${conversationId}:${chatMessages.length}:${latestMsg?.id ?? ''}`;
 
-    if (!minimized) {
+    const isTabVisible = typeof document === 'undefined' || document.visibilityState === 'visible';
+    if (!minimized && isTabVisible) {
       clearUnreadForConversation(conversationId, profile?.id);
+      markConversationNotificationsRead(conversationId);
       if (lastReadRef.current !== readKey) {
         lastReadRef.current = readKey;
         const token = localStorage.getItem('token');
@@ -122,9 +126,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           fetch(`${getApiUrl()}/messaging/${conversationId}/read`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` }
-          })
-            .then(() => window.dispatchEvent(new CustomEvent('aninexo:notifications-updated')))
-            .catch(() => {});
+          }).catch(() => {});
         }
         if (socket && isSocketConnected) {
           socket.emit('message_read', { conversationId });
@@ -146,7 +148,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         socket.off('message_seen', handleSeen);
       };
     }
-  }, [socket, isSocketConnected, conversationId, minimized, chatMessages, currentUser?.id, profile?.id, clearUnreadForConversation]);
+  }, [socket, isSocketConnected, conversationId, minimized, chatMessages, currentUser?.id, profile?.id, clearUnreadForConversation, markConversationNotificationsRead]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef   = useRef<Blob[]>([]);

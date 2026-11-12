@@ -43,7 +43,7 @@ export function ChatWindow({ chat }: { chat: any }) {
       
       const handleNewMessage = (msg: Message) => {
         if (msg.conversationId === chat.conversationId) {
-          setMessages(prev => [...prev, msg]);
+          setMessages(prev => (prev.some(m => String(m.id) === String(msg.id)) ? prev : [...prev, msg]));
         }
       };
 
