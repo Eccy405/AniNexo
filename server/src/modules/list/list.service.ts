@@ -27,17 +27,21 @@ export class ListService {
       }
     });
     
-    // Trigger: Medalla Coleccionista
-    if (status === 'COMPLETED') {
-      await badgeService.checkAnimeCollector(userId);
-    }
+    // Evaluar logros reales del usuario
+    await badgeService.syncUserBadges(userId);
 
     return entry;
   }
 
   async getUserList(username: string) {
-    const user = await prisma.user.findUnique({
-      where: { username }
+    const user = await prisma.user.findFirst({
+      where: {
+        username: {
+          equals: username,
+          mode: 'insensitive'
+        }
+      },
+      select: { id: true, showWatchList: true }
     });
 
     if (!user) {
@@ -46,7 +50,21 @@ export class ListService {
 
     const list = await prisma.animeList.findMany({
       where: { userId: user.id },
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        anime: {
+          select: {
+            id: true,
+            titleRomaji: true,
+            titleEnglish: true,
+            coverImage: true,
+            bannerImage: true,
+            episodes: true,
+            type: true,
+            averageScore: true
+          }
+        }
+      }
     });
 
     return list;

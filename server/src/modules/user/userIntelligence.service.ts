@@ -1,4 +1,7 @@
 import prisma from '../../lib/prisma';
+import { BadgeService } from '../social/badge.service';
+
+const badgeService = new BadgeService();
 
 export class UserIntelligenceService {
   /**
@@ -20,26 +23,49 @@ export class UserIntelligenceService {
     } = data;
 
     console.log(`[UserIntelligenceService] Iniciando configuración de perfil para: ${userId}`);
-    console.log(`[UserIntelligenceService] Datos de entrada:`, JSON.stringify({ genres, emotions, favAnime, favCharacter }, null, 2));
 
     const avatar = avatarUrl;
     const archetype = this.calculateArchetype(data);
-    
-    // 2. Actualizar Usuario Principal con Identidad y Estética
+
+    const parsedFavAnimeId = favAnime?.id ? Number(favAnime.id) : null;
+    const parsedFavAnimeTitle = typeof favAnime === 'string'
+      ? favAnime.trim() || null
+      : (favAnime?.title?.trim() || null);
+    const parsedFavAnimeImage = favAnime?.coverImage || favAnime?.image || favAnime?.bannerImage || null;
+
+    const parsedFavCharId = favCharacter?.id ? Number(favCharacter.id) : null;
+    const parsedFavCharName = typeof favCharacter === 'string'
+      ? favCharacter.trim() || null
+      : (favCharacter?.name?.trim() || null);
+    const parsedFavCharImage = favCharacter?.image || null;
+
+    const cleanBio = typeof bio === 'string' && bio.trim().length > 0 ? bio.trim() : undefined;
+
+    // Actualizar Usuario Principal con Identidad, Favoritos y Estética reales
     await prisma.user.update({
       where: { id: userId },
       data: { 
         archetype,
         themeColor: themeColor || "#00E5FF",
-        avatarUrl: avatar || null,
-        firstName: firstName || undefined,
-        lastName: lastName || undefined,
-        country: country || undefined,
-        bio: bio || `Explorador de Nexo. Fan de ${favAnime?.title || favAnime || 'lo desconocido'}.`
+        avatarUrl: avatar || undefined,
+        firstName: firstName !== undefined ? (firstName?.trim() || null) : undefined,
+        lastName: lastName !== undefined ? (lastName?.trim() || null) : undefined,
+        country: country !== undefined ? (country?.trim() || null) : undefined,
+        ...(cleanBio !== undefined ? { bio: cleanBio } : {}),
+        ...(favAnime !== undefined ? {
+          favAnimeId: Number.isFinite(parsedFavAnimeId as number) ? parsedFavAnimeId : null,
+          favAnimeTitle: parsedFavAnimeTitle,
+          favAnimeImage: parsedFavAnimeImage
+        } : {}),
+        ...(favCharacter !== undefined ? {
+          favCharacterId: Number.isFinite(parsedFavCharId as number) ? parsedFavCharId : null,
+          favCharacterName: parsedFavCharName,
+          favCharacterImage: parsedFavCharImage
+        } : {})
       }
     });
 
-    // 3. Crear Inteligencia de Usuario (Emotion Profile + Favorites)
+    // Crear/Actualizar Inteligencia de Usuario (Emotion Profile + Favorites)
     const emotionProfile: any = {};
     emotions.forEach((e: string) => emotionProfile[e] = true);
 
@@ -56,14 +82,15 @@ export class UserIntelligenceService {
       }
     });
 
-    // 4. Guardar Afinidades (Géneros) con Limpieza Previa
-    console.log(`[UserIntelligenceService] Sincronizando ${genres.length} géneros para ${userId}`);
+    // Guardar Afinidades (Géneros) con Limpieza Previa
     await prisma.userAffinity.deleteMany({
       where: { userId, category: 'GENRE' }
     });
 
     const affinityPromises = genres.map((g: string) => this.saveAffinity(userId, 'GENRE', g, 1.0));
     await Promise.all(affinityPromises);
+
+    await badgeService.syncUserBadges(userId);
 
     return { archetype, themeColor };
   }
@@ -98,6 +125,6 @@ export class UserIntelligenceService {
       return 'Chill Traveler';
     }
 
-    return 'AniNexo Explorer'; // Default
+    return 'AniNexo Explorer';
   }
 }

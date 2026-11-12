@@ -170,7 +170,8 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
                     if (!userStr || !token) return;
                     const user = JSON.parse(userStr);
                     
-                    await fetch('/api/groups/collection/add', {
+                    const apiBase = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api');
+                    const colRes = await fetch(`${apiBase}/groups/collection/add`, {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
@@ -178,6 +179,11 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
                       },
                       body: JSON.stringify({ userId: user.id, animeId: anime.id })
                     });
+                    if (!colRes.ok) {
+                      alert('Error al agregar a la colección');
+                    } else {
+                      alert('¡Anime agregado a tu colección!');
+                    }
                   } catch (e) {
                     alert('Error al agregar a la colección');
                   } finally {

@@ -4,12 +4,20 @@ import { ProfileView } from '@/components/profile/ProfileView';
 export const runtime = 'edge';
 
 interface PageProps {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 }
+
+const getApiBase = () =>
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? 'https://aninexo.onrender.com/api'
+    : 'http://localhost:3001/api');
 
 async function getProfileData(username: string) {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/profile/${username}`, { cache: 'no-store' });
+    const res = await fetch(`${getApiBase()}/profile/${encodeURIComponent(username)}`, {
+      cache: 'no-store'
+    });
     const data = await res.json();
     return data.success ? data.data : null;
   } catch (error) {
@@ -19,19 +27,11 @@ async function getProfileData(username: string) {
 
 async function getListData(username: string) {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/list/${username}`, { cache: 'no-store' });
+    const res = await fetch(`${getApiBase()}/list/${encodeURIComponent(username)}`, {
+      cache: 'no-store'
+    });
     const data = await res.json();
     return data.success ? data.data : [];
-  } catch (error) {
-    return [];
-  }
-}
-
-async function getCollectionData(username: string) {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/profile/${username}`, { cache: 'no-store' });
-    const data = await res.json();
-    return data.success ? data.data.collections : [];
   } catch (error) {
     return [];
   }
@@ -40,7 +40,7 @@ async function getCollectionData(username: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { username } = await params;
   const profile = await getProfileData(username);
-  
+
   if (!profile) return { title: 'Perfil no encontrado' };
 
   const title = `Perfil de ${profile.username} | AniNexo`;
@@ -61,13 +61,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProfilePage({ params }: PageProps) {
   const { username } = await params;
-  const profile = await getProfileData(username);
-  const animeList = await getListData(username);
-  const collection = await getCollectionData(username);
+  const [profile, animeList] = await Promise.all([
+    getProfileData(username),
+    getListData(username)
+  ]);
 
-  if (!profile) return <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>Usuario no encontrado</div>;
+  if (!profile) {
+    return (
+      <div style={{ padding: '4rem 2rem', textAlign: 'center', color: 'white' }}>
+        Usuario no encontrado
+      </div>
+    );
+  }
 
   return (
-    <ProfileView profile={profile} animeList={animeList} collection={collection} />
+    <ProfileView
+      profile={profile}
+      animeList={animeList?.length ? animeList : (profile.animeLists || [])}
+      collection={profile.collections || []}
+    />
   );
 }

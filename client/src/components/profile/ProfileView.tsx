@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Card } from '../ui/Card/Card';
 import { translateListStatus } from '../../lib/translations';
 import { OnboardingWizard } from '../auth/OnboardingWizard';
@@ -13,10 +14,52 @@ import { ChatModal } from './ChatModal';
 import { useSocket } from '../../hooks/useSocket';
 import { useChatStore } from '../../store/useChatStore';
 import { useGlobalSocket } from '../auth/SocketProvider';
-import styles from './ProfileView.module.css';interface ProfileViewProps {
+import styles from './ProfileView.module.css';
+
+interface ProfileViewProps {
   profile: any;
   animeList: any[];
   collection?: any[];
+}
+
+function formatRelativeTime(dateInput?: string | Date | null): string {
+  if (!dateInput) return '';
+  const date = new Date(dateInput);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return 'Hace unos segundos';
+
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `Hace ${diffMin} min`;
+
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `Hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (
+    date.getDate() === yesterday.getDate() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear()
+  ) {
+    const hm = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    return `Ayer a las ${hm}`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `Hace ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
+
+  return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function formatMemberSince(dateInput?: string | Date | null): string {
+  if (!dateInput) return 'Fecha desconocida';
+  const date = new Date(dateInput);
+  if (Number.isNaN(date.getTime())) return 'Fecha desconocida';
+  return date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfile, animeList, collection: initialCollection = [] }) => {
@@ -44,9 +87,63 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
   const [chatInput, setChatInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [showStatusSelector, setShowStatusSelector] = useState(false);
+  const [selectedAchievement, setSelectedAchievement] = useState<any | null>(null);
   
   const { socket: chatSocket, isConnected: isChatConnected } = useSocket(conversationId || undefined);
   const themeColor = profile.themeColor || '#FF007F'; // Magenta Social por defecto
+
+  const favAnime = profile.favAnime || profile.intelligence?.socialProfile?.favAnime || null;
+  const favCharacter = profile.favCharacter || profile.intelligence?.socialProfile?.favCharacter || null;
+
+  const achievements = useMemo(() => {
+    if (Array.isArray(profile.achievements)) return profile.achievements;
+    if (Array.isArray(profile.badges)) {
+      return profile.badges.map((ub: any) => ({
+        id: ub.badge?.id || ub.id,
+        name: ub.badge?.name || 'Logro',
+        description: ub.badge?.description || '',
+        iconUrl: ub.badge?.iconUrl || '🏆',
+        unlockedAt: ub.createdAt
+      }));
+    }
+    return [];
+  }, [profile.achievements, profile.badges]);
+
+  const mergedCollection = useMemo(() => {
+    const map = new Map<number, any>();
+    const sources = [
+      ...(Array.isArray(initialCollection) ? initialCollection : []),
+      ...(Array.isArray(profile.collections) ? profile.collections : []),
+      ...(Array.isArray(animeList) ? animeList : []),
+      ...(Array.isArray(profile.animeLists) ? profile.animeLists : [])
+    ];
+    for (const item of sources) {
+      const animeId = Number(item.animeId || item.anime?.id);
+      if (!animeId) continue;
+      if (!map.has(animeId)) {
+        map.set(animeId, {
+          animeId,
+          status: item.status,
+          anime: item.anime || null,
+          title: item.anime?.titleEnglish || item.anime?.titleRomaji || item.anime?.title || `Anime #${animeId}`,
+          coverImage: item.anime?.coverImage || null
+        });
+      } else {
+        const existing = map.get(animeId);
+        if (!existing.coverImage && item.anime?.coverImage) {
+          existing.coverImage = item.anime.coverImage;
+          existing.title = item.anime?.titleEnglish || item.anime?.titleRomaji || existing.title;
+          existing.anime = item.anime;
+        }
+      }
+    }
+    return Array.from(map.values());
+  }, [initialCollection, profile.collections, animeList, profile.animeLists]);
+
+  const recentActivity = useMemo(
+    () => (Array.isArray(profile.recentActivity) ? profile.recentActivity : []),
+    [profile.recentActivity]
+  );
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
@@ -148,11 +245,37 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
     window.location.reload();
   };
 
-  const handleEditSave = (updatedData: any) => {
+  const handleEditSave = async (updatedData: any) => {
     setProfile((prev: any) => ({ ...prev, ...updatedData }));
-    if (updatedData.themeColor) {
-      const u = JSON.parse(localStorage.getItem('user') || '{}');
-      localStorage.setItem('user', JSON.stringify({ ...u, themeColor: updatedData.themeColor }));
+    const u = JSON.parse(localStorage.getItem('user') || '{}');
+    localStorage.setItem(
+      'user',
+      JSON.stringify({
+        ...u,
+        ...(updatedData.themeColor ? { themeColor: updatedData.themeColor } : {}),
+        ...(updatedData.firstName !== undefined ? { firstName: updatedData.firstName } : {}),
+        ...(updatedData.lastName !== undefined ? { lastName: updatedData.lastName } : {}),
+        ...(updatedData.bio !== undefined ? { bio: updatedData.bio } : {}),
+        ...(updatedData.country !== undefined ? { country: updatedData.country } : {})
+      })
+    );
+
+    // Recargar perfil completo para refrescar logros recién desbloqueados y actividad
+    try {
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_URL ||
+        (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+          ? 'https://aninexo.onrender.com/api'
+          : 'http://localhost:3001/api');
+      const res = await fetch(`${apiBase}/profile/${encodeURIComponent(profile.username)}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setProfile(json.data);
+        }
+      }
+    } catch {
+      // mantener datos optimistas si falla la recarga
     }
   };
 
@@ -394,15 +517,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
         className={styles.coverBanner} 
         data-tour="profile-header"
         style={{
-          backgroundImage: profile.intelligence?.socialProfile?.favAnime?.bannerImage || profile.intelligence?.socialProfile?.favAnime?.coverImage
-            ? `url(${profile.intelligence.socialProfile.favAnime.bannerImage || profile.intelligence.socialProfile.favAnime.coverImage})`
+          backgroundImage: favAnime?.bannerImage || favAnime?.coverImage || favAnime?.image
+            ? `url(${favAnime.bannerImage || favAnime.coverImage || favAnime.image})`
             : undefined,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'
         }}
       >
-        <div className={styles.coverOverlay} style={{ background: profile.intelligence?.socialProfile?.favAnime ? 'linear-gradient(to top, rgba(3, 5, 8, 1) 0%, rgba(3, 5, 8, 0.7) 40%, rgba(3, 5, 8, 0.3) 100%)' : undefined }}></div>
+        <div className={styles.coverOverlay} style={{ background: favAnime ? 'linear-gradient(to top, rgba(3, 5, 8, 1) 0%, rgba(3, 5, 8, 0.7) 40%, rgba(3, 5, 8, 0.3) 100%)' : undefined }}></div>
         <div className={styles.headerContent}>
           <div 
             className={styles.avatarWrapper}
@@ -538,11 +661,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
         <div className={styles.leftColumn}>
           <div className={styles.sectionCard}>
             <h2 className={styles.sectionTitle}>🌍 Información</h2>
-            {profile.bio && <p className={styles.bioText}>{profile.bio}</p>}
+            {profile.bio ? (
+              <p className={styles.bioText}>{profile.bio}</p>
+            ) : (
+              <p className={styles.bioEmpty}>Aún no ha añadido una biografía.</p>
+            )}
+
             <div className={styles.infoList}>
               <div className={styles.infoItem}>
-                <span className={styles.infoIcon}>👤</span>
-                Miembro desde {new Date(profile.createdAt || Date.now()).getFullYear()}
+                <span className={styles.infoIcon}>📅</span>
+                Miembro desde {formatMemberSince(profile.createdAt)}
               </div>
               {profile.country && (
                 <div className={styles.infoItem}>
@@ -550,6 +678,95 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
                   De {profile.country}
                 </div>
               )}
+            </div>
+
+            <div className={styles.favoritesDivider} />
+
+            <div className={styles.infoFavoritesBlock}>
+              <div>
+                <div className={styles.favMiniHeader}>
+                  <span className={styles.favMiniLabel}>📺 Anime Favorito</span>
+                  {isOwnProfile && (
+                    <button
+                      type="button"
+                      className={styles.favMiniEditBtn}
+                      onClick={() => setShowEditModal(true)}
+                    >
+                      {favAnime ? 'Cambiar' : 'Elegir'}
+                    </button>
+                  )}
+                </div>
+                {favAnime && (favAnime.title || favAnime.coverImage || favAnime.image) ? (
+                  favAnime.id ? (
+                    <Link href={`/home/anime/${favAnime.id}`} className={`${styles.favShowcaseCard} ${styles.favShowcaseCardClickable}`}>
+                      {(favAnime.coverImage || favAnime.image) ? (
+                        <img
+                          src={favAnime.coverImage || favAnime.image}
+                          alt={favAnime.title || 'Anime favorito'}
+                          className={styles.favAnimeCover}
+                        />
+                      ) : (
+                        <div className={styles.favShowcasePlaceholder}>🎬</div>
+                      )}
+                      <div className={styles.favShowcaseMeta}>
+                        <span className={styles.favShowcaseTitle}>{favAnime.title || 'Ver anime'}</span>
+                        <span className={styles.favShowcaseSub}>Ver ficha del anime →</span>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className={styles.favShowcaseCard}>
+                      {(favAnime.coverImage || favAnime.image) ? (
+                        <img
+                          src={favAnime.coverImage || favAnime.image}
+                          alt={favAnime.title || 'Anime favorito'}
+                          className={styles.favAnimeCover}
+                        />
+                      ) : (
+                        <div className={styles.favShowcasePlaceholder}>🎬</div>
+                      )}
+                      <div className={styles.favShowcaseMeta}>
+                        <span className={styles.favShowcaseTitle}>{favAnime.title}</span>
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <p className={styles.favUnsetText}>Sin anime favorito configurado</p>
+                )}
+              </div>
+
+              <div>
+                <div className={styles.favMiniHeader}>
+                  <span className={styles.favMiniLabel}>🎭 Personaje Favorito</span>
+                  {isOwnProfile && (
+                    <button
+                      type="button"
+                      className={styles.favMiniEditBtn}
+                      onClick={() => setShowEditModal(true)}
+                    >
+                      {favCharacter ? 'Cambiar' : 'Elegir'}
+                    </button>
+                  )}
+                </div>
+                {favCharacter && (favCharacter.name || favCharacter.image) ? (
+                  <div className={styles.favShowcaseCard}>
+                    {favCharacter.image ? (
+                      <img
+                        src={favCharacter.image}
+                        alt={favCharacter.name || 'Personaje favorito'}
+                        className={styles.favCharAvatar}
+                      />
+                    ) : (
+                      <div className={styles.favShowcasePlaceholder}>🎭</div>
+                    )}
+                    <div className={styles.favShowcaseMeta}>
+                      <span className={styles.favShowcaseTitle}>{favCharacter.name || 'Personaje favorito'}</span>
+                      <span className={styles.favShowcaseSub}>Espíritu afín</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className={styles.favUnsetText}>Sin personaje favorito configurado</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -584,12 +801,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
           </div>
           
           <div className={styles.sectionCard}>
-            <h2 className={styles.sectionTitle}>🏆 Logros</h2>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(255,215,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,215,0,0.4)' }}>⭐</div>
-              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(0,229,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,229,255,0.4)' }}>🔥</div>
-              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(255,0,127,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,0,127,0.4)' }}>💎</div>
-            </div>
+            <h2 className={styles.sectionTitle}>🏆 Logros ({achievements.length})</h2>
+            {achievements.length > 0 ? (
+              <div className={styles.achievementsGrid}>
+                {achievements.map((ach: any) => (
+                  <button
+                    key={ach.id}
+                    type="button"
+                    className={styles.achievementBadgeBtn}
+                    title={`${ach.name}: ${ach.description}`}
+                    onClick={() => setSelectedAchievement(ach)}
+                  >
+                    <span className={styles.achievementIcon}>{ach.iconUrl || '🏆'}</span>
+                    <span>{ach.name}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className={styles.emptyMutedText}>
+                {isOwnProfile
+                  ? 'Todavía no has desbloqueado logros. Explora, añade animes o publica en la comunidad.'
+                  : 'Este usuario todavía no ha desbloqueado logros.'}
+              </p>
+            )}
           </div>
         </div>
 
@@ -616,46 +850,141 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
           </div>
         </div>
 
-        {/* Right Column: Favorites & Activity (Mocked as requested) */}
+        {/* Right Column: Real Collection & Recent Activity */}
         <div className={styles.rightColumn}>
           <div className={styles.sectionCard}>
-            <h2 className={styles.sectionTitle}>⭐ Colección</h2>
-            <div className={styles.favoritesGrid}>
-              {/* Mocked grid items to simulate favorite animes */}
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className={styles.favoriteItem}>
-                  <img src={`https://placehold.co/200x300/1a1a2e/8b5cf6?text=Anime+${i}`} alt={`Anime ${i}`} className={styles.favoriteImg} />
+            <h2 className={styles.sectionTitle}>⭐ Colección ({mergedCollection.length})</h2>
+            {mergedCollection.length > 0 ? (
+              <>
+                <div className={styles.favoritesGrid}>
+                  {mergedCollection.slice(0, 6).map((item: any) => (
+                    <Link
+                      key={item.animeId}
+                      href={`/home/anime/${item.animeId}`}
+                      className={styles.favoriteItem}
+                      title={item.title}
+                    >
+                      {item.coverImage ? (
+                        <img src={item.coverImage} alt={item.title} className={styles.favoriteImg} />
+                      ) : (
+                        <div className={styles.favoriteFallbackTile}>{item.title}</div>
+                      )}
+                      <div className={styles.favoriteTitleOverlay}>{item.title}</div>
+                    </Link>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <button className={styles.viewAllBtn}>Ver colección completa</button>
+                <button
+                  type="button"
+                  className={styles.viewAllBtn}
+                  onClick={() => document.getElementById('coleccion-completa')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  Ver colección completa
+                </button>
+              </>
+            ) : (
+              <div>
+                <p className={styles.emptyMutedText}>Aún no ha añadido animes a su colección.</p>
+                {isOwnProfile && (
+                  <Link href="/home/search" className={styles.viewAllBtn} style={{ display: 'block', textAlign: 'center', marginTop: '12px', textDecoration: 'none' }}>
+                    Explorar catálogo
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
 
           <div className={styles.sectionCard}>
             <h2 className={styles.sectionTitle}>⚡ Actividad Reciente</h2>
-            <div className={styles.activityList}>
-              <div className={styles.activityItem}>
-                <div className={styles.activityIcon}>📺</div>
-                <div className={styles.activityContent}>
-                  <p>Añadió <strong>Jujutsu Kaisen</strong> a Viendo</p>
-                  <span>Hace 2 horas</span>
-                </div>
+            {recentActivity.length > 0 ? (
+              <div className={styles.activityList}>
+                {recentActivity.map((act: any) => {
+                  const relative = formatRelativeTime(act.timestamp);
+                  if (act.type === 'ANIME_LIST' || act.type === 'COLLECTION') {
+                    return (
+                      <div key={act.id} className={styles.activityItem}>
+                        <div className={styles.activityIcon}>📺</div>
+                        <div className={styles.activityContent}>
+                          <p>
+                            {act.type === 'ANIME_LIST' ? 'Actualizó ' : 'Añadió '}
+                            <Link href={`/home/anime/${act.animeId || act.targetId}`} className={styles.activityLink}>
+                              {act.title}
+                            </Link>
+                            {act.status ? ` (${translateListStatus(act.status)})` : ''}
+                          </p>
+                          <span>{relative}</span>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (act.type === 'ACHIEVEMENT') {
+                    return (
+                      <div key={act.id} className={styles.activityItem}>
+                        <div
+                          className={styles.activityIcon}
+                          style={{ background: 'rgba(0, 229, 255, 0.12)', color: '#00E5FF', borderColor: 'rgba(0, 229, 255, 0.25)' }}
+                        >
+                          {act.icon || '🏆'}
+                        </div>
+                        <div className={styles.activityContent}>
+                          <p>
+                            Desbloqueó el logro <strong>{act.title}</strong>
+                          </p>
+                          <span>{relative}</span>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (act.type === 'COMMENT') {
+                    return (
+                      <div key={act.id} className={styles.activityItem}>
+                        <div
+                          className={styles.activityIcon}
+                          style={{ background: 'rgba(255, 215, 0, 0.12)', color: 'gold', borderColor: 'rgba(255, 215, 0, 0.25)' }}
+                        >
+                          💬
+                        </div>
+                        <div className={styles.activityContent}>
+                          <p>
+                            Comentó en{' '}
+                            {act.animeId ? (
+                              <Link href={`/home/anime/${act.animeId}`} className={styles.activityLink}>
+                                {act.title}
+                              </Link>
+                            ) : (
+                              <strong>{act.title}</strong>
+                            )}
+                          </p>
+                          {act.excerpt && <p className={styles.activityExcerpt}>“{act.excerpt}”</p>}
+                          <span>{relative}</span>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={act.id} className={styles.activityItem}>
+                      <div
+                        className={styles.activityIcon}
+                        style={{ background: 'rgba(139, 92, 246, 0.15)', color: '#c4b5fd', borderColor: 'rgba(139, 92, 246, 0.3)' }}
+                      >
+                        📝
+                      </div>
+                      <div className={styles.activityContent}>
+                        <p>
+                          Publicó en <strong>{act.title}</strong>
+                        </p>
+                        {act.excerpt && <p className={styles.activityExcerpt}>“{act.excerpt}”</p>}
+                        <span>{relative}</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className={styles.activityItem}>
-                <div className={styles.activityIcon} style={{ background: 'rgba(0, 229, 255, 0.1)', color: '#00E5FF', borderColor: 'rgba(0, 229, 255, 0.2)' }}>🏆</div>
-                <div className={styles.activityContent}>
-                  <p>Desbloqueó el logro <strong>Maratón Otaku</strong></p>
-                  <span>Ayer a las 14:30</span>
-                </div>
-              </div>
-              <div className={styles.activityItem}>
-                <div className={styles.activityIcon} style={{ background: 'rgba(255, 215, 0, 0.1)', color: 'gold', borderColor: 'rgba(255, 215, 0, 0.2)' }}>💬</div>
-                <div className={styles.activityContent}>
-                  <p>Comentó en <strong>Frieren</strong></p>
-                  <span>Hace 2 días</span>
-                </div>
-              </div>
-            </div>
+            ) : (
+              <p className={styles.emptyMutedText}>Aún no hay actividad reciente.</p>
+            )}
           </div>
         </div>
       </div>
@@ -687,37 +1016,27 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
         </div>
       </div>
 
-<div className="list-section">
+      <div className="list-section" id="coleccion-completa">
          <h2>Colección de Anime</h2>
-         {initialCollection && initialCollection.length > 0 ? (
+         {mergedCollection.length > 0 ? (
            <div className="anime-grid">
-             {initialCollection.map((entry: any) => (
+             {mergedCollection.map((entry: any) => (
                <div key={entry.animeId} className="anime-item-card">
-                 <a href={`/home/anime/${entry.animeId}`} style={{ textDecoration: 'none' }}>
+                 <Link href={`/home/anime/${entry.animeId}`} style={{ textDecoration: 'none' }}>
                    <div className="poster-wrap">
-                     <img src={entry.anime?.coverImage || '/default-anime.png'} alt={entry.anime?.title || 'Anime'} />
+                     {entry.coverImage ? (
+                       <img src={entry.coverImage} alt={entry.title} />
+                     ) : (
+                       <div className={styles.favoriteFallbackTile}>{entry.title}</div>
+                     )}
                    </div>
                    <div className="poster-info">
                      <p className="entry-status">{translateListStatus(entry.status)}</p>
-                     <span className="entry-status" style={{ fontSize: '0.65rem', opacity: 0.6 }}>
-                       {entry.anime?.titleRomaji || entry.anime?.titleEnglish || 'Título desconocido'}
+                     <span className="entry-status" style={{ fontSize: '0.65rem', opacity: 0.75 }}>
+                       {entry.title}
                      </span>
                    </div>
-                 </a>
-               </div>
-             ))}
-           </div>
-         ) : animeList && animeList.length > 0 ? (
-           <div className="anime-grid">
-             {animeList.map((entry: any) => (
-               <div key={entry.id} className="anime-item-card">
-                 <div className="poster-wrap">
-                   <img src={entry.anime.coverImage} alt={entry.anime.title} />
-                 </div>
-                 <div className="poster-info">
-                   <p className="entry-status">{translateListStatus(entry.status)}</p>
-                   <div className="progress-bar"><div className="fill" style={{ width: '60%', backgroundColor: themeColor }}></div></div>
-                 </div>
+                 </Link>
                </div>
              ))}
            </div>
@@ -725,6 +1044,31 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
            <p className="empty-list">Este usuario aún no ha añadido animes a su lista.</p>
          )}
        </div>
+
+      {/* Achievement Detail Modal */}
+      {selectedAchievement && (
+        <div className={styles.badgeModalOverlay} onClick={() => setSelectedAchievement(null)}>
+          <div className={styles.badgeModalCard} onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className={styles.badgeModalClose}
+              onClick={() => setSelectedAchievement(null)}
+            >
+              ✕
+            </button>
+            <div className={styles.badgeModalIcon}>{selectedAchievement.iconUrl || '🏆'}</div>
+            <h3 style={{ margin: '0 0 8px 0', color: '#fff', fontSize: '1.25rem' }}>{selectedAchievement.name}</h3>
+            <p style={{ margin: '0 0 14px 0', color: 'rgba(255,255,255,0.75)', fontSize: '0.92rem', lineHeight: 1.5 }}>
+              {selectedAchievement.description || 'Logro desbloqueado por tu actividad en AniNexo.'}
+            </p>
+            {selectedAchievement.unlockedAt && (
+              <span style={{ fontSize: '0.78rem', color: '#00E5FF', fontWeight: 700 }}>
+                Desbloqueado {formatRelativeTime(selectedAchievement.unlockedAt)}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Story Viewer Modal */}
       {selectedStoryGroup && (

@@ -22,23 +22,52 @@ const backgroundOptions = [
   },
 ] as const;
 
-type Tab = 'appearance' | 'security' | 'privacy' | 'help';
+const getApiBase = () =>
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? 'https://aninexo.onrender.com/api'
+    : 'http://localhost:3001/api');
+
+type Tab = 'profile' | 'appearance' | 'security' | 'privacy' | 'help';
 
 export default function DashboardSettingsPage() {
   const backgroundMode = useUIStore((state) => state.backgroundMode);
   const setBackgroundMode = useUIStore((state) => state.setBackgroundMode);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>('appearance');
+  const [activeTab, setActiveTab] = useState<Tab>('profile');
 
-  // Simulated state for security
+  // Real profile & favorites state
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileStatusMsg, setProfileStatusMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [profileForm, setProfileForm] = useState({
+    firstName: '',
+    lastName: '',
+    bio: '',
+    country: '',
+    themeColor: '#00E5FF'
+  });
+  const [favAnime, setFavAnime] = useState<{ id?: number | null; title: string; image: string; coverImage?: string } | null>(null);
+  const [favCharacter, setFavCharacter] = useState<{ id?: number | null; name: string; image: string } | null>(null);
+
+  const [animeQuery, setAnimeQuery] = useState('');
+  const [animeResults, setAnimeResults] = useState<any[]>([]);
+  const [searchingAnime, setSearchingAnime] = useState(false);
+
+  const [charQuery, setCharQuery] = useState('');
+  const [charResults, setCharResults] = useState<any[]>([]);
+  const [searchingChar, setSearchingChar] = useState(false);
+
+  // Simulated state for security (UI placeholder)
   const [passwordForm, setPasswordForm] = useState({ old: '', new: '', confirm: '' });
   const [twoFactor, setTwoFactor] = useState(false);
   const [securitySaved, setSecuritySaved] = useState(false);
 
-  // Simulated state for privacy
+  // Real DB-backed privacy toggles (+ local UI toggles)
   const [privacySettings, setPrivacySettings] = useState({
     privateProfile: false,
-    showAnimeList: true,
+    showWatchList: true,
     allowDMs: true,
     showActivity: true,
   });
@@ -46,6 +75,104 @@ export default function DashboardSettingsPage() {
 
   // Accordion state for User Manual
   const [openManualSection, setOpenManualSection] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const rawUser = localStorage.getItem('user');
+        if (!rawUser) {
+          setProfileLoading(false);
+          return;
+        }
+        const parsed = JSON.parse(rawUser);
+        setCurrentUser(parsed);
+
+        if (parsed?.username) {
+          const res = await fetch(`${getApiBase()}/profile/${encodeURIComponent(parsed.username)}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (json.success && json.data) {
+              const p = json.data;
+              setProfileForm({
+                firstName: p.firstName || '',
+                lastName: p.lastName || '',
+                bio: p.bio || '',
+                country: p.country || '',
+                themeColor: p.themeColor || '#00E5FF'
+              });
+              const resolvedAnime = p.favAnime || p.intelligence?.socialProfile?.favAnime || null;
+              if (resolvedAnime?.title || resolvedAnime?.image || resolvedAnime?.coverImage) {
+                setFavAnime({
+                  id: resolvedAnime.id || null,
+                  title: resolvedAnime.title || '',
+                  image: resolvedAnime.coverImage || resolvedAnime.image || '',
+                  coverImage: resolvedAnime.coverImage || resolvedAnime.image || ''
+                });
+              }
+              const resolvedChar = p.favCharacter || p.intelligence?.socialProfile?.favCharacter || null;
+              if (resolvedChar?.name || resolvedChar?.image) {
+                setFavCharacter({
+                  id: resolvedChar.id || null,
+                  name: resolvedChar.name || '',
+                  image: resolvedChar.image || ''
+                });
+              }
+              setPrivacySettings((prev) => ({
+                ...prev,
+                privateProfile: Boolean(p.privateProfile),
+                showWatchList: p.showWatchList !== undefined ? Boolean(p.showWatchList) : true
+              }));
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[Settings] Error cargando perfil:', err);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+    loadProfile();
+  }, []);
+
+  useEffect(() => {
+    if (animeQuery.trim().length < 2) {
+      setAnimeResults([]);
+      return;
+    }
+    setSearchingAnime(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`${getApiBase()}/search/global?q=${encodeURIComponent(animeQuery.trim())}`);
+        const json = await res.json();
+        setAnimeResults(json.data?.animes || []);
+      } catch {
+        setAnimeResults([]);
+      } finally {
+        setSearchingAnime(false);
+      }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [animeQuery]);
+
+  useEffect(() => {
+    if (charQuery.trim().length < 2) {
+      setCharResults([]);
+      return;
+    }
+    setSearchingChar(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`${getApiBase()}/search/characters?q=${encodeURIComponent(charQuery.trim())}`);
+        const json = await res.json();
+        setCharResults(Array.isArray(json.data) ? json.data : []);
+      } catch {
+        setCharResults([]);
+      } finally {
+        setSearchingChar(false);
+      }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [charQuery]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
@@ -76,11 +203,69 @@ export default function DashboardSettingsPage() {
     setPasswordForm({ old: '', new: '', confirm: '' });
   };
 
-  const togglePrivacy = (key: keyof typeof privacySettings) => {
+  const handleProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setProfileStatusMsg({ type: 'err', text: 'Inicia sesión para guardar tu perfil.' });
+      return;
+    }
+    setProfileSaving(true);
+    setProfileStatusMsg(null);
+    try {
+      const res = await fetch(`${getApiBase()}/profile/update`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...profileForm,
+          favAnime: favAnime || null,
+          favCharacter: favCharacter || null
+        })
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        const stored = JSON.parse(localStorage.getItem('user') || '{}');
+        localStorage.setItem('user', JSON.stringify({ ...stored, ...json.data }));
+        setProfileStatusMsg({ type: 'ok', text: '✓ Perfil y favoritos guardados en tu cuenta.' });
+      } else {
+        setProfileStatusMsg({ type: 'err', text: json.message || 'No se pudieron guardar los cambios.' });
+      }
+    } catch {
+      setProfileStatusMsg({ type: 'err', text: 'Error de conexión al guardar perfil.' });
+    } finally {
+      setProfileSaving(false);
+      setTimeout(() => setProfileStatusMsg(null), 4000);
+    }
+  };
+
+  const togglePrivacy = async (key: keyof typeof privacySettings) => {
+    const nextVal = !privacySettings[key];
     setPrivacySettings(prev => ({
       ...prev,
-      [key]: !prev[key],
+      [key]: nextVal,
     }));
+
+    if (key === 'privateProfile' || key === 'showWatchList') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          await fetch(`${getApiBase()}/profile/update`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ [key]: nextVal })
+          });
+        } catch (err) {
+          console.error('[Settings] Error guardando privacidad:', err);
+        }
+      }
+    }
+
     setPrivacySaved(true);
     setTimeout(() => setPrivacySaved(false), 2000);
   };
@@ -100,6 +285,12 @@ export default function DashboardSettingsPage() {
       <div className="settings-container">
         {/* Navigation Sidebar */}
         <aside className="settings-sidebar">
+          <button 
+            className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
+            onClick={() => setActiveTab('profile')}
+          >
+            👤 Perfil y Favoritos
+          </button>
           <button 
             className={`tab-btn ${activeTab === 'appearance' ? 'active' : ''}`}
             onClick={() => setActiveTab('appearance')}
@@ -128,6 +319,188 @@ export default function DashboardSettingsPage() {
 
         {/* Content Area */}
         <main className="settings-content">
+          {activeTab === 'profile' && (
+            <Card className="settings-card">
+              <div className="settings-card-header">
+                <div>
+                  <h2>Identidad, Biografía y Favoritos</h2>
+                  <p>Edita tu información pública, tu anime favorito (con portada) y tu personaje favorito.</p>
+                </div>
+              </div>
+
+              {profileLoading ? (
+                <p style={{ color: 'var(--color-text-muted)' }}>Cargando perfil...</p>
+              ) : !currentUser ? (
+                <p style={{ color: 'var(--color-text-muted)' }}>Inicia sesión para editar tu perfil.</p>
+              ) : (
+                <form onSubmit={handleProfileSave} className="simulated-form">
+                  <div className="profile-two-col">
+                    <div className="form-group">
+                      <label>Nombre</label>
+                      <input
+                        type="text"
+                        placeholder="Tu nombre..."
+                        value={profileForm.firstName}
+                        onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Apellido</label>
+                      <input
+                        type="text"
+                        placeholder="Tu apellido..."
+                        value={profileForm.lastName}
+                        onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Biografía</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Cuéntale a la comunidad qué ves o lees..."
+                      value={profileForm.bio}
+                      onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
+                      className="settings-textarea"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>País / Ubicación</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Colombia, México, Japón..."
+                      value={profileForm.country}
+                      onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-divider" />
+
+                  {/* Anime Favorito */}
+                  <div className="form-group">
+                    <label>📺 Anime Favorito (portada y título)</label>
+                    {favAnime ? (
+                      <div className="fav-selected-card">
+                        {(favAnime.coverImage || favAnime.image) ? (
+                          <img src={favAnime.coverImage || favAnime.image} alt={favAnime.title} className="fav-cover-thumb" />
+                        ) : (
+                          <div className="fav-cover-thumb placeholder">🎬</div>
+                        )}
+                        <div className="fav-selected-info">
+                          <strong>{favAnime.title}</strong>
+                          <span>Portada vinculada al perfil</span>
+                        </div>
+                        <button type="button" className="fav-clear-btn" onClick={() => setFavAnime(null)}>
+                          Cambiar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="fav-search-wrapper">
+                        <input
+                          type="text"
+                          placeholder="Buscar anime por título (ej: Frieren, Attack on Titan)..."
+                          value={animeQuery}
+                          onChange={(e) => setAnimeQuery(e.target.value)}
+                        />
+                        {searchingAnime && <span className="fav-searching-text">Buscando animes...</span>}
+                        {animeResults.length > 0 && (
+                          <div className="fav-results-dropdown">
+                            {animeResults.slice(0, 6).map((a: any) => (
+                              <button
+                                key={a.id}
+                                type="button"
+                                className="fav-result-row"
+                                onClick={() => {
+                                  setFavAnime({
+                                    id: a.id,
+                                    title: a.title,
+                                    image: a.coverImage || '',
+                                    coverImage: a.coverImage || ''
+                                  });
+                                  setAnimeQuery('');
+                                  setAnimeResults([]);
+                                }}
+                              >
+                                {a.coverImage && <img src={a.coverImage} alt={a.title} />}
+                                <span>{a.title}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Personaje Favorito */}
+                  <div className="form-group">
+                    <label>🎭 Personaje Favorito (nombre e imagen)</label>
+                    {favCharacter ? (
+                      <div className="fav-selected-card">
+                        {favCharacter.image ? (
+                          <img src={favCharacter.image} alt={favCharacter.name} className="fav-char-thumb" />
+                        ) : (
+                          <div className="fav-char-thumb placeholder">🎭</div>
+                        )}
+                        <div className="fav-selected-info">
+                          <strong>{favCharacter.name}</strong>
+                          <span>Personaje vinculado al perfil</span>
+                        </div>
+                        <button type="button" className="fav-clear-btn" onClick={() => setFavCharacter(null)}>
+                          Cambiar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="fav-search-wrapper">
+                        <input
+                          type="text"
+                          placeholder="Buscar personaje (ej: Luffy, Goku, Gojo)..."
+                          value={charQuery}
+                          onChange={(e) => setCharQuery(e.target.value)}
+                        />
+                        {searchingChar && <span className="fav-searching-text">Buscando personajes...</span>}
+                        {charResults.length > 0 && (
+                          <div className="fav-results-dropdown">
+                            {charResults.slice(0, 6).map((c: any) => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                className="fav-result-row"
+                                onClick={() => {
+                                  setFavCharacter({
+                                    id: c.id,
+                                    name: c.name?.full || c.name || 'Personaje',
+                                    image: c.image?.large || ''
+                                  });
+                                  setCharQuery('');
+                                  setCharResults([]);
+                                }}
+                              >
+                                {c.image?.large && <img src={c.image.large} alt={c.name?.full} />}
+                                <span>{c.name?.full || c.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <button type="submit" className="save-btn" disabled={profileSaving}>
+                    {profileSaving ? 'Guardando cambios...' : 'Guardar Perfil y Favoritos'}
+                  </button>
+
+                  {profileStatusMsg && (
+                    <span className={profileStatusMsg.type === 'ok' ? 'success-toast' : 'error-toast'}>
+                      {profileStatusMsg.text}
+                    </span>
+                  )}
+                </form>
+              )}
+            </Card>
+          )}
+
           {activeTab === 'appearance' && (
             <Card className="settings-card">
               <div className="settings-card-header">
@@ -242,8 +615,8 @@ export default function DashboardSettingsPage() {
                   </div>
                 </div>
 
-                <div className="privacy-item" onClick={() => togglePrivacy('showAnimeList')}>
-                  <input type="checkbox" checked={privacySettings.showAnimeList} readOnly />
+                <div className="privacy-item" onClick={() => togglePrivacy('showWatchList')}>
+                  <input type="checkbox" checked={privacySettings.showWatchList} readOnly />
                   <div className="privacy-text">
                     <h3>Mostrar Lista de Anime</h3>
                     <p>Permitir que los visitantes de tu perfil vean tu colección de animes agregados.</p>
@@ -267,7 +640,7 @@ export default function DashboardSettingsPage() {
                 </div>
 
                 {privacySaved && (
-                  <div className="success-banner">✓ Preferencias de privacidad actualizadas (simulado)</div>
+                  <div className="success-banner">✓ Preferencias de privacidad actualizadas</div>
                 )}
               </div>
             </Card>
@@ -598,8 +971,142 @@ export default function DashboardSettingsPage() {
           transition: border-color 0.2s;
         }
 
-        .form-group input:focus {
+        .form-group input:focus, .settings-textarea:focus {
           border-color: rgba(0, 229, 255, 0.5);
+        }
+
+        .profile-two-col {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+
+        .settings-textarea {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          color: white;
+          padding: 10px 14px;
+          border-radius: var(--border-radius-md);
+          font-size: 0.95rem;
+          outline: none;
+          resize: vertical;
+          transition: border-color 0.2s;
+        }
+
+        .fav-selected-card {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 12px;
+          border-radius: var(--border-radius-md);
+          background: rgba(0, 229, 255, 0.05);
+          border: 1px solid rgba(0, 229, 255, 0.22);
+        }
+
+        .fav-cover-thumb {
+          width: 46px;
+          height: 64px;
+          border-radius: 8px;
+          object-fit: cover;
+          flex-shrink: 0;
+        }
+
+        .fav-char-thumb {
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          object-fit: cover;
+          flex-shrink: 0;
+        }
+
+        .fav-cover-thumb.placeholder, .fav-char-thumb.placeholder {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255, 255, 255, 0.07);
+        }
+
+        .fav-selected-info {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .fav-selected-info strong {
+          color: #fff;
+          font-size: 0.95rem;
+        }
+
+        .fav-selected-info span {
+          color: var(--color-text-muted);
+          font-size: 0.78rem;
+        }
+
+        .fav-clear-btn {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          color: white;
+          padding: 6px 12px;
+          border-radius: 8px;
+          font-size: 0.8rem;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .fav-search-wrapper {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .fav-searching-text {
+          font-size: 0.8rem;
+          color: #00E5FF;
+        }
+
+        .fav-results-dropdown {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          background: rgba(12, 16, 26, 0.96);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: var(--border-radius-md);
+          padding: 6px;
+          max-height: 220px;
+          overflow-y: auto;
+        }
+
+        .fav-result-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: transparent;
+          border: none;
+          color: #eee;
+          padding: 6px 8px;
+          border-radius: 8px;
+          cursor: pointer;
+          text-align: left;
+          font-size: 0.9rem;
+        }
+
+        .fav-result-row:hover {
+          background: rgba(0, 229, 255, 0.12);
+        }
+
+        .fav-result-row img {
+          width: 34px;
+          height: 46px;
+          object-fit: cover;
+          border-radius: 6px;
+        }
+
+        .error-toast {
+          color: #ff6b6b;
+          font-size: 0.9rem;
+          text-align: center;
         }
 
         .form-divider {
