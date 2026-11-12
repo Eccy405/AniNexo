@@ -21,7 +21,7 @@ export const SavedPostsModal: React.FC<SavedPostsModalProps> = ({ userId, onClos
   const fetchSavedPosts = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/saved/${userId}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/feed/saved/${userId}`);
       const data = await res.json();
       if (data.success) {
         setSavedPosts(data.data.map((s: any) => s.post));
@@ -40,7 +40,7 @@ export const SavedPostsModal: React.FC<SavedPostsModalProps> = ({ userId, onClos
       if (!userStr) return;
       
       const user = JSON.parse(userStr);
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post/${postId}/save`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/feed/post/${postId}/save`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

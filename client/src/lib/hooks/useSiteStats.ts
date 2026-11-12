@@ -30,15 +30,15 @@ export const useSiteStats = () => {
         };
 
         // Fetch users count
-        const usersData = await safeFetchJson(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/stats/users`);
+        const usersData = await safeFetchJson(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/stats/users`);
         
         // Fetch animes count
-        const animesData = await safeFetchJson(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/stats/animes`);
+        const animesData = await safeFetchJson(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/stats/animes`);
         
         // Fetch roadmap (optional)
         let upcoming: Array<{ feature: string; eta: string }> = [];
         try {
-          const roadmapData = await safeFetchJson(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/roadmap`);
+          const roadmapData = await safeFetchJson(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/roadmap`);
           upcoming = roadmapData.upcoming || [];
         } catch (e) {
           // ignore roadmap errors

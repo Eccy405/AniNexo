@@ -28,7 +28,7 @@ export function ChatWindow({ chat }: { chat: any }) {
     const fetchMessages = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/messaging/conversation/${chat.conversationId}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/messaging/conversation/${chat.conversationId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -66,7 +66,7 @@ export function ChatWindow({ chat }: { chat: any }) {
 
     if (chat.isNexo) {
         try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/nexo/chat-persistent`, {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/nexo/chat-persistent`, {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json',

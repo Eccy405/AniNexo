@@ -92,7 +92,7 @@ export default function AdminDashboard() {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api');
 
     setSectionLoading(prev => ({ ...prev, [errorKey]: true }));
     try {
@@ -213,7 +213,7 @@ export default function AdminDashboard() {
   const toggleMaintenance = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/maintenance`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/admin/maintenance`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -240,7 +240,7 @@ export default function AdminDashboard() {
     const newValue = currentValue === 'true' ? 'false' : 'true';
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/feature-flag`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/admin/feature-flag`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ key, value: newValue })
@@ -264,7 +264,7 @@ export default function AdminDashboard() {
   const handleToggleUserField = async (userId: string, field: 'role' | 'verify' | 'premium') => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/users/${userId}/${field}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/admin/users/${userId}/${field}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -273,7 +273,7 @@ export default function AdminDashboard() {
         setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...data.data } : u));
         
         // Refresh global analytics metrics
-        const analyticsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/analytics`, {
+        const analyticsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/admin/analytics`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const analytics = await analyticsRes.json();
@@ -291,7 +291,7 @@ export default function AdminDashboard() {
     if (!selectedReport) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/moderation/resolve`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/moderation/resolve`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -338,7 +338,7 @@ export default function AdminDashboard() {
         body.days = Number(modDuration);
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}${endpoint}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}${endpoint}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -365,7 +365,7 @@ export default function AdminDashboard() {
     if (!investigationQuery) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/moderation/investigate/${investigationQuery.replace('@', '')}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/moderation/investigate/${investigationQuery.replace('@', '')}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -387,7 +387,7 @@ export default function AdminDashboard() {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/anime/${editingAnime.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/admin/anime/${editingAnime.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
@@ -751,7 +751,7 @@ export default function AdminDashboard() {
                         const token = localStorage.getItem('token');
                         searchTimeoutRef.current = setTimeout(async () => {
                           try {
-                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/anime${val ? `?q=${encodeURIComponent(val)}` : ''}`, {
+                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/admin/anime${val ? `?q=${encodeURIComponent(val)}` : ''}`, {
                               headers: { 'Authorization': `Bearer ${token}` }
                             });
                             const data = await res.json();

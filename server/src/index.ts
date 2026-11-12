@@ -41,15 +41,38 @@ import session from 'express-session';
 import passport from 'passport';
 import './config/passport.config';
 
-const allowedOrigins = process.env.CLIENT_URL 
-  ? process.env.CLIENT_URL.split(',') 
-  : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+const envOrigins = (process.env.CLIENT_URL || process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
+const defaultOrigins = [
+  'https://aninexo.pages.dev',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+
+const allowedOrigins = Array.from(new Set([...envOrigins, ...defaultOrigins]));
+
+const isAllowedOrigin = (origin: string | undefined): boolean => {
+  if (!origin) return true; // peticiones server-to-server, curl o móviles
+  if (allowedOrigins.includes(origin)) return true;
+  // Soporte para subdominios y preview deployments de Cloudflare Pages (*.aninexo.pages.dev)
+  if (/^https:\/\/([a-z0-9-]+\.)?aninexo\.pages\.dev$/.test(origin)) return true;
+  return false;
+};
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked for origin: ${origin}`));
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -62,7 +85,13 @@ setupSockets(io);
 // Middlewares de Seguridad Global
 app.use(securityHeaders);
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma'],
   credentials: true

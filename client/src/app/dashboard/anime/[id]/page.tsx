@@ -53,7 +53,7 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
         if (titleToSearch) {
           setCheckingManga(true);
           try {
-            const searchRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/manga/search?q=${encodeURIComponent(titleToSearch)}&limit=1`);
+            const searchRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/manga/search?q=${encodeURIComponent(titleToSearch)}&limit=1`);
             const searchJson = await searchRes.json();
             if (searchJson.success && searchJson.data?.length > 0) {
               // Hacemos una validación de título simple para evitar falsos positivos groseros
@@ -72,7 +72,7 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
         // Registrar vista en el historial
         const token = localStorage.getItem('token');
         if (token) {
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/anime/discovery/track-view`, {
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/anime/discovery/track-view`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -455,7 +455,7 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
                           }
                           setIsSearchingCompare(true);
                           try {
-                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/search/global?q=${encodeURIComponent(val)}`);
+                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/search/global?q=${encodeURIComponent(val)}`);
                             const data = await res.json();
                             if (data.success) {
                               setCompareResults(data.data.animes || []);

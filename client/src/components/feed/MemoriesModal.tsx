@@ -21,7 +21,7 @@ export const MemoriesModal: React.FC<MemoriesModalProps> = ({ userId, onClose })
   const fetchMemories = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/memories/${userId}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/feed/memories/${userId}`);
       const data = await res.json();
       if (data.success) {
         setMemories(data.data);

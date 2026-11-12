@@ -136,7 +136,7 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
     setIsSearchingAnime(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/search/global?q=${animeSearch}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/search/global?q=${animeSearch}`);
         const json = await res.json();
         setAnimeResults(json.data.animes || []);
       } catch (e) {
@@ -154,7 +154,7 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
     setIsSearchingChar(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/search/characters?q=${charSearch}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/search/characters?q=${charSearch}`);
         const json = await res.json();
         setCharResults(json.data || []);
       } catch (e) {
@@ -185,7 +185,7 @@ export const OnboardingWizard = ({ onComplete, initialData }: { onComplete: () =
         const token = localStorage.getItem('token');
         const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/profile/onboarding`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/profile/onboarding`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

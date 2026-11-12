@@ -9,7 +9,7 @@ interface PageProps {
 
 async function getProfileData(username: string) {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/profile/${username}`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/profile/${username}`, { cache: 'no-store' });
     const data = await res.json();
     return data.success ? data.data : null;
   } catch (error) {
@@ -19,7 +19,7 @@ async function getProfileData(username: string) {
 
 async function getListData(username: string) {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/list/${username}`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/list/${username}`, { cache: 'no-store' });
     const data = await res.json();
     return data.success ? data.data : [];
   } catch (error) {
@@ -29,7 +29,7 @@ async function getListData(username: string) {
 
 async function getCollectionData(username: string) {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/profile/${username}`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/profile/${username}`, { cache: 'no-store' });
     const data = await res.json();
     return data.success ? data.data.collections : [];
   } catch (error) {

@@ -60,7 +60,7 @@ export function Sidebar() {
   const fetchShortcuts = async () => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/shortcuts/${user.id}`
+        `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/feed/shortcuts/${user.id}`
       );
       const data = await res.json();
       if (data.success) {

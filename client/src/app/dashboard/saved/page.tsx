@@ -28,7 +28,7 @@ export default function SavedPostsPage() {
   const fetchSaved = async (userId: string) => {
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/saved/${userId}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/feed/saved/${userId}`);
       const data = await res.json();
       if (data.success) {
         setSavedPosts((data.data || []).map((s: any) => s.post).filter(Boolean));

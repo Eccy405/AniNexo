@@ -125,7 +125,7 @@ export const HiveCanvas: React.FC<HiveCanvasProps> = ({ engine, sectionRef }) =>
     async function loadNexusCatalog() {
       setIsLoading(true);
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api');
         const res = await fetch(`${apiBase}/anime/discovery/nexus`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();

@@ -36,7 +36,7 @@ const groupThemes = [
 
 export default function CommunityPage() {
   const router = useRouter();
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api');
 
   const [user, setUser] = useState<any>(null);
   const [friendRequests, setFriendRequests] = useState<any[]>([]);

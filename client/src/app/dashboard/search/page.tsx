@@ -84,7 +84,7 @@ export default function SearchPage() {
     if (loading && !isNewSearch) return;
     setLoading(true);
     
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api');
 
     try {
       if (pageNum === 1 && appliedQuery) {

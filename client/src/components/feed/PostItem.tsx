@@ -100,7 +100,7 @@ export function PostItem({ post }: { post: PostData }) {
 
       const user = JSON.parse(userStr);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/social/like`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/social/like`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,7 +134,7 @@ export function PostItem({ post }: { post: PostData }) {
       const user = JSON.parse(userStr);
       setIsSubmittingComment(true);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post/${post.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/feed/post/${post.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -168,7 +168,7 @@ export function PostItem({ post }: { post: PostData }) {
 
       const user = JSON.parse(userStr);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post/${post.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/feed/post/${post.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -219,7 +219,7 @@ export function PostItem({ post }: { post: PostData }) {
       const user = JSON.parse(userStr);
       setIsSubmittingComment(true);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/comment`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/feed/comment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -254,7 +254,7 @@ export function PostItem({ post }: { post: PostData }) {
       const user = JSON.parse(userStr);
 
       if (isSaved) {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post/${post.id}/save`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/feed/post/${post.id}/save`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -264,7 +264,7 @@ export function PostItem({ post }: { post: PostData }) {
         });
         setIsSaved(false);
       } else {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post/${post.id}/save`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/feed/post/${post.id}/save`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -291,7 +291,7 @@ export function PostItem({ post }: { post: PostData }) {
       const user = JSON.parse(userStr);
       setIsSharing(true);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post/${post.id}/share`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/feed/post/${post.id}/share`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -318,7 +318,7 @@ export function PostItem({ post }: { post: PostData }) {
   const addMemory = async (userId: string, postId: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/memory/interaction`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/feed/memory/interaction`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

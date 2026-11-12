@@ -18,7 +18,7 @@ export const UserListModal: React.FC<UserListModalProps> = ({ type, userId, onCl
     try {
       setLoading(true);
       const endpoint = type === 'followers' ? 'followers' : 'following';
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/social/${endpoint}/${userId}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/social/${endpoint}/${userId}`);
       const data = await res.json();
       if (data.success) {
         setUsers(data.data);

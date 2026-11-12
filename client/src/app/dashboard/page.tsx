@@ -16,7 +16,7 @@ export default function DashboardPage() {
       setError(null);
       const token = localStorage.getItem('token');
       
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/anime/discovery/home`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/anime/discovery/home`, {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
           'Cache-Control': 'no-cache',

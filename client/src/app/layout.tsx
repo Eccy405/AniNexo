@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_CLIENT_URL || 'http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_CLIENT_URL || 'https://aninexo.pages.dev'),
   title: {
     default: "AniNexo | La Dimensión Definitiva del Anime",
     template: "%s | AniNexo"

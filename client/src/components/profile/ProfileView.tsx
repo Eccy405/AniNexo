@@ -56,7 +56,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
   const fetchStories = async () => {
     try {
       if (!currentUser?.id) return;
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/social/stories?userId=${currentUser.id}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/social/stories?userId=${currentUser.id}`);
       const data = await res.json();
       if (data.success) setStories(data.data);
     } catch (e) {
@@ -67,7 +67,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
   const fetchUserPosts = async () => {
     try {
       setLoadingPosts(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/user/${profile.id}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/feed/user/${profile.id}`);
       const data = await res.json();
       if (data.success) setPosts(data.data);
     } catch (e) { console.error(e); }
@@ -86,7 +86,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
           const parsed = JSON.parse(u);
           // Refresh user data from backend to get updated isVerified status
           if (parsed?.id) {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/profile/${parsed.username}`);
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/profile/${parsed.username}`);
             if (res.ok) {
               const data = await res.json();
               if (data.success) {
@@ -119,7 +119,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
     reader.onloadend = async () => {
       const base64 = reader.result as string;
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/social/stories`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/social/stories`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -167,7 +167,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
   const checkFriendshipStatus = async () => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/friends/list/${currentUser?.id}`
+        `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/friends/list/${currentUser?.id}`
       );
       const data = await res.json();
       if (data.success) {
@@ -186,7 +186,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
     
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/friends/request`,
+        `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/friends/request`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -208,7 +208,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
   const checkFollowingStatus = async () => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/social/following/check?followerId=${currentUser.id}&followingId=${profile.id}`
+        `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/social/following/check?followerId=${currentUser.id}&followingId=${profile.id}`
       );
       const data = await res.json();
       if (data.success) {
@@ -227,7 +227,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/social/follow`,
+        `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/social/follow`,
         {
           method: 'POST',
           headers: { 
@@ -267,7 +267,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/messaging/conversation`,
+        `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/messaging/conversation`,
         {
           method: 'POST',
           headers: { 
@@ -295,7 +295,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
   const fetchMessages = async (convId: string) => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/messaging/${convId}`
+        `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/messaging/${convId}`
       );
       const data = await res.json();
       if (data.success) {

@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-
-const SOCKET_URL = 'http://localhost:3001';
+import { getSocketUrl } from '../lib/apiConfig';
 
 export function useSocket(conversationId?: string) {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -18,7 +17,13 @@ export function useSocket(conversationId?: string) {
     if (!token || token === 'null' || token === 'undefined') return;
 
     if (!socketRef.current) {
-      const newSocket = io(SOCKET_URL, {
+      const socketUrl = getSocketUrl();
+      if (!socketUrl) {
+        console.warn('[Socket] NEXT_PUBLIC_SOCKET_URL no configurada en producción. Conexión de socket omitida.');
+        return;
+      }
+
+      const newSocket = io(socketUrl, {
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
         transports: ['websocket', 'polling'],

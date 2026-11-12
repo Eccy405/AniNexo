@@ -37,7 +37,7 @@ export function CreatePost({ onPostCreated, defaultAnimeId, defaultAnime }: { on
     if (animeSearch.length > 2) {
       const delay = setTimeout(async () => {
         try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/search/global?q=${encodeURIComponent(animeSearch)}`);
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/search/global?q=${encodeURIComponent(animeSearch)}`);
           const data = await res.json();
           if (data.success) {
             setAnimeResults(data.data.animes || []);
@@ -69,7 +69,7 @@ export function CreatePost({ onPostCreated, defaultAnimeId, defaultAnime }: { on
       const token = localStorage.getItem('token');
       if (!user || !token) throw new Error('No estás autenticado');
 
-const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/feed/post`, {
+const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/feed/post`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

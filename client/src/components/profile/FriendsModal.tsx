@@ -36,7 +36,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
     try {
       setLoading(true);
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/friends/list-with-nicknames/${userId}`
+        `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/friends/list-with-nicknames/${userId}`
       );
       const data = await res.json();
       if (data.success) setFriends(data.data);
@@ -51,7 +51,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
     try {
       const token = localStorage.getItem('token');
       await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/friends/${friendId}`,
+        `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/friends/${friendId}`,
         {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -69,7 +69,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/friends/${friendId}/nickname`,
+        `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/friends/${friendId}/nickname`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -95,7 +95,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/messaging/conversation`,
+        `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/messaging/conversation`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -108,7 +108,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
         let messages: any[] = [];
         try {
           const msgRes = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/messaging/${data.data.id}`
+            `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/messaging/${data.data.id}`
           );
           const msgData = await msgRes.json();
           if (msgData.success) messages = msgData.data;

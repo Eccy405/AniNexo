@@ -60,7 +60,7 @@ export default function ChatWithIdPage() {
         const user = JSON.parse(userStr);
         setCurrentUser(user);
 
-        const convRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/messaging/conversation/${conversationId}`);
+        const convRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/messaging/conversation/${conversationId}`);
         const convData = await convRes.json();
         if (convData.success) {
           setConversation(convData.data);
@@ -78,7 +78,7 @@ export default function ChatWithIdPage() {
     if (!conversationId) return;
     const fetchHistory = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/messaging/conversation/${conversationId}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/messaging/conversation/${conversationId}`);
         const data = await res.json();
         if (data.success) {
           setConversation(data.data);
