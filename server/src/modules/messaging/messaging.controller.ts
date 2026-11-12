@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { MessagingService } from './messaging.service';
+import { AuthRequest } from '../../middleware/auth.middleware';
+import { socketService } from '../../lib/socketService';
 
 export class MessagingController {
   private messagingService: MessagingService;
@@ -46,7 +48,54 @@ export class MessagingController {
       }
 
       const msg = await this.messagingService.sendMessage(conversationId, senderId, content);
+
+      // Emitir por Socket.IO aunque el cliente haya usado el fallback HTTP
+      const io = socketService.getIO();
+      if (io) {
+        const recipientIds = await this.messagingService.getOtherParticipantIds(conversationId, senderId);
+        let emitter = io.to(`conv_${conversationId}`);
+        for (const recipientId of recipientIds) {
+          emitter = emitter.to(`user:${recipientId}`);
+        }
+        emitter.emit('new_message', msg);
+      }
+
       res.status(201).json({ success: true, data: msg });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getUnreadSummary = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user.id;
+      const summary = await this.messagingService.getUnreadSummary(userId);
+      res.status(200).json({ success: true, data: summary });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  markConversationRead = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user.id;
+      const conversationId = req.params.conversationId as string;
+      if (!conversationId) {
+        return res.status(400).json({ success: false, message: 'conversationId es requerido' });
+      }
+
+      const result = await this.messagingService.markMessagesAsRead(conversationId, userId);
+
+      socketService.emitToRoom(`conv_${conversationId}`, 'message_seen', {
+        conversationId,
+        userId
+      });
+      socketService.emitToUser(userId, 'messages_read_sync', {
+        conversationId,
+        userId
+      });
+
+      res.status(200).json({ success: true, data: { count: result.count } });
     } catch (error) {
       next(error);
     }

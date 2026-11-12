@@ -1,17 +1,24 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { FriendsModal } from '../profile/FriendsModal';
 import { ChatWindow } from '../profile/ChatWindow';
 import { useGlobalSocket } from '../auth/SocketProvider';
+import { useChatStore } from '../../store/useChatStore';
+import { getApiUrl } from '../../lib/apiConfig';
 
 export const MessengerChatButton: React.FC = () => {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isPulsing, setIsPulsing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { socket, isConnected } = useGlobalSocket();
+  const totalUnreadMessages = useChatStore(s => s.totalUnreadMessages);
+  const setActiveFloatingChat = useChatStore(s => s.setActiveFloatingChat);
+  const clearUnreadForConversation = useChatStore(s => s.clearUnreadForConversation);
 
   // Chat state — lifted from FriendsModal
   const [activeChatFriend, setActiveChatFriend] = useState<any>(null);
@@ -19,6 +26,7 @@ export const MessengerChatButton: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isChatMinimized, setIsChatMinimized] = useState(false);
 
   useEffect(() => {
     const u = localStorage.getItem('user');
@@ -38,6 +46,32 @@ export const MessengerChatButton: React.FC = () => {
     return () => clearInterval(timer);
   }, [isOpen]);
 
+  // Sincronizar estado de chat abierto con el store global
+  useEffect(() => {
+    setActiveFloatingChat(activeChatFriend ? conversationId : null, isChatMinimized);
+    return () => {
+      setActiveFloatingChat(null, false);
+    };
+  }, [activeChatFriend, conversationId, isChatMinimized, setActiveFloatingChat]);
+
+  const markConversationRead = useCallback(async (convId: string, friendId?: string) => {
+    clearUnreadForConversation(convId, friendId);
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch(`${getApiUrl()}/messaging/${convId}/read`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(() => {
+          window.dispatchEvent(new CustomEvent('aninexo:notifications-updated'));
+        })
+        .catch(() => {});
+    }
+    if (socket && isConnected) {
+      socket.emit('message_read', { conversationId: convId });
+    }
+  }, [clearUnreadForConversation, socket, isConnected]);
+
   // Listen to new messages in real-time
   useEffect(() => {
     if (socket && isConnected) {
@@ -48,6 +82,9 @@ export const MessengerChatButton: React.FC = () => {
             if (prev.some(m => m.id === msg.id)) return prev;
             return [...prev, msg];
           });
+          if (!isChatMinimized && msg.senderId !== user?.id) {
+            markConversationRead(msg.conversationId, msg.senderId);
+          }
         }
       };
 
@@ -56,21 +93,61 @@ export const MessengerChatButton: React.FC = () => {
         socket.off('new_message', handleNewMessage);
       };
     }
-  }, [socket, isConnected, conversationId]);
+  }, [socket, isConnected, conversationId, isChatMinimized, user?.id, markConversationRead]);
 
-  const handleStartChat = (friend: any, convId: string, messages: any[]) => {
+  const handleStartChat = useCallback((friend: any, convId: string, messages: any[]) => {
     setActiveChatFriend(friend);
     setConversationId(convId);
     setChatMessages(messages);
     setChatInput('');
-  };
+    setIsChatMinimized(false);
+    markConversationRead(convId, friend?.id);
+  }, [markConversationRead]);
 
-  const handleCloseChat = () => {
+  const handleCloseChat = useCallback(() => {
     setActiveChatFriend(null);
     setConversationId(null);
     setChatMessages([]);
     setChatInput('');
-  };
+    setIsChatMinimized(false);
+  }, []);
+
+  // Permitir abrir un chat directamente desde notificaciones / toasts
+  useEffect(() => {
+    const handleOpenFromNotification = async (e: Event) => {
+      const customEvent = e as CustomEvent<{ conversationId?: string; sender?: any; isGroup?: boolean }>;
+      const convId = customEvent.detail?.conversationId;
+      if (!convId || !user?.id) return;
+
+      if (customEvent.detail?.isGroup) {
+        router.push(`/home/chat/${convId}`);
+        return;
+      }
+
+      setIsOpen(true);
+      try {
+        const res = await fetch(`${getApiUrl()}/messaging/conversation/${convId}`);
+        const data = await res.json();
+        if (data?.success && data.data) {
+          const conv = data.data;
+          if (conv.isGroup) {
+            router.push(`/home/chat/${convId}`);
+            return;
+          }
+          const otherUser =
+            conv.participants?.find((p: any) => p.user?.id !== user.id)?.user ||
+            customEvent.detail?.sender ||
+            { id: '', username: 'Usuario' };
+          handleStartChat(otherUser, conv.id, conv.messages || []);
+        }
+      } catch (err) {
+        console.error('Error abriendo chat desde notificación:', err);
+      }
+    };
+
+    window.addEventListener('aninexo:open-chat', handleOpenFromNotification);
+    return () => window.removeEventListener('aninexo:open-chat', handleOpenFromNotification);
+  }, [user?.id, handleStartChat, router]);
 
   // Clean click outside event
   useEffect(() => {
@@ -150,6 +227,7 @@ export const MessengerChatButton: React.FC = () => {
             setChatInput={setChatInput}
             onSendMessage={handleSendMessage}
             onClose={handleCloseChat}
+            onMinimizeChange={setIsChatMinimized}
           />
         </div>
       )}
@@ -198,34 +276,42 @@ export const MessengerChatButton: React.FC = () => {
       )}
 
       {/* ===== Floating Action Button ===== */}
-      <button
-        data-tour="messenger-fab"
-        className={`msgr-fab ${isPulsing ? 'msgr-fab-pulse' : ''} ${isOpen ? 'msgr-fab-active' : ''}`}
-        onClick={() => {
-          setIsOpen(o => !o);
-          if (isOpen) setActiveChatFriend(null);
-        }}
-        aria-label="Abrir chats de amigos"
-        title="Chats de amigos"
-      >
-        {isOpen ? (
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 9l-7 7-7-7" />
-          </svg>
-        ) : (
-          <img 
-            src="/nexo_chat_mascot.png?v=4" 
-            alt="Nexo" 
-            style={{ 
-              width: '100%', 
-              height: '100%', 
-              borderRadius: '50%', 
-              objectFit: 'cover' 
-            }} 
-          />
+      <div className="msgr-fab-wrap">
+        <button
+          data-tour="messenger-fab"
+          className={`msgr-fab ${isPulsing ? 'msgr-fab-pulse' : ''} ${isOpen ? 'msgr-fab-active' : ''}`}
+          onClick={() => {
+            setIsOpen(o => !o);
+            if (isOpen) setActiveChatFriend(null);
+          }}
+          aria-label={totalUnreadMessages > 0 ? `Abrir chats (${totalUnreadMessages} sin leer)` : 'Abrir chats de amigos'}
+          title={totalUnreadMessages > 0 ? `${totalUnreadMessages} mensaje(s) sin leer` : 'Chats de amigos'}
+        >
+          {isOpen ? (
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 9l-7 7-7-7" />
+            </svg>
+          ) : (
+            <img
+              src="/nexo_chat_mascot.png?v=4"
+              alt="Nexo"
+              style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: '50%',
+                objectFit: 'cover'
+              }}
+            />
+          )}
+          {!isOpen && <span className="msgr-fab-ring" />}
+        </button>
+
+        {totalUnreadMessages > 0 && (
+          <span className="msgr-unread-badge" aria-label={`${totalUnreadMessages} mensajes sin leer`}>
+            {totalUnreadMessages > 99 ? '99+' : totalUnreadMessages}
+          </span>
         )}
-        {!isOpen && <span className="msgr-fab-ring" />}
-      </button>
+      </div>
 
       <style jsx>{`
         /* ===== ROOT — fixed bottom-right anchor ===== */
@@ -256,7 +342,34 @@ export const MessengerChatButton: React.FC = () => {
         }
 
         /* FAB always last */
-        .msgr-fab { order: 10; }
+        .msgr-fab-wrap {
+          order: 10;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .msgr-unread-badge {
+          position: absolute;
+          top: -4px;
+          right: -4px;
+          min-width: 22px;
+          height: 22px;
+          padding: 0 6px;
+          border-radius: 999px;
+          background: linear-gradient(135deg, #ef4444, #f43f5e);
+          color: #ffffff;
+          font-size: 0.72rem;
+          font-weight: 900;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid #080810;
+          box-shadow: 0 2px 10px rgba(239, 68, 68, 0.7);
+          pointer-events: none;
+          z-index: 2;
+        }
         .msgr-panel { order: 5; }
         .msgr-chat-slot { order: 1; }
 

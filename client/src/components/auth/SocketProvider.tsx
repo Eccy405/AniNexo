@@ -1,11 +1,12 @@
 'use client';
 
-import { createContext, useContext, ReactNode, useEffect } from 'react';
+import { createContext, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { useSocket } from '../../hooks/useSocket';
 import { Socket } from 'socket.io-client';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { useChatStore } from '../../store/useChatStore';
 import { NotificationToastContainer } from '../ui/NotificationToast/NotificationToast';
+import { getApiUrl } from '../../lib/apiConfig';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -19,37 +20,102 @@ export const useGlobalSocket = () => useContext(SocketContext);
 export function SocketProvider({ children }: { children: ReactNode }) {
   const { socket, isConnected } = useSocket();
   const addToast = useNotificationStore((s) => s.addToast);
-  const { setUserStatus, setTyping } = useChatStore();
+  const { setUserStatus, setTyping, setUnreadSummary, incrementUnreadForMessage, clearUnreadForConversation } = useChatStore();
+
+  const refreshUnreadSummary = useCallback(async () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) return;
+    try {
+      const res = await fetch(`${getApiUrl()}/messaging/unread-summary`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data?.success && data.data) {
+        setUnreadSummary(data.data);
+      }
+    } catch {
+      // ignore transient network errors
+    }
+  }, [setUnreadSummary]);
 
   useEffect(() => {
-    if (socket && isConnected) {
-      // Notificaciones
-      socket.on('notification', (data) => {
-        console.log('🔔 Nueva Notificación Global:', data);
+    refreshUnreadSummary();
+  }, [refreshUnreadSummary]);
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    refreshUnreadSummary();
+
+    const handleNotification = (data: any) => {
+      const { activeFloatingConversationId, isFloatingChatMinimized } = useChatStore.getState();
+      const isViewingChat =
+        data?.type === 'MESSAGE' &&
+        data?.referenceId &&
+        ((activeFloatingConversationId === data.referenceId && !isFloatingChatMinimized) ||
+          (typeof window !== 'undefined' && window.location.pathname === `/home/chat/${data.referenceId}`));
+
+      if (!isViewingChat) {
         addToast(data);
-      });
+      }
+      window.dispatchEvent(new CustomEvent('aninexo:notifications-updated'));
+    };
 
-      // Presencia
-      socket.on('user_status', ({ userId, status }) => {
-        setUserStatus(userId, status);
-      });
+    const handleNewMessage = (msg: any) => {
+      let myId: string | null = null;
+      try {
+        const raw = localStorage.getItem('user');
+        if (raw) myId = JSON.parse(raw)?.id || null;
+      } catch {}
 
-      // Escritura
-      socket.on('user_typing', ({ userId, conversationId }) => {
-        setTyping(conversationId, userId, true);
-      });
+      if (!msg?.senderId || (myId && msg.senderId === myId)) return;
 
-      socket.on('user_stop_typing', ({ userId, conversationId }) => {
-        setTyping(conversationId, userId, false);
-      });
-    }
+      const { activeFloatingConversationId, isFloatingChatMinimized } = useChatStore.getState();
+      const isViewingFloating = activeFloatingConversationId === msg.conversationId && !isFloatingChatMinimized;
+      const isViewingRoute =
+        typeof window !== 'undefined' && window.location.pathname === `/home/chat/${msg.conversationId}`;
 
-    return () => {
-      if (socket) {
-        socket.off('notification');
+      if (!isViewingFloating && !isViewingRoute) {
+        incrementUnreadForMessage(msg);
       }
     };
-  }, [socket, isConnected]);
+
+    const handleMessagesReadSync = ({ conversationId }: { conversationId: string }) => {
+      if (conversationId) {
+        clearUnreadForConversation(conversationId);
+        refreshUnreadSummary();
+        window.dispatchEvent(new CustomEvent('aninexo:notifications-updated'));
+      }
+    };
+
+    const handleUserStatus = ({ userId, status }: { userId: string; status: 'online' | 'away' | 'busy' | 'offline' }) => {
+      setUserStatus(userId, status);
+    };
+
+    const handleUserTyping = ({ userId, conversationId }: { userId: string; conversationId: string }) => {
+      setTyping(conversationId, userId, true);
+    };
+
+    const handleUserStopTyping = ({ userId, conversationId }: { userId: string; conversationId: string }) => {
+      setTyping(conversationId, userId, false);
+    };
+
+    socket.on('notification', handleNotification);
+    socket.on('new_message', handleNewMessage);
+    socket.on('messages_read_sync', handleMessagesReadSync);
+    socket.on('user_status', handleUserStatus);
+    socket.on('user_typing', handleUserTyping);
+    socket.on('user_stop_typing', handleUserStopTyping);
+
+    return () => {
+      socket.off('notification', handleNotification);
+      socket.off('new_message', handleNewMessage);
+      socket.off('messages_read_sync', handleMessagesReadSync);
+      socket.off('user_status', handleUserStatus);
+      socket.off('user_typing', handleUserTyping);
+      socket.off('user_stop_typing', handleUserStopTyping);
+    };
+  }, [socket, isConnected, addToast, setUserStatus, setTyping, incrementUnreadForMessage, clearUnreadForConversation, refreshUnreadSummary]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>

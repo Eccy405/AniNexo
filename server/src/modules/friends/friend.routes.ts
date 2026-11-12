@@ -6,6 +6,7 @@ const friendController = new FriendController();
 
 router.post('/request', friendController.sendFriendRequest);
 router.post('/accept', friendController.acceptFriendRequest);
+router.post('/reject', friendController.rejectFriendRequest);
 router.get('/list/:userId', friendController.getFriends);
 router.get('/requests/:userId', friendController.getPendingRequests);
 router.delete('/:friendId', friendController.removeFriend);

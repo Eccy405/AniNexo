@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { MessageCircle, Edit2, UserMinus } from 'lucide-react';
 import { useChatStore } from '../../store/useChatStore';
+import { getApiUrl } from '../../lib/apiConfig';
 
 interface FriendsModalProps {
   userId: string;
@@ -21,31 +22,43 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
   onStartChat,
 }) => {
   const userStatuses = useChatStore(s => s.userStatuses);
-  
+  const unreadBySender = useChatStore(s => s.unreadBySender);
+  const clearUnreadForConversation = useChatStore(s => s.clearUnreadForConversation);
+
   const [friends, setFriends] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingFriend, setEditingFriend] = useState<string | null>(null);
   const [nicknameInput, setNicknameInput] = useState('');
   const [openingChat, setOpeningChat] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchFriends();
-  }, [userId]);
-
-  const fetchFriends = async () => {
+  const fetchFriends = useCallback(async () => {
+    if (!userId) return;
     try {
       setLoading(true);
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/friends/list-with-nicknames/${userId}`
-      );
+      const res = await fetch(`${getApiUrl()}/friends/list-with-nicknames/${userId}`);
       const data = await res.json();
-      if (data.success) setFriends(data.data);
+      if (data.success && Array.isArray(data.data)) {
+        const uniqueMap = new Map<string, any>();
+        for (const f of data.data) {
+          if (f?.id && !uniqueMap.has(f.id)) {
+            uniqueMap.set(f.id, f);
+          }
+        }
+        setFriends(Array.from(uniqueMap.values()));
+      }
     } catch (err) {
       console.error('Error fetching friends:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    fetchFriends();
+    const handleFriendsUpdated = () => fetchFriends();
+    window.addEventListener('aninexo:friends-updated', handleFriendsUpdated);
+    return () => window.removeEventListener('aninexo:friends-updated', handleFriendsUpdated);
+  }, [fetchFriends]);
 
   const handleRemoveFriend = async (friendId: string) => {
     try {
@@ -104,15 +117,25 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
       );
       const data = await res.json();
       if (data.success) {
+        // Limpiar contador sin leer de forma inmediata al abrir la conversación
+        clearUnreadForConversation(data.data.id, friend.id);
+
         // Fetch messages for this conversation
         let messages: any[] = [];
         try {
-          const msgRes = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/messaging/${data.data.id}`
-          );
+          const msgRes = await fetch(`${getApiUrl()}/messaging/${data.data.id}`);
           const msgData = await msgRes.json();
           if (msgData.success) messages = msgData.data;
         } catch {}
+
+        if (token) {
+          fetch(`${getApiUrl()}/messaging/${data.data.id}/read`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` }
+          })
+            .then(() => window.dispatchEvent(new CustomEvent('aninexo:notifications-updated')))
+            .catch(() => {});
+        }
 
         onStartChat?.(friend, data.data.id, messages);
       }
@@ -147,77 +170,116 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
               <p>No tienes amigos agregados aún</p>
             </div>
           ) : (
-            friends.map(friend => (
-              <div key={friend.id} className="friend-item">
-                <div className="friend-avatar-wrap">
-                  <img
-                    src={
-                      friend.avatarUrl ||
-                      `https://ui-avatars.com/api/?name=${friend.username}&background=0866ff&color=fff`
+            friends.map(friend => {
+              const unreadCount = unreadBySender[friend.id] || 0;
+              return (
+                <div
+                  key={friend.id}
+                  className={`friend-item ${unreadCount > 0 ? 'friend-item-unread' : ''}`}
+                  onClick={() => {
+                    if (editingFriend !== friend.id) {
+                      handleStartMessage(friend);
                     }
-                    alt={friend.username}
-                    className="friend-avatar"
-                  />
-                  {/* Real-time status dot indicator */}
-                  <span 
-                    className="friend-online-dot" 
-                    style={{
-                      backgroundColor: {
-                        online: '#31a24c',
-                        away: '#f59e0b',
-                        busy: '#ef4444',
-                        offline: '#6b7280'
-                      }[userStatuses[friend.id] || 'offline']
-                    }}
-                  />
-                </div>
-
-                <div className="friend-info">
-                  {editingFriend === friend.id ? (
-                    <input
-                      type="text"
-                      value={nicknameInput}
-                      onChange={e => setNicknameInput(e.target.value)}
-                      onBlur={() => handleSetNickname(friend.id)}
-                      onKeyDown={e => e.key === 'Enter' && handleSetNickname(friend.id)}
-                      placeholder="Apodo..."
-                      className="nickname-input"
-                      autoFocus
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && editingFriend !== friend.id) {
+                      handleStartMessage(friend);
+                    }
+                  }}
+                  title={`Abrir chat con ${friend.nickname || friend.username}`}
+                >
+                  <div className="friend-avatar-wrap">
+                    <img
+                      src={
+                        friend.avatarUrl ||
+                        `https://ui-avatars.com/api/?name=${friend.username}&background=0866ff&color=fff`
+                      }
+                      alt={friend.username}
+                      className="friend-avatar"
                     />
-                  ) : (
-                    <span className="friend-name">{friend.nickname || friend.username}</span>
-                  )}
-                  {friend.isPremium && <span className="premium-badge">PRO</span>}
-                </div>
+                    {/* Real-time status dot indicator */}
+                    <span
+                      className="friend-online-dot"
+                      style={{
+                        backgroundColor: {
+                          online: '#31a24c',
+                          away: '#f59e0b',
+                          busy: '#ef4444',
+                          offline: '#6b7280'
+                        }[userStatuses[friend.id] || 'offline']
+                      }}
+                    />
+                  </div>
 
-                <div className="friend-actions">
-                  <button
-                    className="btn-icon"
-                    onClick={() => { setEditingFriend(friend.id); setNicknameInput(friend.nickname || ''); }}
-                    title="Editar apodo"
-                  >
-                    <Edit2 size={14} />
-                  </button>
-                  <button
-                    className={`btn-icon btn-msg ${openingChat === friend.id ? 'btn-loading' : ''}`}
-                    onClick={() => handleStartMessage(friend)}
-                    title="Enviar mensaje"
-                  >
-                    {openingChat === friend.id
-                      ? <span className="btn-spinner" />
-                      : <MessageCircle size={14} />
-                    }
-                  </button>
-                  <button
-                    className="btn-icon btn-danger"
-                    onClick={() => handleRemoveFriend(friend.id)}
-                    title="Eliminar amigo"
-                  >
-                    <UserMinus size={14} />
-                  </button>
+                  <div className="friend-info">
+                    {editingFriend === friend.id ? (
+                      <input
+                        type="text"
+                        value={nicknameInput}
+                        onClick={e => e.stopPropagation()}
+                        onChange={e => setNicknameInput(e.target.value)}
+                        onBlur={() => handleSetNickname(friend.id)}
+                        onKeyDown={e => {
+                          e.stopPropagation();
+                          if (e.key === 'Enter') handleSetNickname(friend.id);
+                          if (e.key === 'Escape') setEditingFriend(null);
+                        }}
+                        placeholder="Apodo..."
+                        className="nickname-input"
+                        autoFocus
+                      />
+                    ) : (
+                      <span className="friend-name">{friend.nickname || friend.username}</span>
+                    )}
+                    {friend.isPremium && <span className="premium-badge">PRO</span>}
+                    {unreadCount > 0 && (
+                      <span className="friend-unread-badge" title={`${unreadCount} mensajes sin leer`}>
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="friend-actions" onClick={e => e.stopPropagation()}>
+                    <button
+                      className="btn-icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingFriend(friend.id);
+                        setNicknameInput(friend.nickname || '');
+                      }}
+                      title="Editar apodo"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    <button
+                      className={`btn-icon btn-msg ${openingChat === friend.id ? 'btn-loading' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartMessage(friend);
+                      }}
+                      title="Enviar mensaje"
+                    >
+                      {openingChat === friend.id
+                        ? <span className="btn-spinner" />
+                        : <MessageCircle size={14} />
+                      }
+                    </button>
+                    <button
+                      className="btn-icon btn-danger"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveFriend(friend.id);
+                      }}
+                      title="Eliminar amigo"
+                    >
+                      <UserMinus size={14} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -327,9 +389,26 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
             padding: 8px 10px;
             border-radius: 12px;
             transition: background 0.15s;
-            cursor: default;
+            cursor: pointer;
           }
-          .friend-item:hover { background: rgba(255,255,255,0.05); }
+          .friend-item:hover { background: rgba(255,255,255,0.06); }
+          .friend-item-unread { background: rgba(8,102,255,0.09); }
+          .friend-item-unread .friend-name { color: #ffffff; font-weight: 800; }
+          .friend-unread-badge {
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #ef4444, #f43f5e);
+            color: #ffffff;
+            font-size: 0.7rem;
+            font-weight: 900;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(239,68,68,0.55);
+          }
 
           .friend-avatar-wrap {
             position: relative;

@@ -45,26 +45,84 @@ export class MessagingService {
         conversationId,
         senderId,
         content
+      },
+      include: {
+        sender: { select: { id: true, username: true, avatarUrl: true } }
       }
     });
+
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { updatedAt: new Date() }
+    }).catch(() => {});
 
     // Notificar a los otros participantes
     const participants = await prisma.conversationParticipant.findMany({
       where: { conversationId, userId: { not: senderId } },
-      include: { user: { select: { username: true } } }
+      select: { userId: true }
     });
 
-    const sender = await prisma.user.findUnique({ where: { id: senderId }, select: { username: true } });
+    const senderName = message.sender?.username || 'Alguien';
+    let previewText: string;
+    if (content.startsWith('[IMAGE]')) {
+      previewText = 'Te envió una imagen 📷';
+    } else if (content.startsWith('[GIF]')) {
+      previewText = 'Te envió un GIF 🎞️';
+    } else if (content.startsWith('[AUDIO]')) {
+      previewText = 'Te envió un mensaje de voz 🎙️';
+    } else {
+      const trimmed = content.length > 50 ? content.substring(0, 47) + '...' : content;
+      previewText = `@${senderName}: "${trimmed}"`;
+    }
 
     for (const p of participants) {
       await notificationService.createNotification(p.userId, 'MESSAGE', {
-        title: `Nuevo mensaje de @${sender?.username || 'Alguien'}`,
-        message: content.length > 50 ? content.substring(0, 47) + '...' : content,
+        title: `Nuevo mensaje de @${senderName}`,
+        message: previewText,
         referenceId: conversationId
       }).catch(() => {});
     }
 
     return message;
+  }
+
+  async getOtherParticipantIds(conversationId: string, senderId: string): Promise<string[]> {
+    const participants = await prisma.conversationParticipant.findMany({
+      where: { conversationId, userId: { not: senderId } },
+      select: { userId: true }
+    });
+    return participants.map((p) => p.userId);
+  }
+
+  async getUnreadSummary(userId: string) {
+    const unreadMessages = await prisma.message.findMany({
+      where: {
+        isRead: false,
+        senderId: { not: userId },
+        conversation: {
+          participants: { some: { userId } }
+        }
+      },
+      select: {
+        id: true,
+        conversationId: true,
+        senderId: true
+      }
+    });
+
+    const byConversation: Record<string, number> = {};
+    const bySender: Record<string, number> = {};
+
+    for (const m of unreadMessages) {
+      byConversation[m.conversationId] = (byConversation[m.conversationId] || 0) + 1;
+      bySender[m.senderId] = (bySender[m.senderId] || 0) + 1;
+    }
+
+    return {
+      totalUnread: unreadMessages.length,
+      byConversation,
+      bySender
+    };
   }
 
   async getConversationMessages(conversationId: string, limit: number = 50) {
@@ -97,7 +155,7 @@ export class MessagingService {
   }
   
   async markMessagesAsRead(conversationId: string, userId: string) {
-    return await prisma.message.updateMany({
+    const updated = await prisma.message.updateMany({
       where: {
         conversationId,
         senderId: { not: userId },
@@ -107,6 +165,9 @@ export class MessagingService {
         isRead: true
       }
     });
+
+    await notificationService.markConversationNotificationsRead(userId, conversationId).catch(() => {});
+    return updated;
   }
 
   async createGroupChat(adminId: string, name: string, participantIds: string[], avatar?: string, theme?: string) {

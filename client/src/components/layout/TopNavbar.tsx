@@ -20,45 +20,55 @@ export const TopNavbar: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [processingFriendNotifId, setProcessingFriendNotifId] = useState<string | null>(null);
   const pathname = usePathname();
   const searchRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_URL ||
+    (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+      ? 'https://aninexo.onrender.com/api'
+      : 'http://localhost:3001/api');
+
   const fetchNotifications = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/notifications`, {
+      const res = await fetch(`${apiBase}/notifications`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.data)) {
         setNotifications(data.data);
         setUnreadCount(data.data.filter((n: any) => !n.isRead).length);
       }
     } catch (err) {
       console.error("Error fetching notifications in navbar", err);
     }
-  }, []);
+  }, [apiBase]);
 
   const handleMarkAsRead = async (id: string) => {
     const token = localStorage.getItem('token');
     if (!token) return;
+    // Optimistic UI update so badge drops immediately
+    setNotifications(prev => {
+      const target = prev.find(n => n.id === id);
+      if (target && !target.isRead) {
+        setUnreadCount(c => Math.max(0, c - 1));
+      }
+      return prev.map(n => n.id === id ? { ...n, isRead: true } : n);
+    });
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/notifications/${id}/read`, {
+      await fetch(`${apiBase}/notifications/${id}/read`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      const data = await res.json();
-      if (data.success) {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
     } catch (err) {
       console.error("Error marking notification as read", err);
     }
@@ -67,15 +77,15 @@ export const TopNavbar: React.FC = () => {
   const handleMarkAllRead = async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    setUnreadCount(0);
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/notifications/read-all`, {
+      await fetch(`${apiBase}/notifications/read-all`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      setUnreadCount(0);
     } catch (err) {
       console.error("Error marking all notifications as read", err);
     }
@@ -83,9 +93,10 @@ export const TopNavbar: React.FC = () => {
 
   const handleAcceptFriend = async (friendId: string, notificationId: string) => {
     const token = localStorage.getItem('token');
-    if (!token || !user) return;
+    if (!token || !user || !friendId || processingFriendNotifId === notificationId) return;
+    setProcessingFriendNotifId(notificationId);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api')}/friends/accept`, {
+      const res = await fetch(`${apiBase}/friends/accept`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -94,16 +105,82 @@ export const TopNavbar: React.FC = () => {
         body: JSON.stringify({ userId: user.id, friendId })
       });
       const data = await res.json();
+
+      // Eliminar la notificación de solicitud de la UI para que no se pueda aceptar varias veces
+      setNotifications(prev => {
+        const target = prev.find(n => n.id === notificationId);
+        if (target && !target.isRead) {
+          setUnreadCount(c => Math.max(0, c - 1));
+        }
+        return prev.filter(n => n.id !== notificationId);
+      });
+
+      await fetch(`${apiBase}/notifications/${notificationId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).catch(() => {});
+
       if (data.success) {
-        // Marcar la notificación como leída
-        await handleMarkAsRead(notificationId);
-        alert('¡Solicitud de amistad aceptada!');
-        fetchNotifications();
-      } else {
-        alert(data.message || 'Error al aceptar solicitud');
+        window.dispatchEvent(new CustomEvent('aninexo:friends-updated'));
       }
+      fetchNotifications();
     } catch (err) {
       console.error("Error accepting friend request", err);
+    } finally {
+      setProcessingFriendNotifId(null);
+    }
+  };
+
+  const handleIgnoreFriend = async (friendId: string | undefined, notificationId: string) => {
+    const token = localStorage.getItem('token');
+    if (!token || !user || processingFriendNotifId === notificationId) return;
+    setProcessingFriendNotifId(notificationId);
+    try {
+      setNotifications(prev => {
+        const target = prev.find(n => n.id === notificationId);
+        if (target && !target.isRead) {
+          setUnreadCount(c => Math.max(0, c - 1));
+        }
+        return prev.filter(n => n.id !== notificationId);
+      });
+
+      if (friendId) {
+        await fetch(`${apiBase}/friends/reject`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ userId: user.id, friendId })
+        }).catch(() => {});
+      }
+
+      await fetch(`${apiBase}/notifications/${notificationId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).catch(() => {});
+
+      fetchNotifications();
+    } catch (err) {
+      console.error("Error ignoring friend request", err);
+    } finally {
+      setProcessingFriendNotifId(null);
+    }
+  };
+
+  const handleNotificationClick = (n: any) => {
+    if (!n.isRead && !(n.actionRequired || (n.type === 'SYSTEM' && n.message?.toLowerCase().includes('solicitud de amistad')))) {
+      handleMarkAsRead(n.id);
+    }
+    if (n.type === 'MESSAGE' && (n.conversationId || n.referenceId)) {
+      setShowNotifications(false);
+      window.dispatchEvent(new CustomEvent('aninexo:open-chat', {
+        detail: {
+          conversationId: n.conversationId || n.referenceId,
+          sender: n.sender,
+          isGroup: n.isGroup
+        }
+      }));
     }
   };
 
@@ -144,7 +221,12 @@ export const TopNavbar: React.FC = () => {
     if (user) {
       fetchNotifications();
       const interval = setInterval(fetchNotifications, 20000);
-      return () => clearInterval(interval);
+      const handleRealtimeRefresh = () => fetchNotifications();
+      window.addEventListener('aninexo:notifications-updated', handleRealtimeRefresh);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('aninexo:notifications-updated', handleRealtimeRefresh);
+      };
     }
   }, [user, fetchNotifications]);
 
@@ -347,9 +429,25 @@ export const TopNavbar: React.FC = () => {
                         </div>
                       ) : (
                         notifications.map((n) => {
-                          const itemIcon = n.type === 'LIKE' ? '❤️' : n.type === 'COMMENT' ? '💬' : n.type === 'FOLLOW' ? '👤' : n.type === 'BADGE' ? '🏅' : '🔔';
+                          const isFriendRequest = Boolean(
+                            n.actionRequired ||
+                            (!n.isRead && n.type === 'SYSTEM' && n.message?.toLowerCase().includes('solicitud de amistad'))
+                          );
+                          const itemIcon =
+                            n.type === 'LIKE' ? '❤️'
+                            : n.type === 'COMMENT' ? '💬'
+                            : n.type === 'MESSAGE' ? '✉️'
+                            : n.type === 'FOLLOW' ? '👤'
+                            : n.type === 'BADGE' ? '🏅'
+                            : n.type === 'SYSTEM' ? '🤝'
+                            : '🔔';
                           return (
-                            <div key={n.id} className={`${styles.notificationItem} ${!n.isRead ? styles.unreadItem : ''}`}>
+                            <div
+                              key={n.id}
+                              className={`${styles.notificationItem} ${!n.isRead ? styles.unreadItem : ''}`}
+                              onClick={() => handleNotificationClick(n)}
+                              style={{ cursor: n.type === 'MESSAGE' ? 'pointer' : 'default' }}
+                            >
                               <div className={styles.notificationMain}>
                                 {n.sender?.avatarUrl ? (
                                   <img src={n.sender.avatarUrl} alt="Avatar" className={styles.notificationAvatar} />
@@ -357,6 +455,11 @@ export const TopNavbar: React.FC = () => {
                                   <span className={styles.notificationEmoji}>{itemIcon}</span>
                                 )}
                                 <div className={styles.notificationContent}>
+                                  {n.title && (
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#00E5FF', letterSpacing: '0.2px' }}>
+                                      {n.title}
+                                    </span>
+                                  )}
                                   <p className={styles.notificationText}>{n.message}</p>
                                   <span className={styles.notificationTime}>
                                     {new Date(n.createdAt).toLocaleDateString()} a las {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -364,18 +467,20 @@ export const TopNavbar: React.FC = () => {
                                 </div>
                               </div>
 
-                              {/* Solicitud de amistad */}
-                              {n.type === 'SYSTEM' && n.message.toLowerCase().includes('amistad') && (
-                                <div className={styles.notificationActions}>
-                                  <button 
-                                    className={styles.acceptFriendBtn} 
+                              {/* Solicitud de amistad pendiente */}
+                              {isFriendRequest && n.referenceId && (
+                                <div className={styles.notificationActions} onClick={(e) => e.stopPropagation()}>
+                                  <button
+                                    className={styles.acceptFriendBtn}
+                                    disabled={processingFriendNotifId === n.id}
                                     onClick={() => handleAcceptFriend(n.referenceId, n.id)}
                                   >
-                                    Aceptar
+                                    {processingFriendNotifId === n.id ? 'Aceptando...' : 'Aceptar'}
                                   </button>
-                                  <button 
-                                    className={styles.rejectFriendBtn} 
-                                    onClick={() => handleMarkAsRead(n.id)}
+                                  <button
+                                    className={styles.rejectFriendBtn}
+                                    disabled={processingFriendNotifId === n.id}
+                                    onClick={() => handleIgnoreFriend(n.referenceId, n.id)}
                                   >
                                     Ignorar
                                   </button>
@@ -383,9 +488,12 @@ export const TopNavbar: React.FC = () => {
                               )}
 
                               {!n.isRead && (
-                                <button 
-                                  className={styles.markReadBtn} 
-                                  onClick={() => handleMarkAsRead(n.id)}
+                                <button
+                                  className={styles.markReadBtn}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkAsRead(n.id);
+                                  }}
                                   title="Marcar como leída"
                                 >
                                   ✓

@@ -104,10 +104,13 @@ export function setupSockets(io: Server) {
     socket.on('send_message', async (data: { conversationId: string, senderId: string, content: string }) => {
       try {
         const message = await messagingService.sendMessage(data.conversationId, data.senderId, data.content);
-        io.to(`conv_${data.conversationId}`).emit('new_message', message);
-        
-        // Notificación opcional al destinatario si no está en la sala del chat
-        // io.to(`user:${targetId}`).emit('notification', { type: 'NEW_MESSAGE', sender: userId });
+        const recipientIds = await messagingService.getOtherParticipantIds(data.conversationId, data.senderId);
+
+        let emitter = io.to(`conv_${data.conversationId}`);
+        for (const recipientId of recipientIds) {
+          emitter = emitter.to(`user:${recipientId}`);
+        }
+        emitter.emit('new_message', message);
       } catch (error) {
         logger.error('[socket]: Error guardando mensaje', error);
       }
@@ -125,10 +128,12 @@ export function setupSockets(io: Server) {
     // Mensaje Leído
     socket.on('message_read', async (data: { conversationId: string }) => {
       try {
-        // Guardar el visto en la base de datos de verdad
+        // Guardar el visto en la base de datos de verdad y limpiar notificaciones de esa conversación
         await messagingService.markMessagesAsRead(data.conversationId, userId);
         // Notificar en tiempo real en la sala
         io.to(`conv_${data.conversationId}`).emit('message_seen', { conversationId: data.conversationId, userId });
+        // Sincronizar contadores sin leer en todas las vistas del usuario
+        io.to(`user:${userId}`).emit('messages_read_sync', { conversationId: data.conversationId, userId });
       } catch (error) {
         logger.error('[socket]: Error marcando mensaje como leído', error);
       }

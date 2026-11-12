@@ -17,8 +17,30 @@ export class NotificationController {
   markAsRead = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const id = req.params.id as string;
-      const notification = await notificationService.markAsRead(id);
+      const userId = req.user.id;
+      const notification = await notificationService.markAsRead(id, userId);
       res.status(200).json({ success: true, data: notification });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  markAllAsRead = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user.id;
+      const result = await notificationService.markAllAsRead(userId);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  deleteNotification = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+      const userId = req.user.id;
+      await notificationService.deleteNotification(id, userId);
+      res.status(200).json({ success: true });
     } catch (error) {
       next(error);
     }

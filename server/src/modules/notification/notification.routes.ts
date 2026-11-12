@@ -8,7 +8,11 @@ const controller = new NotificationController();
 router.use(authenticateToken);
 
 router.get('/', controller.getMyNotifications);
+router.post('/read-all', controller.markAllAsRead);
+router.patch('/read-all', controller.markAllAsRead);
+router.post('/:id/read', controller.markAsRead);
 router.patch('/:id/read', controller.markAsRead);
+router.delete('/:id', controller.deleteNotification);
 router.get('/preferences', controller.getPreferences);
 router.put('/preferences', controller.updatePreference);
 router.post('/subscribe', controller.subscribePush);

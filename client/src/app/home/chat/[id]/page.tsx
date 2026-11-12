@@ -8,6 +8,8 @@ import { useSocket } from '../../../../hooks/useSocket';
 import { Card } from '../../../../components/ui/Card/Card';
 import { Button } from '../../../../components/ui/Button/Button';
 import { Users } from 'lucide-react';
+import { useChatStore } from '../../../../store/useChatStore';
+import { getApiUrl } from '../../../../lib/apiConfig';
 
 interface Participant {
   user: {
@@ -50,6 +52,7 @@ export default function ChatWithIdPage() {
   const [loading, setLoading] = useState(true);
   
   const { socket, isConnected } = useSocket(conversationId);
+  const clearUnreadForConversation = useChatStore(s => s.clearUnreadForConversation);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -84,6 +87,17 @@ export default function ChatWithIdPage() {
           setConversation(data.data);
           setMessages(data.data?.messages || []);
           setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+          clearUnreadForConversation(conversationId);
+          const token = localStorage.getItem('token');
+          if (token) {
+            fetch(`${getApiUrl()}/messaging/${conversationId}/read`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` }
+            })
+              .then(() => window.dispatchEvent(new CustomEvent('aninexo:notifications-updated')))
+              .catch(() => {});
+          }
+          socket?.emit('message_read', { conversationId });
         }
       } catch (err) {
         console.error(err);
@@ -97,8 +111,12 @@ export default function ChatWithIdPage() {
     
     const handleNewMessage = (msg: any) => {
       if (msg.conversationId === conversationId) {
-        setMessages(prev => [...prev, msg]);
+        setMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
         setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        if (msg.senderId !== currentUser?.id) {
+          clearUnreadForConversation(conversationId);
+          socket.emit('message_read', { conversationId });
+        }
       }
     };
 

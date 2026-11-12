@@ -19,7 +19,6 @@ import {
   ChevronDown, 
   Compass,
   Gift,
-  MessageCircle,
   X,
   Camera,
   Palette
@@ -50,8 +49,6 @@ export default function CommunityPage() {
   const [selectedTheme, setSelectedTheme] = useState(groupThemes[0].gradient);
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [userFriends, setUserFriends] = useState<any[]>([]);
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [showChatBubble, setShowChatBubble] = useState(false);
 
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [showSavedModal, setShowSavedModal] = useState(false);
@@ -257,28 +254,26 @@ export default function CommunityPage() {
     }
   }, [apiUrl]);
 
-  useEffect(() => {
-    if (user?.id) {
-      fetchUserFriends();
-      fetchUserConversations();
-      fetchPendingRequests();
-    }
-  }, [user?.id]);
-
-  const fetchUserFriends = async () => {
+  const fetchUserFriends = useCallback(async () => {
     if (!user?.id) return;
     try {
       const res = await fetch(`${apiUrl}/friends/list/${user.id}`);
       const data = await res.json();
-      if (data.success) {
-        setUserFriends(data.data);
+      if (data.success && Array.isArray(data.data)) {
+        const uniqueMap = new Map<string, any>();
+        for (const f of data.data) {
+          if (f?.id && !uniqueMap.has(f.id)) {
+            uniqueMap.set(f.id, f);
+          }
+        }
+        setUserFriends(Array.from(uniqueMap.values()));
       }
     } catch (err) {
       console.error('Error fetching friends:', err);
     }
-  };
+  }, [user?.id, apiUrl]);
 
-  const fetchPendingRequests = async () => {
+  const fetchPendingRequests = useCallback(async () => {
     if (!user?.id) return;
     try {
       const res = await fetch(`${apiUrl}/friends/requests/${user.id}`);
@@ -289,20 +284,20 @@ export default function CommunityPage() {
     } catch (err) {
       console.error('Error fetching pending requests:', err);
     }
-  };
+  }, [user?.id, apiUrl]);
 
-  const fetchUserConversations = async () => {
-    if (!user?.id) return;
-    try {
-      const res = await fetch(`${apiUrl}/messaging/user/${user.id}`);
-      const data = await res.json();
-      if (data.success) {
-        setConversations(data.data);
-      }
-    } catch (err) {
-      console.error('Error fetching conversations:', err);
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserFriends();
+      fetchPendingRequests();
+      const onFriendsUpdated = () => {
+        fetchUserFriends();
+        fetchPendingRequests();
+      };
+      window.addEventListener('aninexo:friends-updated', onFriendsUpdated);
+      return () => window.removeEventListener('aninexo:friends-updated', onFriendsUpdated);
     }
-  };
+  }, [user?.id, fetchUserFriends, fetchPendingRequests]);
 
   const searchUsers = useCallback(async (query: string) => {
     if (!query || query.length < 2) {
@@ -342,6 +337,8 @@ export default function CommunityPage() {
       if (data.success) {
         setFriendRequests(prev => prev.filter(req => req.id !== friendId));
         fetchUserFriends();
+        window.dispatchEvent(new CustomEvent('aninexo:friends-updated'));
+        window.dispatchEvent(new CustomEvent('aninexo:notifications-updated'));
       }
     } catch (err) {
       console.error('Error accepting friend request:', err);
@@ -385,7 +382,6 @@ export default function CommunityPage() {
         setGroupName('');
         setGroupAvatar('');
         setSelectedParticipants([]);
-        fetchUserConversations();
         router.push(`/home/chat/${data.data.id}`);
       } else {
         console.error('Error creating group:', data.message);
@@ -648,55 +644,6 @@ export default function CommunityPage() {
                 <span>Crear chat en grupo</span>
               </button>
             </div>
-
-            {/* Chat Bubble Flotante */}
-            <button
-              className="chat-bubble-btn"
-              title="Tus conversaciones"
-              onClick={() => setShowChatBubble(!showChatBubble)}
-            >
-              <MessageCircle size={24} />
-              {conversations.filter((c: any) => c.messages?.[0] && !c.messages[0].isRead).length > 0 && (
-                <span className="chat-badge">
-                  {conversations.filter((c: any) => c.messages?.[0] && !c.messages[0].isRead).length}
-                </span>
-              )}
-            </button>
-
-            {showChatBubble && (
-              <div className="chat-bubble-popup" onClick={(e) => e.stopPropagation()}>
-                <div className="chat-bubble-header">
-                  <h4>Mensajes</h4>
-                  <button onClick={() => setShowChatBubble(false)}>
-                    <X size={18} />
-                  </button>
-                </div>
-                <div className="chat-bubble-list">
-                  {conversations.length > 0 ? (
-                    conversations.map((conv: any) => (
-                      <Link href={`/home/chat/${conv.id}`} key={conv.id} className="chat-bubble-item">
-                        <div className="chat-bubble-avatar" style={{ background: conv.avatar ? undefined : conv.theme || '#00E5FF' }}>
-                          {conv.avatar ? (
-                            <img src={conv.avatar} alt={conv.name} />
-                          ) : (
-                            <span>{conv.name?.charAt(0) || 'G'}</span>
-                          )}
-                        </div>
-                        <div className="chat-bubble-info">
-                          <span className="chat-bubble-name">{conv.name || (conv.isGroup ? 'Grupo' : 'Chat')}</span>
-                          <span className="chat-bubble-preview">
-                            {conv.messages?.[0]?.content?.substring(0, 30) || 'Sin mensajes'}...
-                          </span>
-                        </div>
-                        {!conv.messages?.[0]?.isRead && <span className="chat-unread-dot" />}
-                      </Link>
-                    ))
-                  ) : (
-                    <p className="no-chats">No tienes conversaciones</p>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </aside>
       </div>
@@ -1523,140 +1470,6 @@ export default function CommunityPage() {
           box-shadow: 0 0 16px rgba(0,229,255,0.18);
           transform: translateY(-2px);
         }
-
-        /* Chat Bubble */
-        .chat-bubble-btn {
-          position: fixed;
-          bottom: 28px;
-          right: 186px;
-          width: 58px;
-          height: 58px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #0052FF, #00E5FF);
-          border: none;
-          color: white;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 24px rgba(0,82,255,0.45);
-          z-index: 100;
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-          animation: chat-pulse 3s ease-in-out infinite;
-        }
-        @keyframes chat-pulse {
-          0%, 100% { box-shadow: 0 4px 24px rgba(0,82,255,0.45), 0 0 0 0 rgba(0,229,255,0.3); }
-          50% { box-shadow: 0 4px 24px rgba(0,82,255,0.45), 0 0 0 14px rgba(0,229,255,0); }
-        }
-        .chat-bubble-btn:hover {
-          transform: scale(1.12) translateY(-3px);
-          box-shadow: 0 10px 32px rgba(0,82,255,0.6), 0 0 24px rgba(0,229,255,0.3);
-        }
-        .chat-badge {
-          position: absolute;
-          top: 2px;
-          right: 2px;
-          background: #ef4444;
-          color: white;
-          font-size: 0.67rem;
-          font-weight: 700;
-          min-width: 20px;
-          height: 20px;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 2px solid #080810;
-        }
-
-        /* Chat Popup */
-        .chat-bubble-popup {
-          position: fixed;
-          bottom: 96px;
-          right: 186px;
-          width: 340px;
-          max-height: 430px;
-          background: rgba(10, 10, 18, 0.96);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
-          border: 1px solid rgba(0,229,255,0.14);
-          border-radius: 20px;
-          box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,82,255,0.08);
-          z-index: 100;
-          display: flex;
-          flex-direction: column;
-          animation: popup-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes popup-in {
-          from { opacity: 0; transform: scale(0.88) translateY(14px); }
-          to   { opacity: 1; transform: scale(1)    translateY(0); }
-        }
-        .chat-bubble-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 15px 18px;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .chat-bubble-header h4 {
-          margin: 0;
-          font-size: 1rem;
-          font-weight: 700;
-          background: linear-gradient(90deg, #fff, #00E5FF);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-        .chat-bubble-header button {
-          background: rgba(255,255,255,0.06);
-          border: none;
-          color: #666;
-          cursor: pointer;
-          padding: 6px;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          transition: all 0.2s;
-        }
-        .chat-bubble-header button:hover { background: rgba(255,255,255,0.1); color: white; }
-        .chat-bubble-list { padding: 8px; overflow-y: auto; max-height: 370px; }
-        .chat-bubble-list :global(.chat-bubble-item) {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 10px 12px;
-          border-radius: 12px;
-          text-decoration: none;
-          color: inherit;
-          position: relative;
-          transition: all 0.2s;
-        }
-        .chat-bubble-list :global(.chat-bubble-item:hover) { background: rgba(0,229,255,0.05); }
-        .chat-bubble-avatar {
-          width: 42px;
-          height: 42px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-          flex-shrink: 0;
-          border: 2px solid rgba(0,229,255,0.15);
-        }
-        .chat-bubble-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .chat-bubble-avatar span { color: white; font-weight: 700; font-size: 1.1rem; }
-        .chat-bubble-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        .chat-bubble-name { font-weight: 600; color: #e4e6eb; font-size: 0.88rem; }
-        .chat-bubble-preview { font-size: 0.77rem; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .chat-unread-dot {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #0052FF, #00E5FF);
-          flex-shrink: 0;
-          box-shadow: 0 0 8px rgba(0,229,255,0.6);
-        }
-        .no-chats { font-size: 0.8rem; color: #333; text-align: center; padding: 28px; }
 
         /* Modal */
         .modal-overlay {

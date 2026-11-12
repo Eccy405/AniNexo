@@ -4,6 +4,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useSocket } from '../../../hooks/useSocket';
 import { Card } from '../../../components/ui/Card/Card';
 import { Button } from '../../../components/ui/Button/Button';
+import { useChatStore } from '../../../store/useChatStore';
+import { getApiUrl } from '../../../lib/apiConfig';
 
 export default function ChatPage() {
   const [conversations, setConversations] = useState<any[]>([]);
@@ -13,6 +15,7 @@ export default function ChatPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   
   const { socket, isConnected } = useSocket(activeConvId || undefined);
+  const clearUnreadForConversation = useChatStore(s => s.clearUnreadForConversation);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Cargar usuario y conversaciones al iniciar
@@ -46,6 +49,17 @@ export default function ChatPage() {
         if (data.success) {
           setMessages(data.data);
           setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+          clearUnreadForConversation(activeConvId);
+          const token = localStorage.getItem('token');
+          if (token) {
+            fetch(`${getApiUrl()}/messaging/${activeConvId}/read`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` }
+            })
+              .then(() => window.dispatchEvent(new CustomEvent('aninexo:notifications-updated')))
+              .catch(() => {});
+          }
+          socket?.emit('message_read', { conversationId: activeConvId });
         }
       } catch (err) {
         console.error(err);
@@ -59,9 +73,13 @@ export default function ChatPage() {
     if (!socket) return;
     
     const handleNewMessage = (msg: any) => {
-      if (msg.conversationId === activeConvId) {
-        setMessages(prev => [...prev, msg]);
+      if (activeConvId && msg.conversationId === activeConvId) {
+        setMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
         setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        if (msg.senderId !== currentUser?.id) {
+          clearUnreadForConversation(activeConvId);
+          socket.emit('message_read', { conversationId: activeConvId });
+        }
       }
     };
 

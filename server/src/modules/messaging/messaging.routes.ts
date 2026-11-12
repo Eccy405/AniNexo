@@ -7,6 +7,8 @@ const messagingController = new MessagingController();
 
 router.post('/conversation', authenticateToken, requireVerified, messagingController.createOrGetConversation);
 router.post('/send', authenticateToken, requireVerified, messagingController.sendMessage);
+router.get('/unread-summary', authenticateToken, messagingController.getUnreadSummary);
+router.post('/:conversationId/read', authenticateToken, messagingController.markConversationRead);
 router.get('/:conversationId', messagingController.getMessages);
 router.get('/conversation/:conversationId', messagingController.getConversation);
 router.get('/user/:userId', messagingController.getUserConversations);

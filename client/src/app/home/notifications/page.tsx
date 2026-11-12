@@ -5,8 +5,10 @@ import styles from './notifications.module.css';
 
 interface Notification {
   id: string;
-  type: 'LIKE' | 'FOLLOW' | 'COMMENT' | 'MENTION' | 'SYSTEM';
+  type: 'LIKE' | 'FOLLOW' | 'COMMENT' | 'MENTION' | 'SYSTEM' | 'MESSAGE' | 'BADGE' | 'NEXO';
   referenceId?: string;
+  title?: string;
+  message?: string;
   isRead: boolean;
   createdAt: string;
 }
@@ -24,7 +26,9 @@ export default function NotificationsPage() {
         }
       });
       const data = await res.json();
-      if (Array.isArray(data)) {
+      if (data?.success && Array.isArray(data.data)) {
+        setNotifications(data.data);
+      } else if (Array.isArray(data)) {
         setNotifications(data);
       }
     } catch (error) {
@@ -59,16 +63,21 @@ export default function NotificationsPage() {
       case 'LIKE': return '❤️';
       case 'FOLLOW': return '👤';
       case 'COMMENT': return '💬';
+      case 'MESSAGE': return '✉️';
       case 'MENTION': return '🏷️';
+      case 'SYSTEM': return '🤝';
+      case 'BADGE': return '🏅';
       default: return '🔔';
     }
   };
 
   const getMessage = (n: Notification) => {
+    if (n.message) return n.message;
     switch (n.type) {
       case 'LIKE': return 'Le ha gustado tu publicación';
       case 'FOLLOW': return 'Ha comenzado a seguirte';
       case 'COMMENT': return 'Ha comentado en tu post';
+      case 'MESSAGE': return 'Tienes un nuevo mensaje en tu chat';
       case 'MENTION': return 'Te ha mencionado en una conversación';
       default: return 'Nueva actualización en tu cuenta';
     }

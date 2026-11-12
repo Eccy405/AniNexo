@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useGlobalSocket } from '../auth/SocketProvider';
 import { useChatStore } from '../../store/useChatStore';
+import { getApiUrl } from '../../lib/apiConfig';
 
 /* ─── Sticker set (anime-themed emojis) ─────────────────────────────────── */
 const STICKERS = [
@@ -39,16 +40,18 @@ interface ChatWindowProps {
   setChatInput: (v: string) => void;
   onSendMessage: (content: string, type?: string) => void;
   onClose: () => void;
+  onMinimizeChange?: (minimized: boolean) => void;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
   profile, currentUser, conversationId, chatMessages,
   chatInput, isConnected: isConnectedProp, isSending,
-  setChatInput, onSendMessage, onClose,
+  setChatInput, onSendMessage, onClose, onMinimizeChange,
 }) => {
   const { socket, isConnected: isSocketConnected } = useGlobalSocket();
   const userStatuses = useChatStore(s => s.userStatuses);
   const typingUsers = useChatStore(s => s.typingUsers);
+  const clearUnreadForConversation = useChatStore(s => s.clearUnreadForConversation);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef      = useRef<HTMLInputElement>(null);
@@ -86,33 +89,64 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     offline: '#6b7280'
   }[activeStatus];
 
+  const lastReadRef = useRef<string>('');
+
+  // Resetear minimizado al cambiar de conversación
+  useEffect(() => {
+    setMinimized(false);
+    onMinimizeChange?.(false);
+    lastReadRef.current = '';
+  }, [conversationId, onMinimizeChange]);
+
+  const toggleMinimize = useCallback(() => {
+    setMinimized(prev => {
+      const next = !prev;
+      onMinimizeChange?.(next);
+      return next;
+    });
+  }, [onMinimizeChange]);
+
   // Socket: Join conversation & Emit read receipt when conversation opens or new message arrives
   useEffect(() => {
-    if (socket && isSocketConnected && conversationId) {
+    if (!conversationId) return;
+
+    const latestMsg = chatMessages[chatMessages.length - 1];
+    const readKey = `${conversationId}:${chatMessages.length}:${latestMsg?.id ?? ''}`;
+
+    if (!minimized) {
+      clearUnreadForConversation(conversationId, profile?.id);
+      if (lastReadRef.current !== readKey) {
+        lastReadRef.current = readKey;
+        const token = localStorage.getItem('token');
+        if (token) {
+          fetch(`${getApiUrl()}/messaging/${conversationId}/read`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` }
+          })
+            .then(() => window.dispatchEvent(new CustomEvent('aninexo:notifications-updated')))
+            .catch(() => {});
+        }
+        if (socket && isSocketConnected) {
+          socket.emit('message_read', { conversationId });
+        }
+      }
+    }
+
+    if (socket && isSocketConnected) {
       socket.emit('join_conversation', conversationId);
-      socket.emit('message_read', { conversationId });
 
       const handleSeen = (data: { conversationId: string; userId: string }) => {
-        if (data.conversationId === conversationId && data.userId !== currentUser.id) {
-          // Mark all current messages sent by me as seen
+        if (data.conversationId === conversationId && data.userId !== currentUser?.id) {
           setMessagesSeenMap(prev => ({ ...prev, [conversationId]: true }));
         }
       };
 
       socket.on('message_seen', handleSeen);
-
       return () => {
         socket.off('message_seen', handleSeen);
       };
     }
-  }, [socket, isSocketConnected, conversationId, chatMessages.length, currentUser.id]);
-
-  // Mark incoming messages as read when we focus or type
-  useEffect(() => {
-    if (socket && isSocketConnected && conversationId && !minimized) {
-      socket.emit('message_read', { conversationId });
-    }
-  }, [socket, isSocketConnected, conversationId, minimized]);
+  }, [socket, isSocketConnected, conversationId, minimized, chatMessages, currentUser?.id, profile?.id, clearUnreadForConversation]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef   = useRef<Blob[]>([]);
@@ -329,7 +363,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     <div className={`cw-root ${minimized ? 'cw-minimized' : ''}`}>
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="cw-header" onClick={() => setMinimized(m => !m)}>
+      <div className="cw-header" onClick={toggleMinimize}>
         <div className="cw-header-left">
           <div className="cw-hdr-avatar">
             <img src={profileAvatar} alt={profile?.username} />
@@ -355,7 +389,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </svg>
           </button>
           {/* Minimize */}
-          <button className="cw-hdr-btn" title="Minimizar" onClick={() => setMinimized(m => !m)}>
+          <button className="cw-hdr-btn" title="Minimizar" onClick={toggleMinimize}>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
               {minimized
                 ? <path d="M5 15l7-7 7 7" strokeLinecap="round" strokeLinejoin="round"/>

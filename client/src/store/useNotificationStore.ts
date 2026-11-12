@@ -2,8 +2,10 @@ import { create } from 'zustand';
 
 export interface Notification {
   id: string;
-  type: 'LIKE' | 'FOLLOW' | 'COMMENT' | 'MENTION' | 'SYSTEM';
+  type: 'LIKE' | 'FOLLOW' | 'COMMENT' | 'MENTION' | 'SYSTEM' | 'MESSAGE' | 'BADGE' | 'NEXO';
   referenceId?: string;
+  title?: string;
+  message?: string;
   isRead: boolean;
   createdAt: string;
 }

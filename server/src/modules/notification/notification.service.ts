@@ -90,24 +90,126 @@ export class NotificationService {
 
     const enriched = await Promise.all(
       rawNotifications.map(async (n) => {
-        let sender = null;
+        let sender: { id: string; username: string; avatarUrl: string | null } | null = null;
         let message = '';
         let title = '';
+        let actionRequired = false;
+        let conversationId: string | null = null;
+        let isGroup = false;
 
-        if (n.type === 'FOLLOW' || n.type === 'MESSAGE' || (n.type === 'SYSTEM' && n.referenceId)) {
-          // Buscamos el usuario asociado al referenceId
+        if (n.type === 'FOLLOW' && n.referenceId) {
           const senderUser = await prisma.user.findUnique({
-            where: { id: n.referenceId ?? '' },
+            where: { id: n.referenceId },
             select: { id: true, username: true, avatarUrl: true }
           });
           if (senderUser) {
             sender = senderUser;
-            if (n.type === 'FOLLOW') {
-              title = '¡Nuevo seguidor!';
-              message = `@${senderUser.username} comenzó a seguirte.`;
-            } else if (n.type === 'SYSTEM') {
-              title = 'Solicitud de Amistad';
-              message = `@${senderUser.username} te ha enviado una solicitud de amistad.`;
+            title = '¡Nuevo seguidor!';
+            message = `@${senderUser.username} comenzó a seguirte.`;
+          } else {
+            title = '¡Nuevo seguidor!';
+            message = 'Alguien comenzó a seguirte.';
+          }
+        } else if (n.type === 'SYSTEM' && n.referenceId) {
+          const [senderUser, pendingIncoming, acceptedFriendship] = await Promise.all([
+            prisma.user.findUnique({
+              where: { id: n.referenceId },
+              select: { id: true, username: true, avatarUrl: true }
+            }),
+            prisma.friendship.findUnique({
+              where: { userId_friendId: { userId: n.referenceId, friendId: userId } }
+            }),
+            prisma.friendship.findFirst({
+              where: {
+                status: 'ACCEPTED',
+                OR: [
+                  { userId, friendId: n.referenceId },
+                  { userId: n.referenceId, friendId: userId }
+                ]
+              }
+            })
+          ]);
+
+          if (pendingIncoming?.status === 'PENDING' && senderUser) {
+            sender = senderUser;
+            title = 'Solicitud de Amistad';
+            message = `@${senderUser.username} te ha enviado una solicitud de amistad.`;
+            actionRequired = true;
+          } else if (acceptedFriendship && senderUser) {
+            sender = senderUser;
+            title = '¡Nuevo amigo!';
+            message = `Tú y @${senderUser.username} ahora son amigos.`;
+            actionRequired = false;
+          } else {
+            // Solicitud expirada/cancelada o rechazada -> no mostrar notificación fantasma
+            return null;
+          }
+        } else if (n.type === 'MESSAGE' && n.referenceId) {
+          conversationId = n.referenceId;
+          const conv = await prisma.conversation.findUnique({
+            where: { id: n.referenceId },
+            include: {
+              participants: {
+                include: { user: { select: { id: true, username: true, avatarUrl: true } } }
+              },
+              messages: {
+                where: { senderId: { not: userId } },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+                include: { sender: { select: { id: true, username: true, avatarUrl: true } } }
+              }
+            }
+          });
+
+          if (conv) {
+            isGroup = conv.isGroup;
+            const latestMsg: any = conv.messages?.[0];
+            const msgSender = latestMsg?.sender
+              || conv.participants.find((p) => p.userId !== userId)?.user
+              || null;
+            sender = msgSender;
+
+            let actionText = 'te envió un mensaje';
+            if (latestMsg?.content) {
+              const raw = String(latestMsg.content);
+              if (raw.startsWith('[IMAGE]')) {
+                actionText = 'te envió una imagen 📷';
+              } else if (raw.startsWith('[GIF]')) {
+                actionText = 'te envió un GIF 🎞️';
+              } else if (raw.startsWith('[AUDIO]')) {
+                actionText = 'te envió un mensaje de voz 🎙️';
+              } else {
+                const preview = raw.length > 48 ? `${raw.substring(0, 45)}...` : raw;
+                actionText = `te envió un mensaje: "${preview}"`;
+              }
+            }
+
+            if (conv.isGroup) {
+              const groupName = conv.name || 'Grupo';
+              title = `Nuevo mensaje en ${groupName}`;
+              message = sender
+                ? `@${sender.username} en ${groupName}: ${actionText.replace('te envió ', '')}`
+                : `Tienes un nuevo mensaje en ${groupName}.`;
+            } else if (sender) {
+              title = `Nuevo mensaje de @${sender.username}`;
+              message = `@${sender.username} ${actionText}`;
+            } else {
+              title = 'Nuevo mensaje';
+              message = 'Tienes un nuevo mensaje sin leer.';
+            }
+          } else {
+            // Fallback por si referenceId fuera un userId antiguo
+            const fallbackUser = await prisma.user.findUnique({
+              where: { id: n.referenceId },
+              select: { id: true, username: true, avatarUrl: true }
+            });
+            if (fallbackUser) {
+              sender = fallbackUser;
+              title = `Nuevo mensaje de @${fallbackUser.username}`;
+              message = `@${fallbackUser.username} te envió un mensaje.`;
+            } else {
+              title = 'Nuevo mensaje';
+              message = 'Tienes un nuevo mensaje en tu chat.';
             }
           }
         } else if (n.type === 'LIKE' && n.referenceId) {
@@ -147,6 +249,12 @@ export class NotificationService {
           if (n.type === 'BADGE') {
             title = '¡Nueva medalla!';
             message = '¡Has ganado una nueva medalla en AniNexo!';
+          } else if (n.type === 'NEXO') {
+            title = 'Nexo IA';
+            message = 'Nexo IA tiene un mensaje para ti.';
+          } else if (n.type === 'MESSAGE') {
+            title = 'Nuevo mensaje';
+            message = 'Tienes un nuevo mensaje en tu cuenta.';
           } else {
             title = 'Actualización del Nexo';
             message = 'Tienes una nueva notificación en tu cuenta.';
@@ -157,18 +265,62 @@ export class NotificationService {
           ...n,
           title,
           message,
-          sender
+          sender,
+          actionRequired,
+          conversationId,
+          isGroup
         };
       })
     );
 
-    return enriched;
+    return enriched.filter((item): item is NonNullable<typeof item> => item !== null);
   }
 
-  async markAsRead(notificationId: string) {
+  async markAsRead(notificationId: string, userId?: string) {
+    if (userId) {
+      return prisma.notification.updateMany({
+        where: { id: notificationId, userId },
+        data: { isRead: true }
+      });
+    }
     return prisma.notification.update({
       where: { id: notificationId },
       data: { isRead: true }
+    });
+  }
+
+  async markAllAsRead(userId: string) {
+    return prisma.notification.updateMany({
+      where: { userId, isRead: false },
+      data: { isRead: true }
+    });
+  }
+
+  async deleteNotification(notificationId: string, userId: string) {
+    return prisma.notification.deleteMany({
+      where: { id: notificationId, userId }
+    });
+  }
+
+  async markConversationNotificationsRead(userId: string, conversationId: string) {
+    return prisma.notification.updateMany({
+      where: {
+        userId,
+        type: 'MESSAGE',
+        referenceId: conversationId,
+        isRead: false
+      },
+      data: { isRead: true }
+    });
+  }
+
+  async clearFriendRequestNotifications(userId: string, friendId: string) {
+    return prisma.notification.deleteMany({
+      where: {
+        userId,
+        type: 'SYSTEM',
+        referenceId: friendId
+      }
     });
   }
 
