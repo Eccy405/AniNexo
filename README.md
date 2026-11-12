@@ -1,153 +1,175 @@
-# 🌌 AniNexo — La Dimensión Social del Anime
+# 🌌 AniNexo — La Dimensión Social del Anime y Manga
 
-> **AniNexo** es una plataforma híbrida de nivel Enterprise que fusiona una **Enciclopedia de Anime (Wikipedia)** robusta con una **Red Social Integrada** de alto rendimiento, complementada por un asistente cognitivo con Inteligencia Artificial llamado **Nexo**.
+> **AniNexo** es una plataforma híbrida que combina una **Enciclopedia y Lector de Anime/Manga**, una **Red Social en Tiempo Real** y un **Asistente Cognitivo de IA llamado Nexo** impulsado por **Google Gemini 3.x** (`@google/genai`), todo sobre **Next.js 16**, **Express 5**, **Prisma 6** y **Supabase PostgreSQL**.
 
-Diseñado bajo una estética de diseño *Dark-Premium* futurista con acentos en cian brillante, el ecosistema está construido para proporcionar una experiencia de usuario inmersiva, interactiva, fluida y altamente personalizada.
-
----
-
-## 🚀 Características Clave
-
-### 1. La Enciclopedia Completa (Wikipedia)
-*   **Integración AniList GraphQL:** Sincronización dinámica de miles de títulos de anime, películas, personajes y actores de doblaje (seiyuus).
-*   **Caché Progresivo Inteligente:** Capa proxy en el backend respaldada por MySQL y Redis que almacena temporalmente consultas recurrentes para optimizar rendimiento y mitigar límites de API (Rate Limits).
-*   **Fichas de Datos Detalladas:** Fichas técnicas avanzadas conectadas directamente al ecosistema social.
-
-### 2. Ecosistema Social Integrado
-*   **Feed Dinámico Contextual:** Publicaciones, comentarios, me gusta polimórficos, menciones de anime y compartidos en tiempo real.
-*   **Identidad Inteligente (ADN Nexo):** Cuestionario de onboarding interactivo que analiza el perfil psicológico, afinidades de géneros y emociones del usuario, asignándole un *Arquetipo* (ej. "Dark Strategist") y un color de acento único para su perfil.
-*   **Historias de Usuario (UserStories):** Publicación de contenido multimedia efímero en Base64 con expiración programada de 24 horas.
-*   **Mensajería Real-Time:** Chats privados uno a uno y grupales a baja latencia impulsados por Socket.IO.
-*   **Sistema de Logros e Insignias (Badges):** Concesión automatizada de medallas basadas en actividades del usuario (ej: primer post, posts populares).
-
-### 3. Nexo: Asistente Cognitivo de IA
-*   **Contextualización:** El asistente reconoce la sección actual, el perfil de ADN Nexo y el anime visualizado en pantalla.
-*   **Diferenciación de Roles (Monetización):**
-    *   **Usuarios Premium:** Acceso a respuestas profundas, detalladas, análisis psicológicos del catálogo de anime y una interfaz flotante avanzada.
-    *   **Usuarios Estándar:** Respuestas breves con una personalidad humorística/sarcástica ("tsundere") para minimizar costos de tokens de API.
-
-### 4. Capa Administrativa y Suite de Moderación
-*   **Dashboard Enterprise:** Gráficos estadísticos dinámicos del crecimiento de usuarios, posts, mensajes y conversiones Premium mediante agregaciones analíticas diarias (`AnalyticsSnapshot`).
-*   **Moderación Multi-Nivel:** Soporte para Reportes, Advertencias (Warnings), Silencios Silenciosos (Shadowbans/Mutes interceptados por Sockets), y Baneos de cuenta.
-*   **Sistema de Apelaciones (Appeals):** Interfaz para que usuarios sancionados puedan apelar medidas disciplinarias desde su perfil.
+Diseñada con una estética *Dark-Premium* espacial con acentos en cian (`#00E5FF`) y escenas 3D interactivas, la plataforma integra comunidad, recomendaciones inteligentes, mensajería instantánea y gestión de colecciones en un mismo ecosistema.
 
 ---
 
-## 🛠️ Stack Tecnológico
+## ✨ Nuevas Tecnologías y Actualizaciones Recientes
 
-| Capa | Tecnologías |
-|---|---|
-| **Frontend** | Next.js 15 (App Router), React, Zustand (Estado global), Tailwind CSS & Vanilla CSS (Alineado con Tokens de Diseño), Socket.IO Client, Axios |
-| **Backend** | Node.js, Express, TypeScript, Socket.IO Server, Prisma ORM, Nodemailer, Passport.js (Google OAuth 2.0) |
-| **Bases de Datos** | MySQL (Persistencia relacional única fuente de verdad), Redis (Caché de consultas, Lista negra de tokens JWT, Rate Limiting) |
-| **IA** | OpenAI API (GPT Models) / Servicio de Mock de Respaldo Integrado |
+| Área | Tecnología / Cambio | Detalle Técnico |
+|---|---|---|
+| **IA Cognitiva Real (Nexo AI)** | **Google Gemini 3.x (`@google/genai ^3.2.0`)** | Migración completa al SDK oficial `@google/genai` sin simulaciones ni mocks. Usa `gemini-3.5-flash-lite` (estándar) y `gemini-3.5-flash` (Premium) con `ThinkingLevel.LOW` y cascada automática real (`3.6-flash`, `3.7-flash`, `3.8-flash`) ante saturación (`503`/`504`) o cambios de disponibilidad. |
+| **Base de Datos Cloud** | **Supabase PostgreSQL + Transaction Pooler** | Migración de MySQL a PostgreSQL en Supabase usando conexión Pooler (`pgbouncer=true`, puerto `6543`) para consultas de runtime y conexión directa (puerto `5432`) para migraciones de Prisma. |
+| **Frontend Next-Gen** | **Next.js `16.2.6` + Turbopack + React `19.2.4`** | App Router con `viewTransition` experimental, compilación ultrarrápida con Turbopack y renderizado híbrido SSR/CSR. |
+| **Gráficos 3D y Visual Novel UI** | **Three.js `^0.184.0` + React Three Fiber `^9.6.1`** | Fondos y orbes 3D (`@react-three/drei`), animaciones con **Framer Motion `^12.41.0`** y tour interactivo estilo novela visual con **React Joyride `^3.1.0`**. |
+| **Proxy de Manga e Imágenes** | **MangaDex + Proxy Backend (`/api/manga/image-proxy`)** | Helper `imageProxy.ts` en frontend y proxy en Express para servir portadas y páginas de capítulos saltando restricciones de hotlinking/CORS, además de backoff ante `429` de AniList. |
+| **Ecosistema Social Completo** | **Comunidad, Historias 24h, Guardados y Nexos Diarios** | Nuevas rutas `/dashboard/community`, `/dashboard/daily`, `/dashboard/saved`, `/about`, visor interactivo de historias, gestión real de solicitudes de amistad, chats en burbuja y sincronización real con `/api/auth/me`. |
 
 ---
 
-## 📐 Arquitectura del Sistema y Flujo de Datos
+## 🛠️ Stack Tecnológico Detallado
 
-El sistema sigue un patrón de diseño basado en dominios (**DDD - Domain Driven Design**) y una separación estricta de responsabilidades (Frontend de presentación, Backend de control y servicios de negocio persistentes).
+### 🎨 Frontend (`client/`)
+* **Framework Core:** Next.js `16.2.6` (App Router, Turbopack, `viewTransition`), React `19.2.4`, React DOM `19.2.4`, TypeScript `^5`.
+* **Gráficos 3D y Movimiento:** Three.js `^0.184.0`, `@react-three/fiber` `^9.6.1`, `@react-three/drei` `^10.7.7`, Framer Motion `^12.41.0`.
+* **Estado Global y Datos:** Zustand `^5.0.13`, Fetch API con sincronización JWT/Cookies y WebSockets.
+* **Visualización e Interfaz:** Recharts `^3.8.1` (analíticas y estadísticas), React Joyride `^3.1.0` (Nexo Tour guiado), Lucide React `^1.14.0`, React Icons `^5.6.0`, CSS Modules + Styled JSX.
+* **Tiempo Real y PWA:** `socket.io-client` `^4.8.3`, Service Worker (`sw.js`) y soporte de notificaciones Web Push.
+
+### ⚙️ Backend (`server/`)
+* **Runtime y API:** Node.js, **Express `^5.2.1`**, **TypeScript `^6.0.3`**, `ts-node`, `nodemon`.
+* **ORM y Base de Datos:** **Prisma `^6.19.3`** (`@prisma/client`), driver **`pg` `^8.21.0`** conectado a **Supabase PostgreSQL**.
+* **Inteligencia Artificial:** **`@google/genai` `^3.2.0`** (familia **Gemini 3.x** con memoria persistente `NexoMemory`, contexto de catálogo real e historial multi-turno) y cliente **`openai` `^6.37.0`** opcional.
+* **Tiempo Real, Colas y Caché:** **Socket.IO `^4.8.3`**, `@socket.io/redis-adapter` `^8.3.0`, **IORedis `^5.10.1`** (con fallback automático en memoria para entorno local sin Redis), **BullMQ `^5.76.6`**, `node-cron` `^4.2.1`.
+* **Pagos, Correo y Notificaciones:** **Stripe `^22.1.1`** (suscripciones Premium), **Nodemailer `^8.0.7`** (correos de verificación y logs), **Web Push `^3.6.7`**.
+* **Seguridad, Autenticación y Logs:** `jsonwebtoken` `^9.0.3`, `bcryptjs` `^3.0.3`, **Passport.js** (`passport ^0.7.0`, `passport-google-oauth20 ^2.0.0`), **Helmet `^8.1.0`**, `cors`, `cookie-parser`, `express-session`, `express-rate-limit` `^8.5.1`, **Winston `^3.19.0`**, `morgan`.
+
+### 🌐 APIs Externas e Infraestructura Cloud
+* **Supabase:** Base de datos PostgreSQL gestionada + Connection Pooler + credenciales de API/Storage.
+* **Google Gemini Developer API:** Generación cognitiva real para Nexo AI (`gemini-3.5-flash-lite` / `gemini-3.5-flash` y respaldo `3.6`/`3.7`/`3.8`).
+* **AniList GraphQL API:** Catálogo de animes, temporadas, rankings, personajes y seiyuus con caché en PostgreSQL y reintentos inteligentes anti-rate-limit.
+* **MangaDex API:** Búsqueda, fichas de manga, capítulos y lectura optimizada a través del proxy interno de imágenes.
+
+---
+
+## 🚀 Módulos y Funcionalidades Principales
+
+1. **Enciclopedia Anime & Lector Manga (`/dashboard/anime`, `/dashboard/manga`, `/rankings`, `/dashboard/explore`):**
+   * Catálogo conectado a AniList y MangaDex con filtros avanzados, lector de capítulos, progreso de lectura y guardado de favoritos.
+2. **Nexo AI (`/dashboard` y Orbe Flotante):**
+   * Asistente conversacional real conectado a Gemini 3.x con lectura del catálogo en PostgreSQL, lista personal del usuario, medallas y memorias guardadas (`NexoMemory`), diferenciando respuestas estándar y análisis extendidos Premium.
+3. **Red Social y Comunidad (`/dashboard/community`, `/dashboard/chat`, `/dashboard/groups`, `/dashboard/profile`):**
+   * Publicaciones con menciones de anime, likes polimórficos, comentarios, elementos guardados (`/dashboard/saved`), historias efímeras de 24h con visor modal, grupos temáticos, solicitudes de amistad y chat privado/grupal en tiempo real por WebSockets.
+4. **Identidad Otaku (ADN Nexo) y Gamificación (`/register`, `/dashboard/daily`):**
+   * Wizard de onboarding de 6 pasos para definir arquetipo y color de tema, rachas y recompensas diarias (**Nexos Diarios**) y sistema automático de insignias/logros.
+5. **Administración, Pagos y Moderación (`/admin`, `/dashboard/premium`, `/dashboard/manual`, `/about`):**
+   * Métricas en vivo (`AnalyticsSnapshot`), gestión de reportes/advertencias/baneos/apelaciones, suscripciones con Stripe y centro de ayuda/manual del sistema.
+
+---
+
+## 📐 Arquitectura del Sistema
 
 ```mermaid
 flowchart TD
-    subgraph Cliente [Capa de Presentación (Next.js 15)]
-        UI[Interfaz de Usuario / Zustand]
-        WS_C[Socket.IO Client]
+    subgraph Cliente ["Capa de Presentación (Next.js 16 + React 19 + Three.js)"]
+        UI["App Router / Zustand / Framer Motion"]
+        WS_C["Socket.IO Client + Service Worker"]
     end
 
-    subgraph Servidor [Capa de Negocio (Express / Node.js)]
-        API[Router & Controllers]
-        WS_S[Servidor Socket.IO]
-        Services[Servicios de Dominio - Auth, Anime, Feed, Nexo]
+    subgraph Servidor ["Capa de Negocio (Express 5 + TypeScript 6)"]
+        API["REST API + RBAC + Rate Limit"]
+        WS_S["Socket.IO Server"]
+        Modules["18 Módulos DDD: Auth, Anime, Manga, Feed, Friends, Nexo, Admin..."]
     end
 
-    subgraph Datos [Capa de Datos y Persistencia]
-        DB[(MySQL / Prisma)]
-        Cache[(Redis Cache & Events)]
-        AniList[External API AniList GraphQL]
-        OpenAI[External API OpenAI GPT]
+    subgraph Cloud ["Persistencia, IA y APIs Externas"]
+        DB[("Supabase PostgreSQL / Prisma 6")]
+        Cache[("Redis / Fallback en Memoria + BullMQ")]
+        Gemini["Google Gemini 3.x (@google/genai)"]
+        Media["AniList GraphQL + MangaDex Proxy"]
+        Pay["Stripe + Nodemailer + Web Push"]
     end
 
-    UI -->|HTTP Requests| API
+    UI -->|HTTP / Proxy Imágenes| API
     UI <-->|WebSockets| WS_C
-    WS_C <-->|Protocolo TCP/WS| WS_S
-    API --> Services
-    WS_S --> Services
-    
-    Services -->|Consultas Relacionales| DB
-    Services -->|Caché & Rate-Limiting| Cache
-    Services -->|Proxy & Sync| AniList
-    Services -->|Generación Cognitiva| OpenAI
+    WS_C <-->|Eventos Real-Time| WS_S
+    API --> Modules
+    WS_S --> Modules
+
+    Modules -->|Pooler 6543 / Direct 5432| DB
+    Modules -->|Sesiones, Colas & Rate Limit| Cache
+    Modules -->|ThinkingLevel.LOW + Memoria| Gemini
+    Modules -->|Sync & Anti-429| Media
+    Modules -->|Pagos & Alertas| Pay
 ```
 
 ---
 
-## 📂 Estructura del Proyecto
-
-El monorrepósito está organizado de la siguiente manera:
+## 📂 Estructura del Monorrepósito
 
 ```text
-aninexo/
-├── client/                 # Aplicación Next.js 15 (Frontend)
+AniNexo/
+├── client/                         # Frontend Next.js 16 (puerto 3000)
+│   ├── public/                     # Assets estáticos, íconos y sw.js
 │   ├── src/
-│   │   ├── app/            # App Router (auth, dashboard, admin, profile)
-│   │   ├── components/     # UI base y módulos sociales (feed, list, nexo)
-│   │   ├── hooks/          # Custom Hooks (useAuth, useSocket)
-│   │   ├── store/          # Zustand State Management
-│   │   └── styles/         # Tokens de diseño y CSS modularizado
+│   │   ├── app/                    # Rutas: (auth), about, admin, auth-callback, rankings, settings
+│   │   │   └── dashboard/          # anime, chat, community, daily, explore, groups, manga, manual, notifications, premium, profile, saved, search, settings
+│   │   ├── components/             # UI 3D, NexoChat, FloatingChat, OnboardingWizard, VerticalStoryRow, TopNavbar...
+│   │   └── lib/                    # anilist.ts, imageProxy.ts, animations.ts, hooks/, validators/
 │   └── package.json
 │
-├── server/                 # Servidor Node.js / Express (Backend)
-│   ├── prisma/             # Schema de base de datos enterprise y migraciones
+├── server/                         # Backend Express 5 + TypeScript 6 (puerto 3001)
+│   ├── prisma/
+│   │   └── schema.prisma           # Esquema PostgreSQL (User, Anime, Post, NexoMemory, Badge, Message...)
 │   ├── src/
-│   │   ├── index.ts        # Inicialización del servidor
-│   │   ├── sockets.ts      # Manejador central de WebSockets
-│   │   ├── lib/            # Singletons (Prisma, Redis, Logger, Queue)
-│   │   ├── middleware/     # JWT Auth, Roles (RBAC), Error Handler, Sanitización
-│   │   └── modules/        # Arquitectura modular de dominio (Auth, Anime, Feed, Nexo...)
+│   │   ├── index.ts                # Entrada principal Express + CORS + Helmet + Rate Limit
+│   │   ├── sockets.ts              # Eventos Socket.IO en tiempo real
+│   │   ├── lib/                    # prisma, redis, emailService, socketService, workers, logger
+│   │   ├── middleware/             # JWT auth, RBAC, sanitización, validadores
+│   │   └── modules/                # admin, anime, auth, feed, friends, groups, list, mail, manga, messaging, moderation, nexo, notification, premium, profile, search, social, user
 │   └── package.json
 │
-├── docs/                   # Documentación detallada de arquitectura, decisiones y seguridad
-├── memory/                 # Historial del proyecto y estados de fases
-└── tasks/                  # Hojas de ruta y tareas de desarrollo
+├── docs/                           # Documentación técnica complementaria
+└── README.md
 ```
 
 ---
 
-## ⚙️ Guía de Instalación y Configuración
+## ⚙️ Guía de Instalación y Arranque Local
 
 ### Prerrequisitos
-*   **Node.js** (v18 o superior)
-*   **MySQL** (Instancia local o en la nube)
-*   **Redis** (Opcional en desarrollo, recomendado para optimizaciones)
+* **Node.js** `v20` o superior
+* Cuenta o instancia de **PostgreSQL / Supabase**
+* **API Key de Google Gemini** (AI Studio) para habilitar **Nexo AI**
+* *(Opcional)* **Redis** para colas BullMQ y adaptador multi-instancia (si no está definido `REDIS_URL`, el backend activa automáticamente un fallback en memoria)
 
-### 1. Clonar el repositorio y configurar variables de entorno
-1.  Duplica el archivo de entorno en el servidor:
-    ```bash
-    cp server/.env.example server/.env
-    ```
-2.  Edita `server/.env` con tus credenciales locales de MySQL, tu clave secreta de JWT, tu clave de OpenAI (opcional para desarrollo, el sistema contiene un simulador automático) y tus credenciales SMTP de correo.
+### 1. Clonar el repositorio
+```bash
+git clone https://github.com/Eccy405/AniNexo.git
+cd AniNexo
+```
 
-### 2. Inicializar la Base de Datos (Prisma)
-Accede al directorio del servidor y ejecuta las migraciones de base de datos para generar las tablas y relaciones relacionales estructuradas:
+### 2. Configurar variables de entorno
+Crea `server/.env` a partir de la plantilla `server/.env.example`:
+```bash
+cp server/.env.example server/.env
+```
+Completa en `server/.env`:
+* `DATABASE_URL` (Pooler de Supabase puerto `6543` con `?pgbouncer=true`) y `DIRECT_URL` (puerto `5432` para Prisma).
+* `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+* `JWT_SECRET` y `SESSION_SECRET`.
+* `GEMINI_API_KEY`, `GEMINI_MODEL="gemini-3.5-flash-lite"`, `GEMINI_PREMIUM_MODEL="gemini-3.5-flash"`.
+
+*(Si configuras variables públicas en frontend, duplica también `client/.env.example` hacia `client/.env.local`.)*
+
+### 3. Instalar dependencias y sincronizar Prisma
 ```bash
 cd server
-npx prisma migrate dev --name init
-```
-*(Opcional)* Si cuentas con un script de sembrado para catálogos iniciales:
-```bash
-npx prisma db seed
+npm install
+npx prisma generate
+npx prisma db push
 ```
 
-### 3. Iniciar el Servidor Backend
-Dentro de la carpeta `server/`, instala dependencias e inicia el servidor en modo desarrollo (se ejecutará en `http://localhost:3001`):
+### 4. Iniciar Backend y Frontend
+En una terminal (`server/` — puerto `3001`):
 ```bash
-npm install
+cd server
 npm run dev
 ```
 
-### 4. Iniciar el Cliente Frontend
-Abre otra terminal en la raíz del proyecto, accede a `client/`, instala dependencias e inicia el servidor de desarrollo (se ejecutará en `http://localhost:3000`):
+En otra terminal (`client/` — puerto `3000`):
 ```bash
 cd client
 npm install
@@ -156,25 +178,14 @@ npm run dev
 
 ---
 
-## 🔒 Arquitectura de Seguridad Implementada
+## 🔒 Seguridad Implementada
 
-*   **Autenticación JWT Robusta:** Access Tokens de corta duración (15 min) y Refresh Tokens de larga duración (7 días) persistidos en base de datos con detección de reutilización maliciosa y lista negra basada en Redis.
-*   **Protección XSS & CSRF:** Sanitización activa de peticiones (`body`, `query`, `params`) y cookies seguras con directivas `HttpOnly` y `SameSite: Lax`.
-*   **Prevención de DoS & Spam:** Rate Limiter global y específico para logins e interacciones con el Asistente Nexo.
-*   **Prisma ORM Secure Queries:** Consultas 100% parametrizadas para neutralizar cualquier vulnerabilidad de Inyección SQL.
-
----
-
-## 👥 Contribuciones
-
-1.  Crea un Fork del proyecto.
-2.  Crea una rama para tu característica: `git checkout -b feature/nueva-caracteristica`
-3.  Realiza el commit de tus cambios: `git commit -m "feat: agrega nueva característica social"`
-4.  Realiza el push a la rama: `git push origin feature/nueva-caracteristica`
-5.  Abre un Pull Request en GitHub.
+* **Protección de Secretos:** `.gitignore` excluye `*.env` y `*.env.local` para evitar la exposición de claves de Supabase, JWT o Gemini.
+* **JWT + RBAC + Rate Limiting:** Tokens firmados con rotación/blacklist, control de acceso por rol (`USER`, `MODERATOR`, `ADMIN`, `SUPERADMIN`) y limitadores por usuario/IP.
+* **Endurecimiento HTTP:** Cabeceras seguras con `Helmet 8`, CORS configurado, cookies `HttpOnly` / `SameSite` y consultas parametrizadas mediante **Prisma ORM**.
 
 ---
 
 ## 📝 Licencia
 
-Este proyecto está bajo la licencia MIT. Consulta el archivo `LICENSE` para obtener más información.
+Este proyecto se distribuye bajo la licencia **MIT**.
