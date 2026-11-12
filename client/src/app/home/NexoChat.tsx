@@ -21,8 +21,25 @@ export default function NexoChat() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingTextIndex, setLoadingTextIndex] = useState(0);
   const [userId, setUserId] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const NEXO_THINKING_PHRASES = [
+    '✨ Nexo está canalizando energía dimensional...',
+    '📜 Consultando los pergaminos del gremio...',
+    '⚡ Analizando los archivos akáshicos del anime...',
+    '🧠 Sincronizando núcleos de memoria...',
+    '🌀 Explorando líneas temporales otakus...',
+  ];
+
+  useEffect(() => {
+    if (!loading) return;
+    const interval = setInterval(() => {
+      setLoadingTextIndex((prev) => (prev + 1) % NEXO_THINKING_PHRASES.length);
+    }, 2200);
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? 'https://aninexo.onrender.com/api' : 'http://localhost:3001/api');
 
@@ -182,7 +199,7 @@ export default function NexoChat() {
           Nexo AI
         </h2>
         <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
-          Impulsado por Google Gemini
+          Asistente Otaku Inteligente
         </p>
       </div>
 
@@ -223,8 +240,8 @@ export default function NexoChat() {
           </div>
         ))}
         {loading && (
-          <div style={{ alignSelf: 'flex-start', color: '#00E5FF', fontSize: '0.8rem' }}>
-            Nexo está consultando a Gemini...
+          <div style={{ alignSelf: 'flex-start', color: '#00E5FF', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', animation: 'pulse 1.5s infinite' }}>
+            <span>{NEXO_THINKING_PHRASES[loadingTextIndex]}</span>
           </div>
         )}
         <div ref={messagesEndRef} />

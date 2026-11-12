@@ -81,7 +81,7 @@ export function ChatWindow({ chat }: { chat: any }) {
               {
                 id: `err-${Date.now()}`,
                 senderId: 'SYSTEM_ERROR',
-                content: errData.message || 'No se pudo obtener respuesta de Gemini.',
+                content: errData.message || 'No se pudo obtener respuesta del núcleo de Nexo AI.',
                 createdAt: new Date().toISOString(),
               }
             ]);

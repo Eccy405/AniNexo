@@ -855,7 +855,7 @@ export default function CommunityPage() {
             <button className="modal-close" onClick={() => setShowNexoModal(false)}>
               <X size={20} />
             </button>
-            <h3>Nexo AI - Gemini Otaku</h3>
+            <h3>Nexo AI · Asistente Otaku</h3>
             <div className="nexo-chat-messages" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', margin: '15px 0', paddingRight: '5px' }}>
               {nexoMessages.map((msg) => (
                 <div key={msg.id} style={{
@@ -884,8 +884,8 @@ export default function CommunityPage() {
                 </div>
               ))}
               {nexoLoading && (
-                <div style={{ alignSelf: 'flex-start', color: '#00E5FF', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span className="nexo-pulse-dot" /> Nexo está consultando a Gemini...
+                <div style={{ alignSelf: 'flex-start', color: '#00E5FF', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="nexo-pulse-dot" /> Nexo está consultando los pergaminos del gremio...
                 </div>
               )}
             </div>
