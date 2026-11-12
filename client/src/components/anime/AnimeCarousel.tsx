@@ -24,7 +24,7 @@ export const AnimeCarousel: React.FC<Props> = ({ title, animes }) => {
         {animes.map((anime) => {
           const slug = anime.titleRomaji.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
           return (
-            <Link key={anime.id} href={`/dashboard/anime/${anime.id}-${slug}`} className={styles.card}>
+            <Link key={anime.id} href={`/home/anime/${anime.id}-${slug}`} className={styles.card}>
             <div className={styles.imageWrapper}>
               <img src={anime.coverImage} alt={anime.titleRomaji} className={styles.image} />
               <div className={styles.overlay}>

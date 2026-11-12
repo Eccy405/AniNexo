@@ -11,7 +11,7 @@ export const GuestButton: React.FC<Props> = ({ className, style, children }) => 
   const handleGuestLogin = () => {
     localStorage.setItem('user', JSON.stringify({ username: 'Invitado', role: 'USER', isGuest: true }));
     localStorage.removeItem('token');
-    window.location.href = '/dashboard';
+    window.location.href = '/home';
   };
 
   return (

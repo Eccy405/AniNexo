@@ -317,7 +317,7 @@ export default function RegisterPage() {
  
            {step === 'profiling' && (
              <div key="profiling" className="wizard-container animate-fadeInUp animate-delay-300">
-               <OnboardingWizard onComplete={() => window.location.href = '/dashboard'} />
+               <OnboardingWizard onComplete={() => window.location.href = '/home'} />
              </div>
            )}
          </div>

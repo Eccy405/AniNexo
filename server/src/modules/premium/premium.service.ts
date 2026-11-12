@@ -25,7 +25,7 @@ export class PremiumService {
           premiumUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)) // 1 año
         }
       });
-      return { url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard/premium?success=true&mock=true` };
+      return { url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/home/premium?success=true&mock=true` };
     }
 
     // Flujo real de Stripe
@@ -46,8 +46,8 @@ export class PremiumService {
           },
         ],
         mode: 'payment', // O 'subscription' dependiendo de la necesidad
-        success_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard/premium?success=true`,
-        cancel_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard/premium?canceled=true`,
+        success_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/home/premium?success=true`,
+        cancel_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/home/premium?canceled=true`,
         client_reference_id: userId,
       });
 

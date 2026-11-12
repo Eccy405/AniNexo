@@ -357,7 +357,7 @@ return (
             <span className="profile-link">{post.user.username}</span>
             {post.user.isPremium && <span className="premium-star">★ Premium</span>}
             {post.anime && (
-              <a href={`/dashboard/anime/${post.anime.id}`} className="anime-mention-badge">
+              <a href={`/home/anime/${post.anime.id}`} className="anime-mention-badge">
                 🏷️ {post.anime.titleRomaji || post.anime.titleEnglish}
               </a>
             )}

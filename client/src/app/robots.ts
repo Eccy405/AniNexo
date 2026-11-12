@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/admin/', '/dashboard/settings/', '/api/'],
+      disallow: ['/admin/', '/home/settings/', '/api/'],
     },
     sitemap: 'https://aninexo.com/sitemap.xml',
   };

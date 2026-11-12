@@ -68,7 +68,7 @@ export default function LoginPage() {
         if (role === 'ADMIN' || role === 'SUPERADMIN') {
           window.location.href = '/admin';
         } else {
-          window.location.href = '/dashboard/community';
+          window.location.href = '/home/community';
         }
       } else {
         setErrors(prev => ({

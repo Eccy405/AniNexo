@@ -182,7 +182,7 @@ export default function SearchPage() {
     if (appliedSeason) params.append('season', appliedSeason);
     if (appliedStatus) params.append('status', appliedStatus);
     if (appliedFormat) params.append('format', appliedFormat);
-    router.replace(`/dashboard/search?${params.toString()}`, { scroll: false });
+    router.replace(`/home/search?${params.toString()}`, { scroll: false });
   }, [appliedGenres, appliedYear, appliedSeason, appliedStatus, appliedFormat]);
 
   useEffect(() => {
@@ -383,7 +383,7 @@ export default function SearchPage() {
             <h3 className="section-title-alt">Nexo Comunidad</h3>
             <div className="users-grid-horizontal">
               {users.map(u => (
-                <Link href={`/dashboard/profile/${u.username}`} key={u.id} className="user-search-card">
+                <Link href={`/home/profile/${u.username}`} key={u.id} className="user-search-card">
                   <div className="user-avatar-wrap">
                     <img src={u.avatarUrl || `https://ui-avatars.com/api/?name=${u.username}`} alt={u.username} />
                   </div>

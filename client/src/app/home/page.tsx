@@ -162,7 +162,7 @@ export default function DashboardPage() {
               key={i} 
               title={row.title} 
               items={row.data} 
-              viewAllHref={`/dashboard/explore/${slug}`}
+              viewAllHref={`/home/explore/${slug}`}
             />
           );
         })}

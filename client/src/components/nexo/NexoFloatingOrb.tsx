@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import NexoChat from '../../app/dashboard/NexoChat';
+import NexoChat from '../../app/home/NexoChat';
 
 export const NexoFloatingOrb: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);

@@ -26,12 +26,12 @@ interface Shortcut {
 }
 
 const leftItems = [
-  { icon: Compass, label: 'Explorar', href: '/dashboard/search' },
-  { icon: Tv, label: 'Ver Anime', href: '/dashboard/watch' },
-  { icon: Gift, label: 'Nexos Diarios', href: '/dashboard/daily' },
-  { icon: Sparkles, label: 'IA', href: '/dashboard/nexo' },
-  { icon: Users, label: 'Amigos', href: '/dashboard/friends' },
-  { icon: Bookmark, label: 'Guardados', href: '/dashboard/saved' },
+  { icon: Compass, label: 'Explorar', href: '/home/search' },
+  { icon: Tv, label: 'Ver Anime', href: '/home/watch' },
+  { icon: Gift, label: 'Nexos Diarios', href: '/home/daily' },
+  { icon: Sparkles, label: 'IA', href: '/home/nexo' },
+  { icon: Users, label: 'Amigos', href: '/home/friends' },
+  { icon: Bookmark, label: 'Guardados', href: '/home/saved' },
 ];
 
 export function Sidebar() {
@@ -80,9 +80,9 @@ export function Sidebar() {
 
   const getShortcutHref = (s: Shortcut) => {
     switch (s.targetType) {
-      case 'ANIME': return `/dashboard/anime/${s.targetId}`;
-      case 'GROUP': return `/dashboard/groups/${s.targetId}`;
-      default: return `/dashboard/profile/${s.targetId}`;
+      case 'ANIME': return `/home/anime/${s.targetId}`;
+      case 'GROUP': return `/home/groups/${s.targetId}`;
+      default: return `/home/profile/${s.targetId}`;
     }
   };
 

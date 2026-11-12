@@ -51,7 +51,7 @@ export const UserListModal: React.FC<UserListModalProps> = ({ type, userId, onCl
             </p>
           ) : (
             users.map((user) => (
-              <a key={user.id} href={`/dashboard/profile/${user.username}`} className="user-item">
+              <a key={user.id} href={`/home/profile/${user.username}`} className="user-item">
                 <img 
                   src={user.avatarUrl || `https://ui-avatars.com/api/?name=${user.username}&background=random&color=fff`} 
                   alt={user.username} 

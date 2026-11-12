@@ -14,7 +14,7 @@ function AuthCallbackInner() {
       localStorage.setItem('token', token);
       
       // Enviar al onboarding inteligente para terminar el perfil
-      router.push('/dashboard?onboarding=true');
+      router.push('/home?onboarding=true');
     } else {
       router.push('/login?error=oauth_failed');
     }

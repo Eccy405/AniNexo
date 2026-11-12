@@ -44,7 +44,7 @@ export default function SavedPostsPage() {
     <div className="saved-page">
       <div className="saved-container">
         <header className="saved-header">
-          <Link href="/dashboard/community" className="back-link">
+          <Link href="/home/community" className="back-link">
             <ArrowLeft size={18} /> Volver a Comunidad
           </Link>
           <div className="title-row">
@@ -66,7 +66,7 @@ export default function SavedPostsPage() {
             <Bookmark size={42} color="#333" />
             <h3>Aún no tienes guardados</h3>
             <p>Guarda publicaciones desde el feed de Comunidad para encontrarlas rápido aquí.</p>
-            <Link href="/dashboard/community" className="cta-btn">Explorar Comunidad</Link>
+            <Link href="/home/community" className="cta-btn">Explorar Comunidad</Link>
           </div>
         ) : (
           <div className="posts-list">

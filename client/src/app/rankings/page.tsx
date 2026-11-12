@@ -24,7 +24,7 @@ export default async function RankingsPage() {
       '@type': 'ListItem',
       position: index + 1,
       name: anime.title.english || anime.title.romaji,
-      url: `https://aninexo.com/dashboard/anime/${anime.id}`
+      url: `https://aninexo.com/home/anime/${anime.id}`
     }))
   };
 
@@ -40,7 +40,7 @@ export default async function RankingsPage() {
           <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Top Anime Global</h1>
           <p style={{ color: 'var(--color-text-muted)' }}>Tendencias mundiales actualizadas en tiempo real</p>
         </div>
-        <Link href="/dashboard" style={{ 
+        <Link href="/home" style={{ 
           color: 'var(--color-primary)', 
           padding: '0.5rem 1rem', 
           border: '1px solid var(--color-primary)', 
@@ -55,7 +55,7 @@ export default async function RankingsPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
         {animes?.map((anime: any, index: number) => (
           <Link 
-            href={`/dashboard/anime/${anime.id}`} 
+            href={`/home/anime/${anime.id}`} 
             key={anime.id} 
             style={{ textDecoration: 'none', color: 'inherit' }}
           >

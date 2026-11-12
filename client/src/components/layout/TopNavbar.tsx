@@ -212,16 +212,16 @@ export const TopNavbar: React.FC = () => {
   };
 
   const navLinks = [
-    { name: 'Inicio', href: '/dashboard' },
-    { name: 'Búsqueda', href: '/dashboard/search' },
-    { name: 'Comunidad', href: '/dashboard/community' },
-    { name: 'Premium', href: '/dashboard/premium' },
+    { name: 'Inicio', href: '/home' },
+    { name: 'Búsqueda', href: '/home/search' },
+    { name: 'Comunidad', href: '/home/community' },
+    { name: 'Premium', href: '/home/premium' },
   ];
 
   const handleGlobalSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       const query = (e.target as HTMLInputElement).value;
-      window.location.href = `/dashboard/search?query=${encodeURIComponent(query)}`;
+      window.location.href = `/home/search?query=${encodeURIComponent(query)}`;
     }
   };
 
@@ -229,7 +229,7 @@ export const TopNavbar: React.FC = () => {
     <>
       <nav className={`${styles.topNavbar} ${scrolled ? styles.scrolled : ''}`} role="navigation" aria-label="Navegación principal">
       <div className={styles.navLeft}>
-        <Link href="/dashboard" className={styles.logo}>ANINEXO</Link>
+        <Link href="/home" className={styles.logo}>ANINEXO</Link>
         <div className={styles.navLinks} role="menubar">
           {navLinks.map((link) => {
             const tourId = `nav-${link.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-')}`;
@@ -275,7 +275,7 @@ export const TopNavbar: React.FC = () => {
                        {searchResults.animes.map(anime => {
                          const slug = anime.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
                          return (
-                           <Link key={anime.id} href={`/dashboard/anime/${anime.id}-${slug}`} className={styles.searchResultItem} onClick={() => setShowSearchResults(false)} role="option">
+                           <Link key={anime.id} href={`/home/anime/${anime.id}-${slug}`} className={styles.searchResultItem} onClick={() => setShowSearchResults(false)} role="option">
                          <img src={anime.coverImage} alt={anime.title} className={styles.resImg} />
                          <div className={styles.resInfo}>
                            <p className={styles.resTitle}>{anime.title}</p>
@@ -291,7 +291,7 @@ export const TopNavbar: React.FC = () => {
                    <div className={styles.searchSection}>
                      <p className={styles.sectionTitle}>Personas</p>
                      {searchResults.users.map(u => (
-                       <Link key={u.id} href={`/dashboard/profile/${u.username}`} className={styles.searchResultItem} onClick={() => setShowSearchResults(false)} role="option">
+                       <Link key={u.id} href={`/home/profile/${u.username}`} className={styles.searchResultItem} onClick={() => setShowSearchResults(false)} role="option">
                          <img 
                            src={u.avatarUrl || `https://ui-avatars.com/api/?name=${u.username}&background=random&color=fff`} 
                            alt={u.username} 
@@ -315,7 +315,7 @@ export const TopNavbar: React.FC = () => {
         </div>
         
         <div className={styles.iconGroup}>
-            <Link href="/dashboard/premium" className={styles.premiumLink}>PREMIUM</Link>
+            <Link href="/home/premium" className={styles.premiumLink}>PREMIUM</Link>
 
             <div className={styles.notificationsMenu} ref={notificationsRef}>
               <button 
@@ -429,13 +429,13 @@ export const TopNavbar: React.FC = () => {
                       <p className={styles.dEmail}>{user?.email}</p>
                     </div>
                     <div className={styles.dropdownDivider} />
-                    <Link href={`/dashboard/profile/${user?.username}`} className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
+                    <Link href={`/home/profile/${user?.username}`} className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
                       <span className={styles.dIcon} aria-hidden="true">👤</span> Mi Perfil
                     </Link>
-                    <Link href="/dashboard/saved" className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
+                    <Link href="/home/saved" className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
                       <span className={styles.dIcon} aria-hidden="true">🔖</span> Guardados
                     </Link>
-                    <Link href="/dashboard/daily" className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
+                    <Link href="/home/daily" className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
                       <span className={styles.dIcon} aria-hidden="true">🎁</span> Nexos Diarios
                     </Link>
                     {(user?.role === 'ADMIN' || user?.role === 'SUPERADMIN') && (
@@ -443,10 +443,10 @@ export const TopNavbar: React.FC = () => {
                         <span className={styles.dIcon} aria-hidden="true">🛡️</span> Panel Admin
                       </Link>
                     )}
-                    <Link href="/dashboard/manual" className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
+                    <Link href="/home/manual" className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
                       <span className={styles.dIcon} aria-hidden="true">📖</span> Manual Sistema
                     </Link>
-                    <Link href="/dashboard/settings" className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
+                    <Link href="/home/settings" className={styles.dropdownItem} onClick={() => setShowDropdown(false)} role="menuitem">
                       <span className={styles.dIcon} aria-hidden="true">⚙️</span> Ajustes
                     </Link>
                     <div className={styles.dropdownDivider} />

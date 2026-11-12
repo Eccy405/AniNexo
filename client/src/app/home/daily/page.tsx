@@ -59,7 +59,7 @@ export default function DailyNexosPage() {
                   <div className="spotlight-info">
                     <h3>{dailyAnime.titleEnglish || dailyAnime.titleRomaji}</h3>
                     <p>{dailyAnime.averageScore ? `Puntuación: ${dailyAnime.averageScore}%` : 'Tendencia en AniNexo'}</p>
-                    <Link href={`/dashboard/anime/${dailyAnime.id}`} className="primary-btn">
+                    <Link href={`/home/anime/${dailyAnime.id}`} className="primary-btn">
                       Ver Ficha del Anime
                     </Link>
                   </div>
@@ -73,10 +73,10 @@ export default function DailyNexosPage() {
             <section className="card">
               <h2><Compass size={18} color="#00E5FF" /> Rutas del Día</h2>
               <div className="quick-links">
-                <Link href="/dashboard/community" className="q-link"><MessageSquare size={16} /> Publicar o ver Historias</Link>
-                <Link href="/dashboard/search" className="q-link"><Compass size={16} /> Explorar Animes y Mangas</Link>
+                <Link href="/home/community" className="q-link"><MessageSquare size={16} /> Publicar o ver Historias</Link>
+                <Link href="/home/search" className="q-link"><Compass size={16} /> Explorar Animes y Mangas</Link>
                 <Link href="/rankings" className="q-link"><Trophy size={16} /> Ver Rankings Globales</Link>
-                <Link href="/dashboard/saved" className="q-link"><Gift size={16} /> Revisar Guardados</Link>
+                <Link href="/home/saved" className="q-link"><Gift size={16} /> Revisar Guardados</Link>
               </div>
             </section>
 

@@ -112,7 +112,7 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
 
   if (error || !anime) return (
     <>
-      <NexoAlert show={true} type="error" title="ERROR DIMENSIONAL" message={error || "Anime no encontrado"} onClose={() => window.location.href = '/dashboard'} />
+      <NexoAlert show={true} type="error" title="ERROR DIMENSIONAL" message={error || "Anime no encontrado"} onClose={() => window.location.href = '/home'} />
       <div style={{ background: '#050505', height: '100vh' }} />
     </>
   );
@@ -303,7 +303,7 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
                    <h3>Relaciones</h3>
                    <div className="relations-horizontal">
                      {anime.relations.map((rel: any) => (
-                       <Link key={rel.id} href={`/dashboard/anime/${rel.id}`} className="rel-card-modern">
+                       <Link key={rel.id} href={`/home/anime/${rel.id}`} className="rel-card-modern">
                          <div className="rel-card-img"><Image src={rel.coverImage.large} alt={rel.title.romaji} fill /></div>
                          <div className="rel-card-data">
                            <span className="rel-label">{translateFormat(rel.type)}</span>
@@ -329,7 +329,7 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
                    <h3>Recomendaciones</h3>
                    <div className="recommendations-grid-layout">
                      {anime.recommendations.slice(0, 6).map((rec: any) => (
-                       <Link key={rec.id} href={`/dashboard/anime/${rec.id}`} className="rec-box">
+                       <Link key={rec.id} href={`/home/anime/${rec.id}`} className="rec-box">
                          <div className="rec-box-img"><Image src={rec.coverImage.large} alt={rec.title.romaji} fill /></div>
                          <p className="rec-box-title">{rec.title.english || rec.title.romaji}</p>
                        </Link>
@@ -413,7 +413,7 @@ export default function AnimeDetailPage({ params: paramsPromise }: { params: Pro
                      <h3>📖 Manga disponible en MangaDex</h3>
                      <p>Este anime tiene un manga adaptación disponible para leer.</p>
                    </div>
-                   <Link href={`/dashboard/manga/${mangaId}`} className="manga-tab-cta">
+                   <Link href={`/home/manga/${mangaId}`} className="manga-tab-cta">
                      <span className="manga-tab-cta-icon">📚</span>
                      <span className="manga-tab-cta-text">
                        <strong className="manga-tab-cta-title">Ver capítulos del manga</strong>

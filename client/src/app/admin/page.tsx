@@ -1519,7 +1519,7 @@ export default function AdminDashboard() {
         </nav>
 
         <div style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px solid #1a1a1a' }}>
-          <Link href="/dashboard" style={{ textDecoration: 'none', color: '#888', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', transition: 'color 0.2s' }}>
+          <Link href="/home" style={{ textDecoration: 'none', color: '#888', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', transition: 'color 0.2s' }}>
             <ArrowLeft size={16} /> Salir al Portal
           </Link>
         </div>

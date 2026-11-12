@@ -13,14 +13,14 @@ const STEP_KEY     = 'nexo-tour-step';
 function getProfileUrl(): string {
   try {
     const raw = localStorage.getItem('user');
-    if (!raw) return '/dashboard/profile/mikasa';
+    if (!raw) return '/home/profile/mikasa';
     const user = JSON.parse(raw) as { username?: string };
     if (!user || !user.username) {
-      return '/dashboard/profile/mikasa';
+      return '/home/profile/mikasa';
     }
-    return `/dashboard/profile/${user.username}`;
+    return `/home/profile/${user.username}`;
   } catch {
-    return '/dashboard/profile/mikasa';
+    return '/home/profile/mikasa';
   }
 }
 
@@ -109,7 +109,7 @@ export const NexoTour: React.FC = () => {
     }
 
     // Solo arrancar el tour automáticamente al entrar al dashboard por primera vez
-    if (pathname === '/dashboard' && !startedRef.current) {
+    if (pathname === '/home' && !startedRef.current) {
       startedRef.current = true;
       const timer = setTimeout(() => setRun(true), 1500);
       return () => clearTimeout(timer);
@@ -260,11 +260,11 @@ export const NexoTour: React.FC = () => {
     setStepIndex(0);
     setRun(false);
     // Ir al inicio; el useEffect lo reanudará al detectar /dashboard
-    if (pathname === '/dashboard') {
+    if (pathname === '/home') {
       // Ya estamos aquí: arrancar directamente
       setTimeout(() => setRun(true), 400);
     } else {
-      router.push('/dashboard');
+      router.push('/home');
     }
   }, [pathname, router]);
 

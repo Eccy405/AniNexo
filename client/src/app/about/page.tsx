@@ -36,7 +36,7 @@ export default function AboutPage() {
           Construido para explorar series, guardar tus favoritos, compartir historias y conectar con fans que comparten tu mismo ADN otaku.
         </p>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <Link href="/dashboard" style={{
+          <Link href="/home" style={{
             background: '#00E5FF', color: '#000', padding: '12px 22px',
             borderRadius: '10px', fontWeight: 800, textDecoration: 'none'
           }}>

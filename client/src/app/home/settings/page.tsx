@@ -65,7 +65,7 @@ export default function DashboardSettingsPage() {
     if (typeof window !== 'undefined' && (window as any).startNexoTour) {
       (window as any).startNexoTour();
     } else {
-      window.location.href = '/dashboard';
+      window.location.href = '/home';
     }
   };
 

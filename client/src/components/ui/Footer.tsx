@@ -17,10 +17,10 @@ export const Footer = () => {
           <Link href="/about">
             <Text size="sm" color="muted">Nosotros</Text>
           </Link>
-          <Link href="/dashboard/premium">
+          <Link href="/home/premium">
             <Text size="sm" color="muted">Premium</Text>
           </Link>
-          <Link href="/dashboard/manual">
+          <Link href="/home/manual">
             <Text size="sm" color="muted">Manual</Text>
           </Link>
         </div>

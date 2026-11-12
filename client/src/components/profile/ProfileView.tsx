@@ -690,7 +690,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profile: initialProfil
            <div className="anime-grid">
              {initialCollection.map((entry: any) => (
                <div key={entry.animeId} className="anime-item-card">
-                 <a href={`/dashboard/anime/${entry.animeId}`} style={{ textDecoration: 'none' }}>
+                 <a href={`/home/anime/${entry.animeId}`} style={{ textDecoration: 'none' }}>
                    <div className="poster-wrap">
                      <img src={entry.anime?.coverImage || '/default-anime.png'} alt={entry.anime?.title || 'Anime'} />
                    </div>

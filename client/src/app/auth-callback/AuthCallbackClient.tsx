@@ -11,7 +11,7 @@ export default function AuthCallbackClient() {
   useEffect(() => {
     if (token) {
       localStorage.setItem('token', token);
-      router.push('/dashboard?onboarding=true');
+      router.push('/home?onboarding=true');
     } else {
       router.push('/login?error=oauth_failed');
     }

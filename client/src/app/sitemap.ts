@@ -8,8 +8,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = [
     '',
     '/rankings',
-    '/dashboard',
-    '/dashboard/community',
+    '/home',
+    '/home/community',
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
@@ -22,7 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const popularAnimes = await getPopularAnimes(1, 50);
     animeRoutes = popularAnimes.map((anime: any) => ({
-      url: `${baseUrl}/dashboard/anime/${anime.id}`,
+      url: `${baseUrl}/home/anime/${anime.id}`,
       lastModified: new Date(),
       changeFrequency: 'weekly' as const,
       priority: 0.6,

@@ -61,7 +61,7 @@ export default function PremiumPage() {
           <p style={{ color: 'var(--color-text-muted)', marginBottom: '2rem' }}>
             Tu suscripción se ha procesado exitosamente. Ahora tienes acceso a Nexo Avanzado y mucho más.
           </p>
-          <Button onClick={() => window.location.href = '/dashboard'}>Ir al Dashboard</Button>
+          <Button onClick={() => window.location.href = '/home'}>Ir al Dashboard</Button>
         </Card>
       </div>
     );

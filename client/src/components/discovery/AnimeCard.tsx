@@ -25,7 +25,7 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
   return (
-    <Link href={`/dashboard/anime/${id}-${slug}`} style={{ textDecoration: 'none' }}>
+    <Link href={`/home/anime/${id}-${slug}`} style={{ textDecoration: 'none' }}>
       <div className="anime-card-container">
         <div className="anime-card">
           {/* Poster Principal */}

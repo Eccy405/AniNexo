@@ -22,7 +22,7 @@ export const MangaCard: React.FC<MangaCardProps> = ({
   tags 
 }) => {
   return (
-    <Link href={`/dashboard/manga/${id}`} style={{ textDecoration: 'none' }}>
+    <Link href={`/home/manga/${id}`} style={{ textDecoration: 'none' }}>
       <div className="manga-card-container">
         <div className="manga-card">
           <div className="poster-wrapper">

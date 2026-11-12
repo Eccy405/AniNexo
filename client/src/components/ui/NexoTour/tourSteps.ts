@@ -74,7 +74,7 @@ export const tourSteps: TourStep[] = [
       '¡De vuelta a la Aldea de la Hoja! Te llevaré a la página del popular Naruto Shippuden para mostrarte cómo se ve un anime con todo el detalle de AniNexo.',
     emotion: 'excited',
     disableBeacon: true,
-    navigateTo: '/dashboard/anime/1735-naruto-shippuden',
+    navigateTo: '/home/anime/1735-naruto-shippuden',
   },
   {
     target: '[data-tour="anime-header"]',
@@ -184,7 +184,7 @@ export const tourSteps: TourStep[] = [
       '¡Ahora te muestro la Comunidad! Es el corazón social de AniNexo: conecta con otros fans, comparte reseñas, reacciona a posts y haz nuevos amigos.',
     emotion: 'happy',
     disableBeacon: true,
-    navigateTo: '/dashboard/community',
+    navigateTo: '/home/community',
   },
   {
     target: '[data-tour="community-feed"]',
@@ -284,7 +284,7 @@ export const tourSteps: TourStep[] = [
       '¡Una de las novedades más emocionantes! AniNexo ahora tiene un sistema de mensajes directos en tiempo real. Te lo muestro ahora mismo.',
     emotion: 'excited',
     disableBeacon: true,
-    navigateTo: '/dashboard',
+    navigateTo: '/home',
   },
   {
     target: '[data-tour="messenger-fab"]',
@@ -307,7 +307,7 @@ export const tourSteps: TourStep[] = [
     disableBeacon: true,
     spotlightPadding: 8,
     disableScroll: true,
-    navigateTo: '/dashboard/community',
+    navigateTo: '/home/community',
   },
 
   // ─────────────────────────────────────────────────

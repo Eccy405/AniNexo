@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     viewTransition: true,
   },
   images: {
+    unoptimized: true,
     remotePatterns: [
       { protocol: 'https', hostname: 's4.anilist.co' },
       { protocol: 'https', hostname: 'via.placeholder.com' },

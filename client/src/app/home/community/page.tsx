@@ -386,7 +386,7 @@ export default function CommunityPage() {
         setGroupAvatar('');
         setSelectedParticipants([]);
         fetchUserConversations();
-        router.push(`/dashboard/chat/${data.data.id}`);
+        router.push(`/home/chat/${data.data.id}`);
       } else {
         console.error('Error creating group:', data.message);
       }
@@ -425,10 +425,10 @@ export default function CommunityPage() {
   ];
 
   const shortcuts = [
-    { name: 'Grupos Temáticos', href: '/dashboard/groups', image: 'https://ui-avatars.com/api/?name=GRP&background=9C27B0&color=fff' },
-    { name: 'Explorar Catálogo', href: '/dashboard/search', image: 'https://ui-avatars.com/api/?name=EXP&background=00838f&color=fff' },
+    { name: 'Grupos Temáticos', href: '/home/groups', image: 'https://ui-avatars.com/api/?name=GRP&background=9C27B0&color=fff' },
+    { name: 'Explorar Catálogo', href: '/home/search', image: 'https://ui-avatars.com/api/?name=EXP&background=00838f&color=fff' },
     { name: 'Rankings Globales', href: '/rankings', image: 'https://ui-avatars.com/api/?name=TOP&background=e65100&color=fff' },
-    { name: 'Mensajes y Chat', href: '/dashboard/chat', image: 'https://ui-avatars.com/api/?name=CHT&background=009688&color=fff' }
+    { name: 'Mensajes y Chat', href: '/home/chat', image: 'https://ui-avatars.com/api/?name=CHT&background=009688&color=fff' }
   ];
 
   return (
@@ -439,7 +439,7 @@ export default function CommunityPage() {
         <aside className="left-sidebar" data-tour="community-left-sidebar">
           <div className="sidebar-scrollable">
             <Link
-              href={user?.username ? `/dashboard/profile/${user.username}` : '/login'}
+              href={user?.username ? `/home/profile/${user.username}` : '/login'}
               className="sidebar-link profile-item"
             >
               <img 
@@ -593,7 +593,7 @@ export default function CommunityPage() {
                   searchResults.length > 0 ? (
                     searchResults.map(u => (
                       <div key={u.id} className="contact-item">
-                        <Link href={`/dashboard/profile/${u.username}`} className="contact-link">
+                        <Link href={`/home/profile/${u.username}`} className="contact-link">
                           <div className="avatar-wrapper">
                             <img src={u.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=0052FF&color=fff`} alt={u.username} className="contact-avatar" />
                             <span className="online-badge" />
@@ -623,7 +623,7 @@ export default function CommunityPage() {
                 ) : userFriends.length > 0 ? (
                   userFriends.map((f: any) => (
                     <div key={f.id} className="contact-item">
-                      <Link href={`/dashboard/profile/${f.username}`} className="contact-link">
+                      <Link href={`/home/profile/${f.username}`} className="contact-link">
                         <div className="avatar-wrapper">
                           <img src={f.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.username)}&background=0052FF&color=fff`} alt={f.username} className="contact-avatar" />
                           <span className="online-badge" />
@@ -674,7 +674,7 @@ export default function CommunityPage() {
                 <div className="chat-bubble-list">
                   {conversations.length > 0 ? (
                     conversations.map((conv: any) => (
-                      <Link href={`/dashboard/chat/${conv.id}`} key={conv.id} className="chat-bubble-item">
+                      <Link href={`/home/chat/${conv.id}`} key={conv.id} className="chat-bubble-item">
                         <div className="chat-bubble-avatar" style={{ background: conv.avatar ? undefined : conv.theme || '#00E5FF' }}>
                           {conv.avatar ? (
                             <img src={conv.avatar} alt={conv.name} />
@@ -799,7 +799,7 @@ export default function CommunityPage() {
             currentUser={user}
             onStartChat={(_friend, convId) => {
               setShowFriendsModal(false);
-              router.push(`/dashboard/chat/${convId}`);
+              router.push(`/home/chat/${convId}`);
             }}
           />
         ) : (
@@ -1106,7 +1106,7 @@ export default function CommunityPage() {
               style={{ marginTop: '15px' }}
               onClick={() => {
                 setShowGroupsModal(false);
-                router.push('/dashboard/groups');
+                router.push('/home/groups');
               }}
             >
               Ir a Grupos Temáticos y Crear Uno

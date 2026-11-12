@@ -51,7 +51,7 @@ export default function AuthForm({ initialMode = 'login' }: AuthFormProps) {
         localStorage.setItem('user', JSON.stringify(data.data.user));
         
         setTimeout(() => {
-          window.location.href = '/dashboard';
+          window.location.href = '/home';
         }, 500);
       }
     } catch (err: any) {
@@ -141,7 +141,7 @@ export default function AuthForm({ initialMode = 'login' }: AuthFormProps) {
             onClick={() => {
               localStorage.setItem('user', JSON.stringify({ username: 'Invitado', role: 'USER', isGuest: true }));
               localStorage.removeItem('token'); // Sin token para invitados
-              window.location.href = '/dashboard';
+              window.location.href = '/home';
             }}
           >
             🚀 Entrar como Invitado (Free)

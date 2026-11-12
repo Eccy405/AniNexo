@@ -14,7 +14,7 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window !== "undefined" && localStorage.getItem("token")) {
-      window.location.href = "/dashboard";
+      window.location.href = "/home";
     }
   }, []);
 
@@ -22,7 +22,7 @@ export default function Home() {
     localStorage.removeItem('nexo-tour-completed');
     localStorage.setItem('user', JSON.stringify({ username: 'Invitado', role: 'USER', isGuest: true }));
     localStorage.removeItem('token');
-    window.location.href = '/dashboard';
+    window.location.href = '/home';
   };
 
   return (
@@ -99,8 +99,8 @@ export default function Home() {
           </div>
           <div className={styles.footerLinks}>
             <Link href="/about">Nosotros</Link>
-            <Link href="/dashboard/premium">Premium</Link>
-            <Link href="/dashboard/manual">Manual</Link>
+            <Link href="/home/premium">Premium</Link>
+            <Link href="/home/manual">Manual</Link>
           </div>
         </div>
         <div className={styles.footerBottom}>
